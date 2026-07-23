@@ -129,6 +129,7 @@
   .overlay.open { display: flex; }
   .modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 480px;
     box-shadow: 0 20px 60px rgba(0,0,0,.35); border: 1px solid var(--border); max-height: 92vh; overflow-y: auto; }
+  #overlay .modal { max-width: 720px; }
   .modal h2 { margin: 0; padding: 18px 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border); }
   .mtabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
   .mtab-btn { border: none; background: transparent; padding: 8px 12px; font-size: .82rem; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; }
@@ -263,7 +264,7 @@
   .g-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 38px; }
   .g-row:last-child { border-bottom: none; }
   .g-subrow { min-height: 30px; }
-  .g-label, .g-group { min-width: 200px; max-width: 200px; padding: 8px 10px; font-size: .82rem; position: sticky; left: 0; z-index: 2;
+  .g-label, .g-group { min-width: 280px; max-width: 280px; padding: 8px 10px; font-size: .82rem; position: sticky; left: 0; z-index: 2;
     background: var(--surface); border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
   .g-head .g-label { background: var(--surface-2); font-weight: 700; align-items: flex-end; }
   .g-group { background: var(--surface-2); font-weight: 700; }
@@ -406,6 +407,7 @@
       <div class="mtabs">
         <button type="button" class="mtab-btn active" data-mtab="basis">Basis</button>
         <button type="button" class="mtab-btn" data-mtab="termine">Termine</button>
+        <button type="button" class="mtab-btn" data-mtab="checklist">Checkliste</button>
         <button type="button" class="mtab-btn" data-mtab="subs">Unteraufgaben</button>
         <button type="button" class="mtab-btn" data-mtab="people">Verknüpfungen</button>
       </div>
@@ -473,7 +475,7 @@
         </div>
       </div>
 
-      <div class="mtab" data-mtab="subs">
+      <div class="mtab" data-mtab="checklist">
         <div class="field">
           <label>Checkliste (schnelle Haken)</label>
           <div class="cl-list" id="mChecklist"></div>
@@ -482,12 +484,23 @@
             <button type="button" class="ghost" id="mClAdd">+</button>
           </div>
         </div>
+      </div>
+
+      <div class="mtab" data-mtab="subs">
         <div class="field">
           <label>Subtasks (Unteraufgaben mit eigenem Status)</label>
           <div class="cl-list" id="mSubtasks"></div>
           <div class="cl-add">
             <input id="mStInput" type="text" placeholder="Unteraufgabe hinzufügen …">
             <button type="button" class="ghost" id="mStAdd">+</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Hängt ab von (blockiert, bis erledigt)</label>
+          <div class="tag-list" id="mDeps"></div>
+          <div class="addrow dep-add">
+            <input id="mDepsSearch" type="text" placeholder="Aufgabe suchen …">
+            <select id="mDepsSel"></select>
           </div>
         </div>
       </div>
@@ -498,13 +511,6 @@
           <div class="tag-list" id="mPeople"></div>
           <div class="addrow">
             <select id="mPeopleSel"></select>
-          </div>
-        </div>
-        <div class="field">
-          <label>Hängt ab von (blockiert, bis erledigt)</label>
-          <div class="tag-list" id="mDeps"></div>
-          <div class="addrow">
-            <select id="mDepsSel"></select>
           </div>
         </div>
         <div class="field">
@@ -1204,7 +1210,7 @@ function calAgenda(){
 }
 
 /* ============================== GANTT ============================== */
-const GDAY_W = 34, GLABEL_W = 200;
+const GDAY_W = 34, GLABEL_W = 280;
 function gRange(a,b){ if(!a && !b) return null; return { start: a<b?a:b, end: a<b?b:a }; }
 function stRange(s){ return gRange(s.start||s.due, s.due||s.start); }
 function taskOwnRange(t){ return gRange(t.start||t.due, t.due||t.start); }
@@ -1260,10 +1266,10 @@ function renderGantt(){
   }
   flushSeg();
 
-  const bar=(r,color,extra,cls,label,id)=>{
+  const bar=(r,color,extra,cls,label,id,attr)=>{
     const x=dayIdx(r.start)*GDAY_W;
     const w=Math.max(GDAY_W,(dayIdx(r.end)-dayIdx(r.start)+1)*GDAY_W);
-    return `<div class="g-bar ${cls}" style="left:${x}px;width:${w-2}px;background:${color};${extra}" onclick="openEdit('${id}')">${esc(label)}</div>`;
+    return `<div class="g-bar ${cls}" ${attr||''} style="left:${x}px;width:${w-2}px;background:${color};${extra}" onclick="openEdit('${id}')">${esc(label)}</div>`;
   };
 
   const groups=[{id:null,name:'Ohne Projekt'}].concat(projects.map(p=>({id:p.id,name:p.name})));
@@ -1283,7 +1289,7 @@ function renderGantt(){
         : `<span class="g-chev" style="visibility:hidden">${ic('chevron')}</span>`;
       const cnt=hasSubs?` <span class="col-count">${subs.filter(x=>x.s.status==='done').length}/${subs.length}</span>`:'';
       rows+=`<div class="g-row"><div class="g-label" title="${esc(t.title)}">${chev}${roleBadge(t)}<span class="g-lname">${esc(t.title)}</span>${cnt}</div>
-        <div class="g-track" style="width:${trackW}px">${bar(r,color,done,'',t.title,t.id)}</div></div>`;
+        <div class="g-track" style="width:${trackW}px">${bar(r,color,done,'',t.title,t.id,`data-gtask="${t.id}"`)}</div></div>`;
       if(open){
         subs.forEach(({s,r:sr})=>{
           const sdone=(s.status==='done')?'opacity:.5;':'';
@@ -1304,6 +1310,36 @@ function renderGantt(){
     <div class="g-head"><div class="g-label">Aufgabe</div><div class="g-time"><div class="g-months">${monthRow}</div><div class="g-days">${dayRow}</div></div></div>
     ${rows}${todayLine}
   </div></div>${note}`;
+  drawGanttDeps(el);
+}
+function drawGanttDeps(el){
+  const inner=el.querySelector('.gantt-inner'); if(!inner) return;
+  const innerRect=inner.getBoundingClientRect();
+  if(!innerRect.width) return; // Ansicht nicht sichtbar -> keine Messung
+  const barOf=id=>inner.querySelector('.g-bar[data-gtask="'+id+'"]');
+  const segs=[];
+  tasks.forEach(S=>{
+    (S.dependsOn||[]).forEach(pid=>{
+      const sb=barOf(S.id), pb=barOf(pid);
+      if(!sb||!pb) return;
+      const sr=sb.getBoundingClientRect(), pr=pb.getBoundingClientRect();
+      segs.push({
+        x1: pr.right-innerRect.left, y1: pr.top-innerRect.top+pr.height/2,
+        x2: sr.left-innerRect.left,  y2: sr.top-innerRect.top+sr.height/2
+      });
+    });
+  });
+  if(!segs.length) return;
+  const W=inner.scrollWidth, H=inner.scrollHeight, gap=10, col='#9aa0ac';
+  let paths='';
+  segs.forEach(({x1,y1,x2,y2})=>{
+    let d;
+    if(x2>=x1+gap) d=`M${x1} ${y1} H${x1+gap} V${y2} H${x2}`;
+    else { const my=(y1+y2)/2; d=`M${x1} ${y1} H${x1+gap} V${my} H${x2-gap} V${y2} H${x2}`; }
+    paths+=`<path d="${d}" fill="none" stroke="${col}" stroke-width="1.4"/>`;
+    paths+=`<path d="M${x2-6} ${y2-4} L${x2} ${y2} L${x2-6} ${y2+4} Z" fill="${col}"/>`;
+  });
+  inner.insertAdjacentHTML('afterbegin', `<svg class="g-deps" width="${W}" height="${H}" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0">${paths}</svg>`);
 }
 
 /* ============================== ACTIONS ============================== */
@@ -1399,11 +1435,19 @@ function renderModalDeps(){
   const sel=document.getElementById('mDepsSel');
   const curId=document.getElementById('mId').value;
   const used=new Set(modalDeps);
-  const avail=tasks.filter(t=>t.id!==curId && !used.has(t.id));
-  sel.innerHTML = avail.length ? '<option value="">Abhängigkeit hinzufügen …</option>' + avail.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join('')
-    : '<option value="">— keine weiteren Aufgaben —</option>';
+  const q=(document.getElementById('mDepsSearch')?.value||'').trim().toLowerCase();
+  const avail=tasks.filter(t=>t.id!==curId && !used.has(t.id) && (!q || (t.title||'').toLowerCase().includes(q)));
+  if(!avail.length){ sel.innerHTML='<option value="">— keine passende Aufgabe —</option>'; return; }
+  const groups=[{id:null,name:'Ohne Projekt'}].concat(projects.map(p=>({id:p.id,name:p.name})));
+  let opts='<option value="">Abhängigkeit hinzufügen …</option>';
+  groups.forEach(g=>{
+    const items=avail.filter(t=>(t.projectId||null)===g.id);
+    if(!items.length) return;
+    opts+=`<optgroup label="${esc(g.name)}">`+items.map(t=>`<option value="${t.id}">${esc(t.title)}</option>`).join('')+'</optgroup>';
+  });
+  sel.innerHTML=opts;
 }
-function addModalDep(){ const sel=document.getElementById('mDepsSel'); const id=sel.value; if(!id) return; modalDeps.push(id); renderModalDeps(); }
+function addModalDep(){ const sel=document.getElementById('mDepsSel'); const id=sel.value; if(!id) return; modalDeps.push(id); const s=document.getElementById('mDepsSearch'); if(s) s.value=''; renderModalDeps(); }
 
 let modalLinks=[];
 function renderModalLinks(){
@@ -1754,6 +1798,7 @@ document.getElementById('listClose').onclick=()=>listOverlay.classList.remove('o
 listOverlay.addEventListener('click',e=>{ if(e.target===listOverlay) listOverlay.classList.remove('open'); });
 document.getElementById('mPeopleSel').onchange=addModalPerson;
 document.getElementById('mDepsSel').onchange=addModalDep;
+document.getElementById('mDepsSearch').oninput=renderModalDeps;
 document.getElementById('mLinkAdd').onclick=addModalLink;
 document.getElementById('mLinkUrl').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addModalLink(); } });
 
