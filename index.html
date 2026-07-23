@@ -255,6 +255,35 @@
   /* Dezente Ton-in-Ton Icons */
   .ic { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; flex: none; vertical-align: -2px; }
   .ic svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Schwebender Neue-Aufgabe-Button */
+  .fab { position: fixed; right: 22px; bottom: 22px; width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent); color: #fff; border: none; font-size: 2rem; line-height: 1; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.28); z-index: 45; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .fab:hover { filter: brightness(1.1); border: none; }
+  .col-add { border: 1px dashed var(--border); background: transparent; color: var(--text-muted); width: 100%;
+    border-radius: 9px; padding: 7px; font-size: .82rem; margin-top: 2px; cursor: pointer; }
+  .col-add:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Archiv */
+  .arch-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .arch-month { margin-bottom: 20px; }
+  .arch-month h4 { font-size: .9rem; margin: 0 0 8px; color: var(--text-muted); font-weight: 600; }
+  .arch-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 9px; background: var(--surface); margin-bottom: 6px; box-shadow: var(--shadow); cursor: pointer; }
+  .arch-row:hover { border-color: var(--accent); }
+  .arch-row .a-title { flex: 1; font-size: .88rem; }
+  .arch-row .a-date { font-size: .74rem; color: var(--text-muted); }
+
+  /* Links in der Aufgabe */
+  .link-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; font-size: .86rem; }
+  .link-row a { flex: 1; color: var(--accent); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-row a:hover { text-decoration: underline; }
+  .link-row button { border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 2px 6px; }
+  .link-add { display: flex; gap: 6px; flex-wrap: wrap; }
+  .link-add input.ln { flex: 1 1 90px; min-width: 0; }
+  .link-add input.lu { flex: 2 1 140px; min-width: 0; }
   .badge .ic, .due .ic, .marker .ic, .progress .ic { width: 12px; height: 12px; }
 
   .hidden { display: none !important; }
@@ -305,6 +334,7 @@
     <button class="vbtn" data-view="calendar"><span class="ic" data-ic="calendar"></span> Kalender</button>
     <button class="vbtn" data-view="gantt"><span class="ic" data-ic="gantt"></span> Gantt</button>
     <button class="vbtn" data-view="statistik"><span class="ic" data-ic="stats"></span> Statistik</button>
+    <button class="vbtn" data-view="archiv"><span class="ic" data-ic="archive"></span> Archiv</button>
   </div>
 
   <div class="cal-controls" id="boardGroupBar">
@@ -323,7 +353,10 @@
   <div id="calendar" class="hidden"></div>
   <div id="gantt" class="hidden"></div>
   <div id="statistik" class="hidden"></div>
+  <div id="archiv" class="hidden"></div>
 </div>
+
+<button class="fab" id="fab" title="Neue Aufgabe">+</button>
 
 <!-- Aufgabe-Modal -->
 <div class="overlay" id="overlay">
@@ -335,7 +368,7 @@
         <button type="button" class="mtab-btn active" data-mtab="basis">Basis</button>
         <button type="button" class="mtab-btn" data-mtab="termine">Termine</button>
         <button type="button" class="mtab-btn" data-mtab="subs">Unteraufgaben</button>
-        <button type="button" class="mtab-btn" data-mtab="people">Personen &amp; Abhängigkeiten</button>
+        <button type="button" class="mtab-btn" data-mtab="people">Verknüpfungen</button>
       </div>
 
       <div class="mtab active" data-mtab="basis">
@@ -433,6 +466,15 @@
           <div class="tag-list" id="mDeps"></div>
           <div class="addrow">
             <select id="mDepsSel"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Links (z. B. Planner-Plan, Ressource, Dokument)</label>
+          <div class="tag-list" id="mLinks"></div>
+          <div class="link-add">
+            <input id="mLinkName" class="ln" type="text" placeholder="Name (optional)">
+            <input id="mLinkUrl" class="lu" type="url" placeholder="https://…">
+            <button type="button" class="ghost" id="mLinkAdd">+</button>
           </div>
         </div>
       </div>
@@ -618,8 +660,8 @@ const STATUS = [
   { id:'waiting',     label:'Waiting',     color:'#b07a5f', board:true },
   { id:'snoozed',     label:'Snoozed',     color:'#8a7fa8', board:true },
   { id:'backlog',     label:'Backlog',     color:'#5a8a86', board:false },
-  { id:'done',        label:'Done',        color:'#6b8a6b', board:true },
-  { id:'discarded',   label:'Verworfen',   color:'#a8aeb8', board:true },
+  { id:'done',        label:'Done',        color:'#6b8a6b', board:false, archive:true },
+  { id:'discarded',   label:'Verworfen',   color:'#a8aeb8', board:false, archive:true },
 ];
 const STATUS_MAP = Object.fromEntries(STATUS.map(s => [s.id, s]));
 const PALETTE = ['#5f7d9c','#5a8a76','#b07a5f','#8a6a9c','#6f88a8','#b0895a','#a86a6a','#6b8a6b'];
@@ -647,6 +689,8 @@ const ICON = {
   search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>',
   repeat:'<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
   flag:'<svg viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg>',
+  archive:'<svg viewBox="0 0 24 24"><path d="M3 4h18v4H3z"/><path d="M5 8h14v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M9.5 12h5"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>',
   focus:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6L19 19M5 19l1.4-1.4M17.6 6.4L19 5"/></svg>',
   stats:'<svg viewBox="0 0 24 24"><path d="M4 20h16"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/></svg>',
   cloud:'<svg viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10.5-1.2A4 4 0 0 1 17.5 18z"/><path d="M9 14l2 2 4-4"/></svg>',
@@ -712,7 +756,7 @@ function renderViewSwitch(){
 function setView(v){ view = v; renderViewSwitch(); renderCurrent(); }
 function setBoardGroup(g){ boardGroup=g; document.querySelectorAll('#boardGroupBar .cmode').forEach(b=>b.classList.toggle('active', b.dataset.bg===g)); renderBoard(); }
 function renderCurrent(){
-  ['board','focus','backlog','calendar','gantt','statistik'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
+  ['board','focus','backlog','calendar','gantt','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
   const cur=document.getElementById(view); if(cur) cur.classList.remove('hidden');
   document.getElementById('boardGroupBar').classList.toggle('hidden', view!=='board');
   if(view==='board') renderBoard();
@@ -721,6 +765,7 @@ function renderCurrent(){
   else if(view==='calendar') renderCalendar();
   else if(view==='gantt') renderGantt();
   else if(view==='statistik') renderStatistik();
+  else if(view==='archiv') renderArchiv();
 }
 function renderFocus(){
   const today=todayStr();
@@ -769,6 +814,32 @@ function renderStatistik(){
       ${barChart('Offene Aufgaben je Person (Auslastung)', byPerson)}
     </div>`;
 }
+
+let archMode='done';
+function setArchMode(m){ archMode=m; renderArchiv(); }
+function renderArchiv(){
+  const items = tasks.filter(t=>t.status===archMode).filter(matchesFilter);
+  const groups={};
+  items.forEach(t=>{ const d=t.archivedAt||t.created||''; const key=d?d.slice(0,7):'unbekannt'; (groups[key]=groups[key]||[]).push(t); });
+  const keys=Object.keys(groups).sort().reverse();
+  const monthName=k=>{ if(k==='unbekannt') return 'Ohne Datum'; const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('de-DE',{month:'long',year:'numeric'}); };
+  const controls=`<div class="arch-controls">
+    <div class="cal-modes">
+      <button class="cmode ${archMode==='done'?'active':''}" onclick="setArchMode('done')">Erledigt</button>
+      <button class="cmode ${archMode==='discarded'?'active':''}" onclick="setArchMode('discarded')">Verworfen</button>
+    </div>
+    <span class="flabel">${items.length} Einträge</span>
+  </div>`;
+  const body = keys.length ? keys.map(k=>{
+    const rows=groups[k].sort((a,b)=>(a.archivedAt||'')<(b.archivedAt||'')?1:-1).map(t=>{
+      const p=projById(t.projectId);
+      const dstr=t.archivedAt?new Date(t.archivedAt+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'short'}):'';
+      return `<div class="arch-row" onclick="openEdit('${t.id}')">${roleBadge(t)}<span class="a-title">${esc(t.title)}</span>${p?`<span class="badge proj" style="background:${p.color}">${esc(p.name)}</span>`:''}<span class="a-date">${dstr}</span></div>`;
+    }).join('');
+    return `<div class="arch-month"><h4>${monthName(k)} (${groups[k].length})</h4>${rows}</div>`;
+  }).join('') : `<div class="cal-empty">Keine ${archMode==='done'?'erledigten':'verworfenen'} Aufgaben.</div>`;
+  document.getElementById('archiv').innerHTML = controls + body;
+}
 function renderBacklog(){
   const items = tasks.filter(t => t.status === 'backlog').filter(matchesFilter).sort((a,b) => {
     const e = ehRank(a) - ehRank(b); if(e !== 0) return e;
@@ -783,7 +854,7 @@ function backlogCardHTML(t){
   const projHTML = p ? `<span class="badge proj" style="background:${p.color}">${esc(p.name)}</span>` : '';
   return `<div class="card ${q.key} ${t.status}">
     <div class="c-title">${esc(t.title)}</div>
-    <div class="c-meta">${roleBadge(t)}<span class="badge eh ${q.key}">${q.label}</span>${projHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
+    <div class="c-meta">${roleBadge(t)}<span class="badge eh ${q.key}">${q.label}</span>${projHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
     <div class="c-actions">
       <button class="ghost sm" title="Ins Board holen (To Do)" onclick="setStatus('${t.id}','todo')">→ Board</button>
       <span style="flex:1"></span>
@@ -883,9 +954,10 @@ function renderBoard(){
       return (a.due||'9999') < (b.due||'9999') ? -1 : 1;
     });
     const cards = items.length ? items.map(cardHTML).join('') : '<div class="empty-col">—</div>';
+    const addBtn = boardGroup==='status' ? `<button class="col-add" onclick="openNew('${col.key}')">+ Aufgabe</button>` : '';
     return `<div class="column">
       <div class="col-head"><span class="col-dot" style="background:${col.color}"></span>${esc(col.label)}
-        <span class="col-count">${items.length}</span></div>${cards}</div>`;
+        <span class="col-count">${items.length}</span></div>${cards}${addBtn}</div>`;
   }).join('');
 }
 
@@ -903,7 +975,7 @@ function cardHTML(t){
   const opts = STATUS.map(s=>`<option value="${s.id}" ${s.id===t.status?'selected':''}>${s.label}</option>`).join('');
   return `<div class="card ${q.key} ${t.status}">
     <div class="c-title">${esc(t.title)}</div>
-    <div class="c-meta">${roleBadge(t)}${ehHTML}${projHTML}${dueHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
+    <div class="c-meta">${roleBadge(t)}${ehHTML}${projHTML}${dueHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
     <div class="c-actions">
       <select title="Status ändern" onchange="setStatus('${t.id}', this.value)">${opts}</select>
       <button class="icon ghost" title="Bearbeiten" onclick="openEdit('${t.id}')">${ic('edit')}</button>
@@ -1068,7 +1140,7 @@ const selfPerson = () => people.find(p => p.self) || null;
 function personInitials(name){
   return (name||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
 }
-function setStatus(id, val){ const t=tasks.find(x=>x.id===id); if(t){ const old=t.status; t.status=val; maybeRecur(t, old, val); persist(); render(); } }
+function setStatus(id, val){ const t=tasks.find(x=>x.id===id); if(t){ const old=t.status; t.status=val; setArchivedAt(t, old, val); maybeRecur(t, old, val); persist(); render(); } }
 
 /* ---------- Aufgabe-Modal ---------- */
 const overlay = document.getElementById('overlay');
@@ -1157,6 +1229,24 @@ function renderModalDeps(){
     : '<option value="">— keine weiteren Aufgaben —</option>';
 }
 function addModalDep(){ const sel=document.getElementById('mDepsSel'); const id=sel.value; if(!id) return; modalDeps.push(id); renderModalDeps(); }
+
+let modalLinks=[];
+function renderModalLinks(){
+  document.getElementById('mLinks').innerHTML = modalLinks.map((l,i)=>`
+    <div class="link-row">${ic('link')}<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name||l.url)}</a>
+      <button type="button" title="Entfernen" onclick="removeLink(${i})">✕</button></div>`).join('');
+}
+function addModalLink(){
+  const name=document.getElementById('mLinkName').value.trim();
+  let url=document.getElementById('mLinkUrl').value.trim();
+  if(!url) return;
+  if(!/^https?:\/\//i.test(url)) url='https://'+url;
+  modalLinks.push({name, url});
+  document.getElementById('mLinkName').value=''; document.getElementById('mLinkUrl').value='';
+  renderModalLinks(); document.getElementById('mLinkName').focus();
+}
+function removeLink(i){ modalLinks.splice(i,1); renderModalLinks(); }
+function linkBadge(t){ const l=t.links||[]; if(!l.length) return ''; return `<span class="progress">${ic('link')} ${l.length}</span>`; }
 function removeDep(i){ modalDeps.splice(i,1); renderModalDeps(); }
 
 /* Karten-Marker */
@@ -1180,6 +1270,11 @@ function recurMarker(t){
   if(!t.recur) return '';
   const lbl={daily:'täglich',weekly:'wöchentlich',monthly:'monatlich'}[t.recur]||'';
   return `<span class="marker" style="background:var(--surface-2);color:var(--text-muted)">${ic('repeat')} ${lbl}</span>`;
+}
+function setArchivedAt(t, oldStatus, newStatus){
+  const arch = s => s==='done' || s==='discarded';
+  if(arch(newStatus) && !arch(oldStatus)) t.archivedAt = todayStr();
+  else if(!arch(newStatus) && arch(oldStatus)) t.archivedAt = '';
 }
 function shiftDate(ds, recur){
   const d=new Date(ds+'T00:00:00');
@@ -1251,14 +1346,14 @@ function setModalTab(t){
   document.querySelectorAll('.mtab-btn').forEach(b=>b.classList.toggle('active', b.dataset.mtab===t));
   document.querySelectorAll('.mtab').forEach(d=>d.classList.toggle('active', d.dataset.mtab===t));
 }
-function openNew(){
+function openNew(presetStatus){
   fillSelects(); setModalTab('basis');
   document.getElementById('modalTitle').textContent='Neue Aufgabe';
   document.getElementById('mId').value='';
   document.getElementById('mTitle').value='';
   document.getElementById('mDesc').value='';
   document.getElementById('mProj').value='';
-  document.getElementById('mStatus').value = (view === 'backlog') ? 'backlog' : 'inbox';
+  document.getElementById('mStatus').value = presetStatus || (view === 'backlog' ? 'backlog' : 'inbox');
   document.getElementById('mRole').value = filters.role || 'meta';
   document.getElementById('mPrio').value='D';
   document.getElementById('mStart').value='';
@@ -1267,6 +1362,7 @@ function openNew(){
   document.getElementById('mRecur').value='';
   modalChecklist=[]; renderChecklist();
   modalSubtasks=[]; renderSubtasks();
+  modalLinks=[]; renderModalLinks();
   const self=selfPerson();
   modalPeople = self ? [{personId:self.id, approval:false}] : [];
   modalDeps=[]; renderModalPeople(); renderModalDeps();
@@ -1292,6 +1388,7 @@ function openEdit(id){
   document.getElementById('mRecur').value=t.recur||'';
   modalChecklist=(t.checklist||[]).map(x=>({...x})); renderChecklist();
   modalSubtasks=(t.subtasks||[]).map(x=>({...x})); renderSubtasks();
+  modalLinks=(t.links||[]).map(x=>({...x})); renderModalLinks();
   modalPeople=(t.people||[]).map(x=>({...x})); modalDeps=[...(t.dependsOn||[])];
   renderModalPeople(); renderModalDeps();
   updateRoleField();
@@ -1318,8 +1415,9 @@ function saveModal(){
     subtasks:modalSubtasks.map(x=>({...x})),
     people:modalPeople.map(x=>({...x})),
     dependsOn:[...modalDeps],
+    links:modalLinks.map(x=>({...x})),
   };
-  if(id){ const t=tasks.find(x=>x.id===id); const old=t.status; Object.assign(t, data); maybeRecur(t, old, data.status); }
+  if(id){ const t=tasks.find(x=>x.id===id); const old=t.status; Object.assign(t, data); setArchivedAt(t, old, data.status); maybeRecur(t, old, data.status); }
   else { tasks.push({ id:uid(), created:todayStr(), ...data }); }
   persist(); render(); closeModal();
 }
@@ -1468,7 +1566,8 @@ function importJSON(file){
 document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll('#boardGroupBar .cmode').forEach(b => b.onclick = () => setBoardGroup(b.dataset.bg));
 document.querySelectorAll('.mtab-btn').forEach(b=>b.onclick=()=>setModalTab(b.dataset.mtab));
-document.getElementById('btnNew').onclick=openNew;
+document.getElementById('btnNew').onclick=()=>openNew();
+document.getElementById('fab').onclick=()=>openNew();
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('mCancel').onclick=closeModal;
 document.getElementById('mDelete').onclick=deleteModal;
@@ -1481,6 +1580,8 @@ document.getElementById('listClose').onclick=()=>listOverlay.classList.remove('o
 listOverlay.addEventListener('click',e=>{ if(e.target===listOverlay) listOverlay.classList.remove('open'); });
 document.getElementById('mPeopleSel').onchange=addModalPerson;
 document.getElementById('mDepsSel').onchange=addModalDep;
+document.getElementById('mLinkAdd').onclick=addModalLink;
+document.getElementById('mLinkUrl').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addModalLink(); } });
 
 document.getElementById('btnPeople').onclick=openPeople;
 document.getElementById('btnGithub').onclick=openGithub;
