@@ -10,7 +10,7 @@
     --text: #1c2333; --text-muted: #6b7386; --accent: #343a40; --accent-soft: #e9ecef;
     --shadow: 0 1px 3px rgba(20,30,60,.08), 0 4px 16px rgba(20,30,60,.05);
     --radius: 14px;
-    --q1: #e03131; --q2: #1971c2; --q3: #f08c00; --q4: #adb5bd;
+    --q1: #b06a6a; --q2: #5f7d9c; --q3: #b0895a; --q4: #9aa0ac;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -78,9 +78,9 @@
   .badge { font-size: .71rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
   .badge.proj { color: #fff; }
   .badge.eh { background: var(--surface-2); }
-  .badge.eh.q1 { background: rgba(224,49,49,.14); color: var(--q1); }
-  .badge.eh.q2 { background: rgba(25,113,194,.14); color: var(--q2); }
-  .badge.eh.q3 { background: rgba(240,140,0,.16); color: var(--q3); }
+  .badge.eh.q1 { background: rgba(176,106,106,.18); color: var(--q1); }
+  .badge.eh.q2 { background: rgba(95,125,156,.18); color: var(--q2); }
+  .badge.eh.q3 { background: rgba(176,137,90,.20); color: var(--q3); }
   .badge.eh.q4 { background: var(--surface-2); color: var(--text-muted); }
   .due { font-size: .73rem; color: var(--text-muted); display: inline-flex; gap: 3px; align-items: center; }
   .due.over { color: var(--q1); font-weight: 600; }
@@ -113,6 +113,12 @@
   .modal { background: var(--surface); border-radius: var(--radius); width: 100%; max-width: 480px;
     box-shadow: 0 20px 60px rgba(0,0,0,.35); border: 1px solid var(--border); max-height: 92vh; overflow-y: auto; }
   .modal h2 { margin: 0; padding: 18px 20px; font-size: 1.1rem; border-bottom: 1px solid var(--border); }
+  .mtabs { display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+  .mtab-btn { border: none; background: transparent; padding: 8px 12px; font-size: .82rem; font-weight: 600; color: var(--text-muted); border-bottom: 2px solid transparent; cursor: pointer; }
+  .mtab-btn:hover { color: var(--text); }
+  .mtab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+  .mtab { display: none; flex-direction: column; gap: 14px; }
+  .mtab.active { display: flex; }
   .modal .body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
   .field label { display: block; font-size: .8rem; color: var(--text-muted); margin-bottom: 5px; font-weight: 500; }
   .field input, .field select, .field textarea { width: 100%; font-family: inherit; font-size: .92rem; padding: 10px;
@@ -141,7 +147,7 @@
   .cl-bar { height: 5px; background: var(--surface-2); border-radius: 4px; overflow: hidden; margin-top: 4px; }
   .cl-bar > i { display: block; height: 100%; background: var(--q3); }
   .progress { font-size: .71rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 3px; }
-  .progress.full { color: var(--q3-done, #2f9e44); }
+  .progress.full { color: var(--q3-done, #6b8a6b); }
 
   /* Subtasks */
   .st-item { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 8px; background: var(--surface-2);
@@ -171,11 +177,11 @@
 
   /* Personen / Abhängigkeiten / Marker */
   .person-chip { font-size: .71rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap;
-    background: #495057; color: #fff; }
-  .person-chip.approval { background: #e8590c; }
+    background: #6b727e; color: #fff; }
+  .person-chip.approval { background: #b07a5f; }
   .marker { font-size: .71rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
-  .marker.blocked { background: rgba(224,49,49,.14); color: var(--q1); }
-  .marker.followup { background: rgba(232,89,12,.15); color: #e8590c; }
+  .marker.blocked { background: rgba(176,106,106,.18); color: var(--q1); }
+  .marker.followup { background: rgba(176,122,95,.20); color: #a06a4a; }
   .tag-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
   .tag-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--surface-2);
     border: 1px solid var(--border); border-radius: 8px; font-size: .86rem; }
@@ -264,7 +270,7 @@
     <div class="top-actions">
       <button class="ghost" id="btnProjects" title="Projekte verwalten"><span class="ic" data-ic="folder"></span> Projekte</button>
       <button class="ghost" id="btnPeople" title="Personen verwalten"><span class="ic" data-ic="user"></span> Personen</button>
-      <button class="ghost" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span id="ghDot" style="width:8px;height:8px;border-radius:50%;background:#adb5bd;display:inline-block;margin-left:2px"></span></button>
+      <button class="ghost" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span id="ghDot" style="width:8px;height:8px;border-radius:50%;background:#a8aeb8;display:inline-block;margin-left:2px"></span></button>
       <button class="ghost" id="btnImport" title="JSON importieren"><span class="ic" data-ic="upload"></span></button>
       <button class="ghost" id="btnExport" title="Als JSON sichern"><span class="ic" data-ic="download"></span></button>
       <button class="primary" id="btnNew">+ Neue Aufgabe</button>
@@ -325,91 +331,109 @@
     <h2 id="modalTitle">Neue Aufgabe</h2>
     <div class="body">
       <input type="hidden" id="mId">
-      <div class="field">
-        <label for="mTitle">Titel *</label>
-        <input id="mTitle" type="text" placeholder="Was ist zu tun?">
+      <div class="mtabs">
+        <button type="button" class="mtab-btn active" data-mtab="basis">Basis</button>
+        <button type="button" class="mtab-btn" data-mtab="termine">Termine</button>
+        <button type="button" class="mtab-btn" data-mtab="subs">Unteraufgaben</button>
+        <button type="button" class="mtab-btn" data-mtab="people">Personen &amp; Abhängigkeiten</button>
       </div>
-      <div class="field">
-        <label for="mDesc">Notiz (optional)</label>
-        <textarea id="mDesc" placeholder="Details …"></textarea>
-      </div>
-      <div class="row2">
+
+      <div class="mtab active" data-mtab="basis">
         <div class="field">
-          <label for="mProj">Projekt</label>
-          <select id="mProj"><option value="">— kein Projekt —</option></select>
-        </div>
-        <div class="field">
-          <label for="mStatus">Status</label>
-          <select id="mStatus"></select>
-        </div>
-      </div>
-      <div class="field" id="mRoleField">
-        <label for="mRole">Rolle</label>
-        <select id="mRole"></select>
-      </div>
-      <div class="eh-hint hidden" id="mRoleInherit"></div>
-      <div class="field">
-        <label for="mPrio">Priorität</label>
-        <select id="mPrio">
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D" selected>D</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Checkliste / Unteraufgaben</label>
-        <div class="cl-list" id="mChecklist"></div>
-        <div class="cl-add">
-          <input id="mClInput" type="text" placeholder="Punkt hinzufügen …">
-          <button type="button" class="ghost" id="mClAdd">+</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Subtasks (Unteraufgaben mit eigenem Status)</label>
-        <div class="cl-list" id="mSubtasks"></div>
-        <div class="cl-add">
-          <input id="mStInput" type="text" placeholder="Unteraufgabe hinzufügen …">
-          <button type="button" class="ghost" id="mStAdd">+</button>
-        </div>
-      </div>
-      <div class="field">
-        <label>Beteiligte Personen (mehrere möglich · Häkchen „Freigabe" = muss zustimmen)</label>
-        <div class="tag-list" id="mPeople"></div>
-        <div class="addrow">
-          <select id="mPeopleSel"></select>
-        </div>
-      </div>
-      <div class="field">
-        <label>Hängt ab von (blockiert, bis erledigt)</label>
-        <div class="tag-list" id="mDeps"></div>
-        <div class="addrow">
-          <select id="mDepsSel"></select>
-        </div>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label for="mFollowUp">Follow-up / Wiedervorlage am</label>
-          <input id="mFollowUp" type="date">
+          <label for="mTitle">Titel *</label>
+          <input id="mTitle" type="text" placeholder="Was ist zu tun?">
         </div>
         <div class="field">
-          <label for="mRecur">Wiederholung</label>
-          <select id="mRecur">
-            <option value="">Keine</option>
-            <option value="daily">Täglich</option>
-            <option value="weekly">Wöchentlich</option>
-            <option value="monthly">Monatlich</option>
+          <label for="mDesc">Notiz (optional)</label>
+          <textarea id="mDesc" placeholder="Details …"></textarea>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="mProj">Projekt</label>
+            <select id="mProj"><option value="">— kein Projekt —</option></select>
+          </div>
+          <div class="field">
+            <label for="mStatus">Status</label>
+            <select id="mStatus"></select>
+          </div>
+        </div>
+        <div class="field" id="mRoleField">
+          <label for="mRole">Rolle</label>
+          <select id="mRole"></select>
+        </div>
+        <div class="eh-hint hidden" id="mRoleInherit"></div>
+        <div class="field">
+          <label for="mPrio">Priorität</label>
+          <select id="mPrio">
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D" selected>D</option>
           </select>
         </div>
       </div>
-      <div class="row2">
+
+      <div class="mtab" data-mtab="termine">
+        <div class="row2">
+          <div class="field">
+            <label for="mStart">Start</label>
+            <input id="mStart" type="date">
+          </div>
+          <div class="field">
+            <label for="mDue">Fällig / Ende</label>
+            <input id="mDue" type="date">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="mFollowUp">Follow-up / Wiedervorlage am</label>
+            <input id="mFollowUp" type="date">
+          </div>
+          <div class="field">
+            <label for="mRecur">Wiederholung</label>
+            <select id="mRecur">
+              <option value="">Keine</option>
+              <option value="daily">Täglich</option>
+              <option value="weekly">Wöchentlich</option>
+              <option value="monthly">Monatlich</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="mtab" data-mtab="subs">
         <div class="field">
-          <label for="mStart">Start</label>
-          <input id="mStart" type="date">
+          <label>Checkliste (schnelle Haken)</label>
+          <div class="cl-list" id="mChecklist"></div>
+          <div class="cl-add">
+            <input id="mClInput" type="text" placeholder="Punkt hinzufügen …">
+            <button type="button" class="ghost" id="mClAdd">+</button>
+          </div>
         </div>
         <div class="field">
-          <label for="mDue">Fällig / Ende</label>
-          <input id="mDue" type="date">
+          <label>Subtasks (Unteraufgaben mit eigenem Status)</label>
+          <div class="cl-list" id="mSubtasks"></div>
+          <div class="cl-add">
+            <input id="mStInput" type="text" placeholder="Unteraufgabe hinzufügen …">
+            <button type="button" class="ghost" id="mStAdd">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mtab" data-mtab="people">
+        <div class="field">
+          <label>Beteiligte Personen (mehrere möglich · Häkchen „Freigabe" = muss zustimmen)</label>
+          <div class="tag-list" id="mPeople"></div>
+          <div class="addrow">
+            <select id="mPeopleSel"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Hängt ab von (blockiert, bis erledigt)</label>
+          <div class="tag-list" id="mDeps"></div>
+          <div class="addrow">
+            <select id="mDepsSel"></select>
+          </div>
         </div>
       </div>
     </div>
@@ -588,23 +612,23 @@ const Store = {
 
 /* ============================== KONSTANTEN ============================== */
 const STATUS = [
-  { id:'inbox',       label:'Inbox',       color:'#868e96', board:true },
-  { id:'todo',        label:'To Do',       color:'#748ffc', board:true },
-  { id:'in_progress', label:'In Progress', color:'#f59f00', board:true },
-  { id:'waiting',     label:'Waiting',     color:'#e8590c', board:true },
-  { id:'snoozed',     label:'Snoozed',     color:'#9775fa', board:true },
-  { id:'backlog',     label:'Backlog',     color:'#099268', board:false },
-  { id:'done',        label:'Done',        color:'#37b24d', board:true },
-  { id:'discarded',   label:'Verworfen',   color:'#adb5bd', board:true },
+  { id:'inbox',       label:'Inbox',       color:'#8a909c', board:true },
+  { id:'todo',        label:'To Do',       color:'#6f88a8', board:true },
+  { id:'in_progress', label:'In Progress', color:'#b0895a', board:true },
+  { id:'waiting',     label:'Waiting',     color:'#b07a5f', board:true },
+  { id:'snoozed',     label:'Snoozed',     color:'#8a7fa8', board:true },
+  { id:'backlog',     label:'Backlog',     color:'#5a8a86', board:false },
+  { id:'done',        label:'Done',        color:'#6b8a6b', board:true },
+  { id:'discarded',   label:'Verworfen',   color:'#a8aeb8', board:true },
 ];
 const STATUS_MAP = Object.fromEntries(STATUS.map(s => [s.id, s]));
-const PALETTE = ['#3b5bdb','#0ca678','#e8590c','#ae3ec9','#1971c2','#f08c00','#e03131','#2f9e44'];
+const PALETTE = ['#5f7d9c','#5a8a76','#b07a5f','#8a6a9c','#6f88a8','#b0895a','#a86a6a','#6b8a6b'];
 const ROLES = [
-  { id:'dc',   code:'DC',   label:'Donor Care',       color:'#d6336c' },
-  { id:'dm',   code:'DM',   label:'Data Management',  color:'#1c7ed6' },
-  { id:'qm',   code:'QM',   label:'Quality Mgmt',     color:'#2f9e44' },
-  { id:'ict',  code:'ICT',  label:'ICT',              color:'#7048e8' },
-  { id:'meta', code:'META', label:'META (übergreifend)', color:'#495057' },
+  { id:'dc',   code:'DC',   label:'Donor Care',       color:'#a86a7c' },
+  { id:'dm',   code:'DM',   label:'Data Management',  color:'#5f7d9c' },
+  { id:'qm',   code:'QM',   label:'Quality Mgmt',     color:'#6b8a6b' },
+  { id:'ict',  code:'ICT',  label:'ICT',              color:'#7d6f9c' },
+  { id:'meta', code:'META', label:'META (übergreifend)', color:'#6b727e' },
 ];
 const ICON = {
   folder:'<svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
@@ -731,8 +755,8 @@ function renderStatistik(){
   const byStatus=STATUS.map(s=>({label:s.label,color:s.color,count:pool.filter(t=>t.status===s.id).length})).filter(r=>r.count>0);
   const byRole=ROLES.map(r=>({label:r.code+' – '+r.label,color:r.color,count:pool.filter(t=>taskRole(t)===r.id).length})).filter(r=>r.count>0);
   const byProject=[...projects.map(p=>({label:p.name,color:p.color,count:pool.filter(t=>t.projectId===p.id).length})),
-    {label:'Ohne Projekt',color:'#adb5bd',count:pool.filter(t=>!t.projectId).length}].filter(r=>r.count>0);
-  const byPerson=people.map(p=>({label:p.name,color:'#495057',count:pool.filter(t=>active(t)&&(t.people||[]).some(pp=>pp.personId===p.id)).length})).filter(r=>r.count>0);
+    {label:'Ohne Projekt',color:'#a8aeb8',count:pool.filter(t=>!t.projectId).length}].filter(r=>r.count>0);
+  const byPerson=people.map(p=>({label:p.name,color:'#6b727e',count:pool.filter(t=>active(t)&&(t.people||[]).some(pp=>pp.personId===p.id)).length})).filter(r=>r.count>0);
   const total=pool.length, open=pool.filter(active).length, done=pool.filter(t=>t.status==='done').length, overdue=pool.filter(isOverdue).length;
   const kpi=(n,l,c)=>`<div><div style="font-size:1.7rem;font-weight:700;${c?`color:${c}`:''}">${n}</div><div class="mt-lbl">${l}</div></div>`;
   const summary=`<div class="chart-block"><h3>Überblick${filters.role?' · Rolle '+roleCode(filters.role):''}</h3>
@@ -832,19 +856,19 @@ function matchesFilter(t){
 
 function boardGroups(){
   if(boardGroup==='prio') return [
-    { key:'A', label:'A', color:'#e03131', match:t=>(t.prio||'D')==='A' },
-    { key:'B', label:'B', color:'#1971c2', match:t=>(t.prio||'D')==='B' },
-    { key:'C', label:'C', color:'#f08c00', match:t=>(t.prio||'D')==='C' },
-    { key:'D', label:'D', color:'#adb5bd', match:t=>(t.prio||'D')==='D' },
+    { key:'A', label:'A', color:'#b06a6a', match:t=>(t.prio||'D')==='A' },
+    { key:'B', label:'B', color:'#5f7d9c', match:t=>(t.prio||'D')==='B' },
+    { key:'C', label:'C', color:'#b0895a', match:t=>(t.prio||'D')==='C' },
+    { key:'D', label:'D', color:'#9aa0ac', match:t=>(t.prio||'D')==='D' },
   ];
   if(boardGroup==='person'){
-    const g=people.map(p=>({ key:p.id, label:p.name, color:'#495057', match:t=>(t.people||[]).some(pp=>pp.personId===p.id) }));
-    g.push({ key:'__none', label:'Ohne Person', color:'#adb5bd', match:t=>!(t.people||[]).length });
+    const g=people.map(p=>({ key:p.id, label:p.name, color:'#6b727e', match:t=>(t.people||[]).some(pp=>pp.personId===p.id) }));
+    g.push({ key:'__none', label:'Ohne Person', color:'#a8aeb8', match:t=>!(t.people||[]).length });
     return g;
   }
   if(boardGroup==='project'){
     const g=projects.map(p=>({ key:p.id, label:p.name, color:p.color, match:t=>t.projectId===p.id }));
-    g.push({ key:'__none', label:'Ohne Projekt', color:'#adb5bd', match:t=>!t.projectId });
+    g.push({ key:'__none', label:'Ohne Projekt', color:'#a8aeb8', match:t=>!t.projectId });
     return g;
   }
   return STATUS.filter(s=>s.board).map(s=>({ key:s.id, label:s.label, color:s.color, match:t=>t.status===s.id }));
@@ -891,7 +915,7 @@ let calMode = 'month';
 let calRef = new Date();
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function calTasks(){ return tasks.filter(matchesFilter).filter(t=>t.due); }
-function evColor(t){ const r=roleById(taskRole(t)); return r?r.color:'#868e96'; }
+function evColor(t){ const r=roleById(taskRole(t)); return r?r.color:'#8a909c'; }
 function setCalMode(m){ calMode=m; renderCalendar(); }
 function calToday(){ calRef=new Date(); renderCalendar(); }
 function calNav(dir){
@@ -1223,8 +1247,12 @@ function updateRoleField(){
     inherit.classList.add('hidden');
   }
 }
+function setModalTab(t){
+  document.querySelectorAll('.mtab-btn').forEach(b=>b.classList.toggle('active', b.dataset.mtab===t));
+  document.querySelectorAll('.mtab').forEach(d=>d.classList.toggle('active', d.dataset.mtab===t));
+}
 function openNew(){
-  fillSelects();
+  fillSelects(); setModalTab('basis');
   document.getElementById('modalTitle').textContent='Neue Aufgabe';
   document.getElementById('mId').value='';
   document.getElementById('mTitle').value='';
@@ -1249,7 +1277,7 @@ function openNew(){
 }
 function openEdit(id){
   const t=tasks.find(x=>x.id===id); if(!t) return;
-  fillSelects();
+  fillSelects(); setModalTab('basis');
   document.getElementById('modalTitle').textContent='Aufgabe bearbeiten';
   document.getElementById('mId').value=t.id;
   document.getElementById('mTitle').value=t.title||'';
@@ -1372,8 +1400,8 @@ function delProject(id){
 const githubOverlay = document.getElementById('githubOverlay');
 function ghSetStatus(state, msg){
   const dot=document.getElementById('ghDot'); if(!dot) return;
-  const colors={ connected:'#37b24d', saving:'#f59f00', error:'#e03131', local:'#adb5bd' };
-  dot.style.background=colors[state]||'#adb5bd';
+  const colors={ connected:'#5f9e6f', saving:'#b0895a', error:'#b06a6a', local:'#9aa0ac' };
+  dot.style.background=colors[state]||'#a8aeb8';
   const btn=document.getElementById('btnGithub'); if(btn) btn.title='GitHub: '+(msg||state);
 }
 function openGithub(){
@@ -1439,6 +1467,7 @@ function importJSON(file){
 /* ============================== EVENTS ============================== */
 document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll('#boardGroupBar .cmode').forEach(b => b.onclick = () => setBoardGroup(b.dataset.bg));
+document.querySelectorAll('.mtab-btn').forEach(b=>b.onclick=()=>setModalTab(b.dataset.mtab));
 document.getElementById('btnNew').onclick=openNew;
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('mCancel').onclick=closeModal;
