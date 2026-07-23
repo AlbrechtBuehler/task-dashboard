@@ -256,11 +256,13 @@
   .ic { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; flex: none; vertical-align: -2px; }
   .ic svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* Schwebender Neue-Aufgabe-Button */
-  .fab { position: fixed; right: 22px; bottom: 22px; width: 56px; height: 56px; border-radius: 50%;
-    background: var(--accent); color: #fff; border: none; font-size: 2rem; line-height: 1; cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0,0,0,.28); z-index: 45; display: flex; align-items: center; justify-content: center; padding: 0; }
-  .fab:hover { filter: brightness(1.1); border: none; }
+  /* Ansichts-Leiste mit Neue-Aufgabe-Pille */
+  .viewbar { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    flex-wrap: wrap; margin-bottom: 16px; }
+  .viewbar .viewswitch { margin-bottom: 0; }
+  .pill-new { border-radius: 12px; padding: 9px 16px; font-weight: 600; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px; }
+  .pill-new .ic { display: inline-flex; }
   .col-add { border: 1px dashed var(--border); background: transparent; color: var(--text-muted); width: 100%;
     border-radius: 9px; padding: 7px; font-size: .82rem; margin-top: 2px; cursor: pointer; }
   .col-add:hover { border-color: var(--accent); color: var(--text); }
@@ -302,7 +304,6 @@
       <button class="ghost" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span id="ghDot" style="width:8px;height:8px;border-radius:50%;background:#a8aeb8;display:inline-block;margin-left:2px"></span></button>
       <button class="ghost" id="btnImport" title="JSON importieren"><span class="ic" data-ic="upload"></span></button>
       <button class="ghost" id="btnExport" title="Als JSON sichern"><span class="ic" data-ic="download"></span></button>
-      <button class="primary" id="btnNew">+ Neue Aufgabe</button>
     </div>
   </header>
 
@@ -327,14 +328,17 @@
     <button class="ghost sm" id="fReset">Zurücksetzen</button>
   </div>
 
-  <div class="viewswitch" id="viewswitch">
-    <button class="vbtn active" data-view="board"><span class="ic" data-ic="board"></span> Board</button>
-    <button class="vbtn" data-view="focus"><span class="ic" data-ic="focus"></span> Mein Tag</button>
-    <button class="vbtn" data-view="backlog"><span class="ic" data-ic="backlog"></span> Backlog <span class="vcount" id="backlogCount">0</span></button>
-    <button class="vbtn" data-view="calendar"><span class="ic" data-ic="calendar"></span> Kalender</button>
-    <button class="vbtn" data-view="gantt"><span class="ic" data-ic="gantt"></span> Gantt</button>
-    <button class="vbtn" data-view="statistik"><span class="ic" data-ic="stats"></span> Statistik</button>
-    <button class="vbtn" data-view="archiv"><span class="ic" data-ic="archive"></span> Archiv</button>
+  <div class="viewbar">
+    <div class="viewswitch" id="viewswitch">
+      <button class="vbtn active" data-view="board"><span class="ic" data-ic="board"></span> Board</button>
+      <button class="vbtn" data-view="focus"><span class="ic" data-ic="focus"></span> Mein Tag</button>
+      <button class="vbtn" data-view="backlog"><span class="ic" data-ic="backlog"></span> Backlog <span class="vcount" id="backlogCount">0</span></button>
+      <button class="vbtn" data-view="calendar"><span class="ic" data-ic="calendar"></span> Kalender</button>
+      <button class="vbtn" data-view="gantt"><span class="ic" data-ic="gantt"></span> Gantt</button>
+      <button class="vbtn" data-view="statistik"><span class="ic" data-ic="stats"></span> Statistik</button>
+      <button class="vbtn" data-view="archiv"><span class="ic" data-ic="archive"></span> Archiv</button>
+    </div>
+    <button class="primary pill-new" id="btnNewTab"><span class="ic" data-ic="plus"></span> Neue Aufgabe</button>
   </div>
 
   <div class="cal-controls" id="boardGroupBar">
@@ -355,8 +359,6 @@
   <div id="statistik" class="hidden"></div>
   <div id="archiv" class="hidden"></div>
 </div>
-
-<button class="fab" id="fab" title="Neue Aufgabe">+</button>
 
 <!-- Aufgabe-Modal -->
 <div class="overlay" id="overlay">
@@ -694,6 +696,7 @@ const ICON = {
   focus:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6L19 19M5 19l1.4-1.4M17.6 6.4L19 5"/></svg>',
   stats:'<svg viewBox="0 0 24 24"><path d="M4 20h16"/><rect x="5" y="11" width="3" height="7"/><rect x="10.5" y="6" width="3" height="12"/><rect x="16" y="9" width="3" height="9"/></svg>',
   cloud:'<svg viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10.5-1.2A4 4 0 0 1 17.5 18z"/><path d="M9 14l2 2 4-4"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
 };
 const ic = name => `<span class="ic">${ICON[name]||''}</span>`;
 const roleById = id => ROLES.find(r => r.id === id) || null;
@@ -1566,8 +1569,7 @@ function importJSON(file){
 document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll('#boardGroupBar .cmode').forEach(b => b.onclick = () => setBoardGroup(b.dataset.bg));
 document.querySelectorAll('.mtab-btn').forEach(b=>b.onclick=()=>setModalTab(b.dataset.mtab));
-document.getElementById('btnNew').onclick=()=>openNew();
-document.getElementById('fab').onclick=()=>openNew();
+document.getElementById('btnNewTab').onclick=()=>openNew();
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('mCancel').onclick=closeModal;
 document.getElementById('mDelete').onclick=deleteModal;
