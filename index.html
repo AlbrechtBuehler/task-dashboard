@@ -59,10 +59,10 @@
   .filters .flabel { font-size: .78rem; color: var(--text-muted); margin-right: -4px; }
 
   /* Board – horizontal scrollbar */
-  .board { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; }
-  .column { scroll-snap-align: start; flex: 0 0 270px; background: var(--surface-2); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 12px; min-height: 140px; }
-  @media (max-width: 560px) { .column { flex-basis: 84vw; } }
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding-bottom: 10px; align-items: start; }
+  .column { background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px; min-height: 140px; min-width: 0; }
+  @media (max-width: 520px) { .board { grid-template-columns: 1fr; } }
   .col-head { display: flex; align-items: center; gap: 8px; margin: 2px 4px 12px; font-weight: 600; font-size: .92rem; }
   .col-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .col-count { margin-left: auto; color: var(--text-muted); font-weight: 500; font-size: .8rem;
