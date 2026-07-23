@@ -228,7 +228,8 @@
   .cal-title { font-weight: 700; font-size: 1.05rem; margin: 0 6px; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
   .cal-dow { font-size: .74rem; font-weight: 600; color: var(--text-muted); text-align: center; padding: 4px 0; }
-  .cal-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; min-height: 96px; padding: 6px; overflow: hidden; }
+  .cal-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; min-height: 96px; padding: 6px; overflow: hidden; cursor: pointer; }
+  .cal-cell:hover { border-color: var(--accent); }
   .cal-cell.other { opacity: .4; }
   .cal-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .cal-daynum { font-size: .76rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
@@ -238,7 +239,8 @@
   .cal-ev.ev-mid { border-radius: 0; opacity: .92; }
   .cal-more { font-size: .68rem; color: var(--text-muted); }
   .cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .cal-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 8px; min-height: 120px; }
+  .cal-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 8px; min-height: 120px; cursor: pointer; }
+  .cal-col:hover { border-color: var(--accent); }
   .cal-col h4 { margin: 0 0 8px; font-size: .8rem; }
   .cal-col.today h4 { color: var(--accent); }
   .cal-year { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -1039,7 +1041,9 @@ function taskSpan(t){
   if(!s && !e) return null;
   return { s: s<e?s:e, e: s<e?e:s };
 }
-function spanTasks(){ return tasks.filter(matchesFilter).map(t=>({t, sp:taskSpan(t)})).filter(x=>x.sp); }
+function spanTasks(){ return tasks.filter(matchesFilter).filter(t=>t.status!=='done' && t.status!=='discarded').map(t=>({t, sp:taskSpan(t)})).filter(x=>x.sp); }
+function openDay(ds){ calRef=new Date(ds+'T00:00:00'); calMode='day'; renderCalendar(); }
+function dayTip(evs){ return evs.length ? `${evs.length} Aufgabe(n):\n`+evs.map(x=>'• '+x.t.title).join('\n') : 'Keine Aufgaben – klicken für Tagesansicht'; }
 function coversDay(sp, ds){ return sp.s<=ds && ds<=sp.e; }
 function evChip(t, ds){
   const sp=taskSpan(t);
@@ -1088,7 +1092,7 @@ function calMonth(){
     const evs=spans.filter(x=>coversDay(x.sp,ds));
     const shown=evs.slice(0,3).map(x=>evChip(x.t, ds)).join('');
     const more=evs.length>3?`<div class="cal-more">+${evs.length-3} mehr</div>`:'';
-    cells+=`<div class="cal-cell ${other?'other':''} ${ds===today?'today':''}"><div class="cal-daynum">${d.getDate()}</div>${shown}${more}</div>`;
+    cells+=`<div class="cal-cell ${other?'other':''} ${ds===today?'today':''}" onclick="openDay('${ds}')" title="${esc(dayTip(evs))}"><div class="cal-daynum">${d.getDate()}</div>${shown}${more}</div>`;
   }
   return `<div class="cal-grid">${DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>`;
 }
@@ -1099,7 +1103,7 @@ function calWeek(){
   for(let i=0;i<7;i++){
     const d=new Date(mon); d.setDate(mon.getDate()+i); const ds=ymd(d);
     const evs=spans.filter(x=>coversDay(x.sp,ds));
-    cols+=`<div class="cal-col ${ds===today?'today':''}"><h4>${DOW[i]} ${d.getDate()}.${d.getMonth()+1}.</h4>${evs.length?evs.map(x=>evChip(x.t, ds)).join(''):'<div class="cal-more">—</div>'}</div>`;
+    cols+=`<div class="cal-col ${ds===today?'today':''}" onclick="openDay('${ds}')" title="${esc(dayTip(evs))}"><h4>${DOW[i]} ${d.getDate()}.${d.getMonth()+1}.</h4>${evs.length?evs.map(x=>evChip(x.t, ds)).join(''):'<div class="cal-more">—</div>'}</div>`;
   }
   return `<div class="cal-week">${cols}</div>`;
 }
