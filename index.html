@@ -174,6 +174,7 @@
   .st-item select, .st-item input[type=date] { font-size: .74rem; padding: 4px 6px; border: 1px solid var(--border);
     border-radius: 6px; background: var(--surface); color: var(--text); width: auto; }
   .st-item button { border: none; background: transparent; color: var(--text-muted); cursor: pointer; padding: 2px 6px; }
+  .st-item .st-dl { display: inline-flex; align-items: center; gap: 4px; font-size: .68rem; color: var(--text-muted); }
   .stat { cursor: pointer; }
   .stat:hover { border-color: var(--accent); }
 
@@ -261,17 +262,30 @@
   .g-head { display: flex; position: sticky; top: 0; z-index: 3; background: var(--surface-2); border-bottom: 1px solid var(--border); }
   .g-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 38px; }
   .g-row:last-child { border-bottom: none; }
+  .g-subrow { min-height: 30px; }
   .g-label, .g-group { min-width: 200px; max-width: 200px; padding: 8px 10px; font-size: .82rem; position: sticky; left: 0; z-index: 2;
     background: var(--surface); border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
-  .g-head .g-label { background: var(--surface-2); font-weight: 700; }
+  .g-head .g-label { background: var(--surface-2); font-weight: 700; align-items: flex-end; }
   .g-group { background: var(--surface-2); font-weight: 700; }
+  .g-lname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .g-chev { display: inline-flex; width: 14px; flex: none; cursor: pointer; color: var(--text-muted); transition: transform .12s ease; }
+  .g-chev .ic { width: 13px; height: 13px; }
+  .g-chev.open { transform: rotate(90deg); }
+  .g-label.g-sub { padding-left: 26px; font-size: .78rem; color: var(--text-muted); }
   .g-track { position: relative; }
   .g-bar { position: absolute; top: 7px; height: 22px; border-radius: 6px; color: #fff; font-size: .7rem; line-height: 22px;
     padding: 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-shadow: var(--shadow); }
-  .g-daycell { min-width: 34px; max-width: 34px; text-align: center; font-size: .64rem; color: var(--text-muted); padding: 3px 0;
-    border-right: 1px solid var(--border); line-height: 1.2; }
-  .g-daycell.we { background: rgba(120,130,150,.08); }
-  .g-daycell.today { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .g-bar.g-subbar { top: 8px; height: 15px; line-height: 15px; font-size: .62rem; border-radius: 4px; opacity: .92; box-shadow: none; }
+  .g-time { display: flex; flex-direction: column; }
+  .g-months { display: flex; }
+  .g-mseg { box-sizing: border-box; border-right: 1px solid var(--border); font-size: .72rem; font-weight: 700; padding: 4px 8px;
+    white-space: nowrap; overflow: hidden; }
+  .g-days { display: flex; }
+  .g-day { box-sizing: border-box; min-width: 34px; max-width: 34px; text-align: center; font-size: .64rem; color: var(--text-muted);
+    padding: 2px 0; border-right: 1px solid var(--border); line-height: 1.2; }
+  .g-day .g-wd { display: block; font-size: .56rem; opacity: .75; }
+  .g-day.we { background: rgba(120,130,150,.08); }
+  .g-day.today { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
   .g-today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); z-index: 1; pointer-events: none; }
 
   /* Dezente Ton-in-Ton Icons */
@@ -1191,36 +1205,66 @@ function calAgenda(){
 
 /* ============================== GANTT ============================== */
 const GDAY_W = 34, GLABEL_W = 200;
+function gRange(a,b){ if(!a && !b) return null; return { start: a<b?a:b, end: a<b?b:a }; }
+function stRange(s){ return gRange(s.start||s.due, s.due||s.start); }
+function taskOwnRange(t){ return gRange(t.start||t.due, t.due||t.start); }
 function ganttParse(t){
-  const a=t.start||t.due, b=t.due||t.start;
-  if(!a && !b) return null;
-  return { start: a<b?a:b, end: a<b?b:a };
+  const ranges=[];
+  const own=taskOwnRange(t); if(own) ranges.push(own);
+  (t.subtasks||[]).forEach(s=>{ const r=stRange(s); if(r) ranges.push(r); });
+  if(!ranges.length) return null;
+  let start=ranges[0].start, end=ranges[0].end;
+  ranges.forEach(r=>{ if(r.start<start) start=r.start; if(r.end>end) end=r.end; });
+  return { start, end };
 }
+let ganttCollapsed=(()=>{ try{ return new Set(JSON.parse(localStorage.getItem('taskDashboard.ganttCollapsed')||'[]')); }catch(e){ return new Set(); } })();
+function saveGanttCollapsed(){ try{ localStorage.setItem('taskDashboard.ganttCollapsed', JSON.stringify([...ganttCollapsed])); }catch(e){} }
+function toggleGantt(id){ if(ganttCollapsed.has(id)) ganttCollapsed.delete(id); else ganttCollapsed.add(id); saveGanttCollapsed(); renderGantt(); }
+
 function renderGantt(){
   const el=document.getElementById('gantt');
   const vis=tasks.filter(matchesFilter);
   const dated=vis.map(t=>({t, r:ganttParse(t)})).filter(x=>x.r);
   const undatedCount=vis.length-dated.length;
-  if(!dated.length){
-    el.innerHTML='<div class="cal-empty">Keine Aufgaben mit Datum.<br>Setze Start und/oder Fällig in einer Aufgabe, damit ein Balken erscheint.</div>';
-    return;
-  }
-  let minS=dated[0].r.start, maxE=dated[0].r.end;
-  dated.forEach(x=>{ if(x.r.start<minS) minS=x.r.start; if(x.r.end>maxE) maxE=x.r.end; });
-  const start=new Date(minS+'T00:00:00'); start.setDate(start.getDate()-2);
-  const end=new Date(maxE+'T00:00:00'); end.setDate(end.getDate()+2);
-  const totalDays=Math.round((end-start)/86400000)+1;
-  const trackW=totalDays*GDAY_W;
-  const today=ymd(new Date());
-  const dayIdx=ds=>Math.round((new Date(ds+'T00:00:00')-start)/86400000);
+  const todayD=new Date(); const today=ymd(todayD);
 
-  let head='';
+  // Zeitfenster: Datenbereich, aber immer ein breites, heute-zentriertes Fenster (volle Breite, auch wenn leer)
+  let startD, endD;
+  if(dated.length){
+    let minS=dated[0].r.start, maxE=dated[0].r.end;
+    dated.forEach(x=>{ if(x.r.start<minS) minS=x.r.start; if(x.r.end>maxE) maxE=x.r.end; });
+    startD=new Date(minS+'T00:00:00'); startD.setDate(startD.getDate()-2);
+    endD=new Date(maxE+'T00:00:00'); endD.setDate(endD.getDate()+2);
+  } else { startD=new Date(todayD); endD=new Date(todayD); }
+  const lo=new Date(todayD); lo.setDate(lo.getDate()-4);
+  const hi=new Date(todayD); hi.setDate(hi.getDate()+35);
+  if(startD>lo) startD=lo;
+  if(endD<hi) endD=hi;
+  startD.setHours(0,0,0,0); endD.setHours(0,0,0,0);
+  const totalDays=Math.round((endD-startD)/86400000)+1;
+  const trackW=totalDays*GDAY_W;
+  const dayIdx=ds=>Math.round((new Date(ds+'T00:00:00')-startD)/86400000);
+  const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+
+  // Zwei-Zeilen-Kopf: Monat (oben, über die Tage) + Wochentag/Tag (unten)
+  let monthRow='', dayRow='', segDays=0, segLabel='';
+  const flushSeg=()=>{ if(segDays) monthRow+=`<div class="g-mseg" style="width:${segDays*GDAY_W}px">${segLabel}</div>`; };
   for(let i=0;i<totalDays;i++){
-    const d=new Date(start); d.setDate(start.getDate()+i);
+    const d=new Date(startD); d.setDate(startD.getDate()+i);
+    const mlab=d.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+    if(i===0){ segLabel=mlab; segDays=1; }
+    else if(d.getDate()===1){ flushSeg(); segLabel=mlab; segDays=1; }
+    else segDays++;
     const we=(d.getDay()===0||d.getDay()===6), isToday=ymd(d)===today;
-    const mLabel=(d.getDate()===1||i===0)?`<br><b>${d.toLocaleDateString('de-DE',{month:'short'})}</b>`:'';
-    head+=`<div class="g-daycell ${we?'we':''} ${isToday?'today':''}">${d.getDate()}${mLabel}</div>`;
+    dayRow+=`<div class="g-day ${we?'we':''} ${isToday?'today':''}"><span class="g-wd">${WD[d.getDay()]}</span>${d.getDate()}</div>`;
   }
+  flushSeg();
+
+  const bar=(r,color,extra,cls,label,id)=>{
+    const x=dayIdx(r.start)*GDAY_W;
+    const w=Math.max(GDAY_W,(dayIdx(r.end)-dayIdx(r.start)+1)*GDAY_W);
+    return `<div class="g-bar ${cls}" style="left:${x}px;width:${w-2}px;background:${color};${extra}" onclick="openEdit('${id}')">${esc(label)}</div>`;
+  };
 
   const groups=[{id:null,name:'Ohne Projekt'}].concat(projects.map(p=>({id:p.id,name:p.name})));
   let rows='';
@@ -1229,20 +1273,35 @@ function renderGantt(){
     if(!items.length) return;
     rows+=`<div class="g-row"><div class="g-group">${esc(g.name)}</div><div class="g-track" style="width:${trackW}px"></div></div>`;
     items.forEach(({t,r})=>{
-      const x=dayIdx(r.start)*GDAY_W;
-      const w=Math.max(GDAY_W,(dayIdx(r.end)-dayIdx(r.start)+1)*GDAY_W);
       const color=(t.projectId&&projById(t.projectId))?projById(t.projectId).color:evColor(t);
       const done=(t.status==='done'||t.status==='discarded')?'opacity:.5;':'';
-      rows+=`<div class="g-row"><div class="g-label" title="${esc(t.title)}">${roleBadge(t)}<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.title)}</span></div>
-        <div class="g-track" style="width:${trackW}px"><div class="g-bar" style="left:${x}px;width:${w-2}px;background:${color};${done}" onclick="openEdit('${t.id}')">${esc(t.title)}</div></div></div>`;
+      const subs=(t.subtasks||[]).map(s=>({s,r:stRange(s)})).filter(x=>x.r);
+      const hasSubs=subs.length>0;
+      const open=hasSubs && !ganttCollapsed.has(t.id);
+      const chev=hasSubs
+        ? `<span class="g-chev ${open?'open':''}" onclick="event.stopPropagation();toggleGantt('${t.id}')">${ic('chevron')}</span>`
+        : `<span class="g-chev" style="visibility:hidden">${ic('chevron')}</span>`;
+      const cnt=hasSubs?` <span class="col-count">${subs.filter(x=>x.s.status==='done').length}/${subs.length}</span>`:'';
+      rows+=`<div class="g-row"><div class="g-label" title="${esc(t.title)}">${chev}${roleBadge(t)}<span class="g-lname">${esc(t.title)}</span>${cnt}</div>
+        <div class="g-track" style="width:${trackW}px">${bar(r,color,done,'',t.title,t.id)}</div></div>`;
+      if(open){
+        subs.forEach(({s,r:sr})=>{
+          const sdone=(s.status==='done')?'opacity:.5;':'';
+          rows+=`<div class="g-row g-subrow"><div class="g-label g-sub" title="${esc(s.title)}"><span class="g-lname">${esc(s.title)}</span></div>
+            <div class="g-track" style="width:${trackW}px">${bar(sr,color,sdone,'g-subbar',s.title,t.id)}</div></div>`;
+        });
+      }
     });
   });
+  if(!dated.length){
+    rows=`<div class="g-row"><div class="g-label" style="color:var(--text-muted)">—</div><div class="g-track" style="width:${trackW}px"><div style="padding:9px 12px;color:var(--text-muted);font-size:.8rem;white-space:nowrap">Noch keine Aufgaben mit Datum. Setze Start und/oder Fällig, dann erscheint hier ein Balken.</div></div></div>`;
+  }
 
   const ti=dayIdx(today);
   const todayLine=(ti>=0&&ti<totalDays)?`<div class="g-today-line" style="left:${GLABEL_W+ti*GDAY_W+GDAY_W/2}px"></div>`:'';
   const note=undatedCount?`<div class="cal-more" style="padding:8px 2px">${undatedCount} Aufgabe(n) ohne Datum werden hier nicht angezeigt.</div>`:'';
-  el.innerHTML=`<div class="gantt-wrap"><div class="gantt-inner">
-    <div class="g-head"><div class="g-label">Aufgabe</div>${head}</div>
+  el.innerHTML=`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
+    <div class="g-head"><div class="g-label">Aufgabe</div><div class="g-time"><div class="g-months">${monthRow}</div><div class="g-days">${dayRow}</div></div></div>
     ${rows}${todayLine}
   </div></div>${note}`;
 }
@@ -1293,12 +1352,14 @@ function renderSubtasks(){
     <div class="st-item ${s.status==='done'?'done':''}">
       <span class="st-title">${esc(s.title)}</span>
       <select onchange="setStStatus(${i},this.value)">${SUBSTATUS.map(o=>`<option value="${o[0]}" ${s.status===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
-      <input type="date" value="${s.due||''}" onchange="setStDue(${i},this.value)">
+      <label class="st-dl">Start<input type="date" value="${s.start||''}" onchange="setStStart(${i},this.value)"></label>
+      <label class="st-dl">Fällig<input type="date" value="${s.due||''}" onchange="setStDue(${i},this.value)"></label>
       <button type="button" title="Entfernen" onclick="removeSt(${i})">✕</button>
     </div>`).join('');
 }
-function addSt(){ const inp=document.getElementById('mStInput'); const v=inp.value.trim(); if(!v) return; modalSubtasks.push({title:v,status:'open',due:''}); inp.value=''; renderSubtasks(); inp.focus(); }
+function addSt(){ const inp=document.getElementById('mStInput'); const v=inp.value.trim(); if(!v) return; modalSubtasks.push({title:v,status:'open',start:'',due:''}); inp.value=''; renderSubtasks(); inp.focus(); }
 function setStStatus(i,v){ modalSubtasks[i].status=v; renderSubtasks(); }
+function setStStart(i,v){ modalSubtasks[i].start=v; }
 function setStDue(i,v){ modalSubtasks[i].due=v; }
 function removeSt(i){ modalSubtasks.splice(i,1); renderSubtasks(); }
 function stBadge(t){ const st=t.subtasks||[]; if(!st.length) return ''; const done=st.filter(x=>x.status==='done').length; return `<span class="progress ${done===st.length?'full':''}">↳ ${done}/${st.length}</span>`; }
