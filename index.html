@@ -60,6 +60,7 @@
 
   /* Board – horizontal scrollbar */
   .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; padding-bottom: 10px; align-items: start; }
+  .board.planned { display: block; }
   .column { background: var(--surface-2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px; min-height: 140px; min-width: 0; }
   @media (max-width: 520px) { .board { grid-template-columns: 1fr; } }
@@ -369,6 +370,7 @@
       <button class="cmode" data-bg="prio">Priorität</button>
       <button class="cmode" data-bg="person">Person</button>
       <button class="cmode" data-bg="project">Projekt</button>
+      <button class="cmode" data-bg="termin">Termin</button>
     </div>
   </div>
 
@@ -972,7 +974,42 @@ function boardGroups(){
   }
   return STATUS.filter(s=>s.board).map(s=>({ key:s.id, label:s.label, color:s.color, match:t=>t.status===s.id }));
 }
+function plannedSections(visible){
+  const today=ymd(new Date());
+  const t1=new Date(); t1.setDate(t1.getDate()+1); const tomorrow=ymd(t1);
+  const t2=new Date(); t2.setDate(t2.getDate()+2); const dayAfter=ymd(t2);
+  const dated=visible.filter(t=>t.due).sort((a,b)=> a.due<b.due?-1 : a.due>b.due?1 : ehRank(a)-ehRank(b));
+  const sections=[];
+  const pick=pred=>dated.filter(pred);
+  const overdue=pick(t=>t.due<today);
+  const heute=pick(t=>t.due===today);
+  const morgen=pick(t=>t.due===tomorrow);
+  const uebermorgen=pick(t=>t.due===dayAfter);
+  if(overdue.length) sections.push({label:'Überfällig', over:true, items:overdue});
+  if(heute.length) sections.push({label:'Heute', items:heute});
+  if(morgen.length) sections.push({label:'Morgen', items:morgen});
+  if(uebermorgen.length) sections.push({label:'Übermorgen', items:uebermorgen});
+  const beyond=dated.filter(t=>t.due>dayAfter);
+  const byDate={};
+  beyond.forEach(t=>{ (byDate[t.due]=byDate[t.due]||[]).push(t); });
+  Object.keys(byDate).sort().forEach(d=>{
+    const dt=new Date(d+'T00:00:00');
+    const label=dt.toLocaleDateString('de-DE',{weekday:'short', day:'2-digit', month:'short'});
+    sections.push({label, items:byDate[d]});
+  });
+  return sections;
+}
+function renderPlanned(){
+  const visible = tasks.filter(matchesFilter).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
+  const sections=plannedSections(visible);
+  document.getElementById('board').innerHTML = sections.length
+    ? sections.map(s=>`<div class="focus-section"><h3${s.over?' style="color:var(--q1)"':''}>${esc(s.label)} <span class="col-count">${s.items.length}</span></h3><div class="backlog-grid">${s.items.map(cardHTML).join('')}</div></div>`).join('')
+    : '<div class="empty-col" style="padding:44px 8px">Keine terminierten Aufgaben.<br>Aufgaben mit Fälligkeitsdatum erscheinen hier chronologisch – Überfällig, Heute, Morgen, dann nach Tag.</div>';
+}
 function renderBoard(){
+  const board=document.getElementById('board');
+  board.classList.toggle('planned', boardGroup==='termin');
+  if(boardGroup==='termin'){ renderPlanned(); return; }
   // Nur Board-Status (Backlog bleibt seinem eigenen Tab vorbehalten – gilt für alle Gruppierungen)
   const visible = tasks.filter(matchesFilter).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const groups = boardGroups();
