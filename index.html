@@ -59,7 +59,7 @@
   .filters .flabel { font-size: .78rem; color: var(--text-muted); margin-right: -4px; }
 
   /* Board – horizontal scrollbar */
-  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding-bottom: 10px; align-items: start; }
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 12px; padding-bottom: 10px; align-items: start; }
   .column { background: var(--surface-2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px; min-height: 140px; min-width: 0; }
   @media (max-width: 520px) { .board { grid-template-columns: 1fr; } }
@@ -69,12 +69,17 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1px 9px; }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--q4);
-    border-radius: 11px; padding: 11px 11px 9px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    border-radius: 11px; padding: 11px 11px 9px; margin-bottom: 10px; box-shadow: var(--shadow);
+    cursor: pointer; transition: box-shadow .12s ease, transform .12s ease; }
+  .card:hover { box-shadow: 0 5px 16px rgba(0,0,0,.20); transform: translateY(-1px); }
+  .over-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--q1);
+    margin-right: 6px; vertical-align: middle; }
   .card.q1 { border-left-color: var(--q1); } .card.q2 { border-left-color: var(--q2); }
   .card.q3 { border-left-color: var(--q3); } .card.q4 { border-left-color: var(--q4); }
   .card.done .c-title, .card.discarded .c-title { text-decoration: line-through; color: var(--text-muted); }
   .card .c-title { font-weight: 600; font-size: .93rem; line-height: 1.35; word-break: break-word; }
-  .card .c-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .card .c-meta { display: none; flex-wrap: wrap; gap: 6px; margin-top: 8px; align-items: center; }
+  .card:hover .c-meta { display: flex; }
   .badge { font-size: .71rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
   .badge.proj { color: #fff; }
   .badge.eh { background: var(--surface-2); }
@@ -84,7 +89,9 @@
   .badge.eh.q4 { background: var(--surface-2); color: var(--text-muted); }
   .due { font-size: .73rem; color: var(--text-muted); display: inline-flex; gap: 3px; align-items: center; }
   .due.over { color: var(--q1); font-weight: 600; }
-  .card .c-actions { display: flex; gap: 6px; margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--border); align-items: center; }
+  .card .c-actions { display: none; gap: 6px; margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--border); align-items: center; }
+  .card:hover .c-actions { display: flex; }
+  @media (hover: none) { .card:hover .c-meta, .card:hover .c-actions { display: none; } }
   .card .c-actions select { font-family: inherit; font-size: .76rem; padding: 4px 6px; border: 1px solid var(--border);
     border-radius: 7px; background: var(--surface-2); color: var(--text); flex: 1; }
   .empty-col { color: var(--text-muted); font-size: .8rem; text-align: center; padding: 16px 8px; }
@@ -855,10 +862,10 @@ function renderBacklog(){
 function backlogCardHTML(t){
   const q = quadrant(t); const p = projById(t.projectId);
   const projHTML = p ? `<span class="badge proj" style="background:${p.color}">${esc(p.name)}</span>` : '';
-  return `<div class="card ${q.key} ${t.status}">
+  return `<div class="card ${q.key} ${t.status}" onclick="openEdit('${t.id}')">
     <div class="c-title">${esc(t.title)}</div>
     <div class="c-meta">${roleBadge(t)}<span class="badge eh ${q.key}">${q.label}</span>${projHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
-    <div class="c-actions">
+    <div class="c-actions" onclick="event.stopPropagation()">
       <button class="ghost sm" title="Ins Board holen (To Do)" onclick="setStatus('${t.id}','todo')">→ Board</button>
       <span style="flex:1"></span>
       <button class="icon ghost" title="Bearbeiten" onclick="openEdit('${t.id}')">${ic('edit')}</button>
@@ -976,10 +983,10 @@ function cardHTML(t){
   const ehHTML = `<span class="badge eh ${q.key}">${q.label}</span>`;
   const dueHTML = t.due ? `<span class="due ${over?'over':''}">${ic('calendar')} ${fmtDate(t.due)}</span>` : '';
   const opts = STATUS.map(s=>`<option value="${s.id}" ${s.id===t.status?'selected':''}>${s.label}</option>`).join('');
-  return `<div class="card ${q.key} ${t.status}">
-    <div class="c-title">${esc(t.title)}</div>
+  return `<div class="card ${q.key} ${t.status}" onclick="openEdit('${t.id}')">
+    <div class="c-title">${over?'<span class="over-dot" title="Überfällig"></span>':''}${esc(t.title)}</div>
     <div class="c-meta">${roleBadge(t)}${ehHTML}${projHTML}${dueHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
-    <div class="c-actions">
+    <div class="c-actions" onclick="event.stopPropagation()">
       <select title="Status ändern" onchange="setStatus('${t.id}', this.value)">${opts}</select>
       <button class="icon ghost" title="Bearbeiten" onclick="openEdit('${t.id}')">${ic('edit')}</button>
     </div></div>`;
