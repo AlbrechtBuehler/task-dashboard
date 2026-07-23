@@ -233,6 +233,9 @@
   .cal-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .cal-daynum { font-size: .76rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
   .cal-ev { font-size: .72rem; padding: 2px 6px; border-radius: 5px; margin-bottom: 3px; color: #fff; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev.ev-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .cal-ev.ev-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .cal-ev.ev-mid { border-radius: 0; opacity: .92; }
   .cal-more { font-size: .68rem; color: var(--text-muted); }
   .cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
   .cal-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 8px; min-height: 120px; }
@@ -1031,31 +1034,49 @@ function weekRange(ref){
   return {mon,sun};
 }
 const DOW=['Mo','Di','Mi','Do','Fr','Sa','So'];
-function evChip(t){ return `<div class="cal-ev" style="background:${evColor(t)}" title="${esc(t.title)}" onclick="openEdit('${t.id}')">${esc(t.title)}</div>`; }
+function taskSpan(t){
+  const s=t.start||t.due, e=t.due||t.start;
+  if(!s && !e) return null;
+  return { s: s<e?s:e, e: s<e?e:s };
+}
+function spanTasks(){ return tasks.filter(matchesFilter).map(t=>({t, sp:taskSpan(t)})).filter(x=>x.sp); }
+function coversDay(sp, ds){ return sp.s<=ds && ds<=sp.e; }
+function evChip(t, ds){
+  const sp=taskSpan(t);
+  const span = sp && sp.s!==sp.e;
+  let pos='single';
+  if(span) pos = ds===sp.s ? 'start' : ds===sp.e ? 'end' : 'mid';
+  const tip = span ? `${esc(t.title)} (${fmtDate(sp.s)}–${fmtDate(sp.e)})` : esc(t.title);
+  return `<div class="cal-ev ev-${pos}" style="background:${evColor(t)}" title="${tip}" onclick="event.stopPropagation();openEdit('${t.id}')">${esc(t.title)}</div>`;
+}
 
 function renderCalendar(){
   let title='';
   if(calMode==='day') title=calRef.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   else if(calMode==='week'){ const {mon,sun}=weekRange(calRef); title=`${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
   else if(calMode==='month') title=calRef.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
-  else title=String(calRef.getFullYear());
-  const modes=[['day','Tag'],['week','Woche'],['month','Monat'],['year','Jahr']];
-  const controls=`<div class="cal-controls">
-    <div class="cal-modes">${modes.map(m=>`<button class="cmode ${calMode===m[0]?'active':''}" onclick="setCalMode('${m[0]}')">${m[1]}</button>`).join('')}</div>
+  else if(calMode==='year') title=String(calRef.getFullYear());
+  else title='Vorausschau nach Startdatum';
+  const modes=[['day','Tag'],['week','Woche'],['month','Monat'],['year','Jahr'],['agenda','Agenda']];
+  const nav = calMode==='agenda' ? `<span class="cal-title">${title}</span>` : `
     <button class="ghost sm" onclick="calNav(-1)">◀</button>
     <button class="ghost sm" onclick="calToday()">Heute</button>
     <button class="ghost sm" onclick="calNav(1)">▶</button>
-    <span class="cal-title">${title}</span>
+    <span class="cal-title">${title}</span>`;
+  const controls=`<div class="cal-controls">
+    <div class="cal-modes">${modes.map(m=>`<button class="cmode ${calMode===m[0]?'active':''}" onclick="setCalMode('${m[0]}')">${m[1]}</button>`).join('')}</div>
+    ${nav}
   </div>`;
   let body;
   if(calMode==='month') body=calMonth();
   else if(calMode==='week') body=calWeek();
   else if(calMode==='day') body=calDay();
-  else body=calYear();
+  else if(calMode==='year') body=calYear();
+  else body=calAgenda();
   document.getElementById('calendar').innerHTML=controls+body;
 }
 function calMonth(){
-  const evAll=calTasks();
+  const spans=spanTasks();
   const y=calRef.getFullYear(), m=calRef.getMonth();
   const first=new Date(y,m,1); const startWd=(first.getDay()+6)%7;
   const start=new Date(y,m,1-startWd);
@@ -1064,42 +1085,67 @@ function calMonth(){
   for(let i=0;i<42;i++){
     const d=new Date(start); d.setDate(start.getDate()+i);
     const ds=ymd(d); const other=d.getMonth()!==m;
-    const evs=evAll.filter(t=>t.due===ds);
-    const shown=evs.slice(0,3).map(evChip).join('');
+    const evs=spans.filter(x=>coversDay(x.sp,ds));
+    const shown=evs.slice(0,3).map(x=>evChip(x.t, ds)).join('');
     const more=evs.length>3?`<div class="cal-more">+${evs.length-3} mehr</div>`:'';
     cells+=`<div class="cal-cell ${other?'other':''} ${ds===today?'today':''}"><div class="cal-daynum">${d.getDate()}</div>${shown}${more}</div>`;
   }
   return `<div class="cal-grid">${DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>`;
 }
 function calWeek(){
-  const evAll=calTasks();
+  const spans=spanTasks();
   const {mon}=weekRange(calRef); const today=ymd(new Date());
   let cols='';
   for(let i=0;i<7;i++){
     const d=new Date(mon); d.setDate(mon.getDate()+i); const ds=ymd(d);
-    const evs=evAll.filter(t=>t.due===ds);
-    cols+=`<div class="cal-col ${ds===today?'today':''}"><h4>${DOW[i]} ${d.getDate()}.${d.getMonth()+1}.</h4>${evs.length?evs.map(evChip).join(''):'<div class="cal-more">—</div>'}</div>`;
+    const evs=spans.filter(x=>coversDay(x.sp,ds));
+    cols+=`<div class="cal-col ${ds===today?'today':''}"><h4>${DOW[i]} ${d.getDate()}.${d.getMonth()+1}.</h4>${evs.length?evs.map(x=>evChip(x.t, ds)).join(''):'<div class="cal-more">—</div>'}</div>`;
   }
   return `<div class="cal-week">${cols}</div>`;
 }
 function calDay(){
   const ds=ymd(calRef);
-  const evs=calTasks().filter(t=>t.due===ds);
+  const evs=spanTasks().filter(x=>coversDay(x.sp,ds)).map(x=>x.t);
   return evs.length ? `<div class="backlog-grid">${evs.map(cardHTML).join('')}</div>`
-    : '<div class="cal-empty">Keine fälligen Aufgaben an diesem Tag.</div>';
+    : '<div class="cal-empty">Keine Aufgaben an diesem Tag (weder Start noch Fälligkeit).</div>';
 }
 function calYear(){
-  const evAll=calTasks();
+  const spans=spanTasks();
   const y=calRef.getFullYear();
   const now=new Date(), curM=now.getMonth(), curY=now.getFullYear();
   let tiles='';
   for(let m=0;m<12;m++){
     const nm=new Date(y,m,1).toLocaleDateString('de-DE',{month:'long'});
-    const cnt=evAll.filter(t=>{ const d=new Date(t.due+'T00:00:00'); return d.getFullYear()===y && d.getMonth()===m; }).length;
+    const mStart=ymd(new Date(y,m,1)), mEnd=ymd(new Date(y,m+1,0));
+    const cnt=spans.filter(x=>x.sp.s<=mEnd && x.sp.e>=mStart).length;
     const cur=(m===curM&&y===curY)?'cur':'';
-    tiles+=`<div class="cal-month-tile ${cur}" onclick="calRef=new Date(${y},${m},1); calMode='month'; renderCalendar();"><div class="mt-name">${nm}</div><div class="mt-count">${cnt}</div><div class="mt-lbl">Aufgaben fällig</div></div>`;
+    tiles+=`<div class="cal-month-tile ${cur}" onclick="calRef=new Date(${y},${m},1); calMode='month'; renderCalendar();"><div class="mt-name">${nm}</div><div class="mt-count">${cnt}</div><div class="mt-lbl">Aufgaben</div></div>`;
   }
   return `<div class="cal-year">${tiles}</div>`;
+}
+function calAgenda(){
+  const today=ymd(new Date());
+  const tmD=new Date(); tmD.setDate(tmD.getDate()+1); const tomorrow=ymd(tmD);
+  const {sun}=weekRange(new Date()); const weekEnd=ymd(sun);
+  const base=tasks.filter(matchesFilter).filter(t=>t.status!=='done' && t.status!=='discarded');
+  const sections=[
+    { title:'Bereits gestartet', pred:t=>t.start && t.start<today },
+    { title:'Heute startet',     pred:t=>t.start===today },
+    { title:'Morgen startet',    pred:t=>t.start===tomorrow },
+    { title:'Diese Woche',       pred:t=>t.start && t.start>tomorrow && t.start<=weekEnd },
+    { title:'Später',            pred:t=>t.start && t.start>weekEnd },
+    { title:'Ohne Startdatum',   pred:t=>!t.start },
+  ];
+  const html=sections.map(s=>{
+    const items=base.filter(s.pred).sort((a,b)=>{
+      const x=(a.start||a.due||'9999'), y=(b.start||b.due||'9999');
+      if(x!==y) return x<y?-1:1;
+      return ehRank(a)-ehRank(b);
+    });
+    if(!items.length) return '';
+    return `<div class="focus-section"><h3>${s.title} <span class="col-count">${items.length}</span></h3><div class="backlog-grid">${items.map(cardHTML).join('')}</div></div>`;
+  }).join('');
+  return html || '<div class="cal-empty">Keine offenen Aufgaben.</div>';
 }
 
 /* ============================== GANTT ============================== */
