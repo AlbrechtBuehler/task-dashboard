@@ -6,18 +6,19 @@
 <title>Task-Dashboard</title>
 <style>
   :root {
-    --bg: #f4f6fb; --surface: #ffffff; --surface-2: #f0f2f8; --border: #e2e6f0;
+    --bg: #f4f6fb; --surface: #ffffff; --surface-2: #f0f2f8; --border: #e2e6f0; --border-soft: #eaedf4;
     --text: #1c2333; --text-muted: #6b7386; --accent: #343a40; --accent-soft: #e9ecef;
     --shadow: 0 1px 3px rgba(20,30,60,.08), 0 4px 16px rgba(20,30,60,.05);
-    --radius: 14px;
+    --radius: 14px; --r: 10px; --gap: 14px;
     --q1: #b06a6a; --q2: #5f7d9c; --q3: #b0895a; --q4: #9aa0ac;
+    --dc:#a86a7c; --dm:#5f7d9c; --qm:#6b8a6b; --ict:#7d6f9c; --meta:#6b727e; --red:#b0555a;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #12151d; --surface: #1b1f2a; --surface-2: #232836; --border: #2c3242;
+      --bg: #12151d; --surface: #1b1f2a; --surface-2: #232836; --border: #2c3242; --border-soft: #242a37;
       --text: #e8ebf2; --text-muted: #9aa2b5; --accent: #7c8494; --accent-soft: #2b313c;
       --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
-      --q4: #5c6370;
+      --q4: #5c6370; --red:#c76b70;
     }
   }
   * { box-sizing: border-box; }
@@ -328,31 +329,187 @@
   .link-add input.lu { flex: 2 1 140px; min-width: 0; }
   .badge .ic, .due .ic, .marker .ic, .progress .ic { width: 12px; height: 12px; }
 
+  /* ============================================================
+     PEPAPP-KOPF (Redesign) – zwei feste Zeilen, ein Card-Vokabular
+     ============================================================ */
+  .app-head { position: sticky; top: 0; background: var(--bg); z-index: 20;
+    border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .head-1 { display: flex; align-items: center; gap: 20px; padding: 10px 0 16px; }
+  .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .brand .name { font-size: 1.15rem; font-weight: 750; letter-spacing: .02em; }
+  .brand .pipe { font-size: 1.05rem; font-weight: 300; color: var(--text-muted); }
+  .brand .date { font-size: 1.15rem; font-weight: 400; color: var(--text); }
+  .sys { display: flex; align-items: center; gap: 7px; margin-left: auto; }
+  .iconbtn { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-muted); display: inline-flex; align-items: center;
+    justify-content: center; cursor: pointer; padding: 0; transition: .15s; position: relative; }
+  .iconbtn:hover { border-color: var(--accent); color: var(--text); }
+  .iconbtn .ic { width: 15px; height: 15px; }
+  .iconbtn .gh-dot { position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px;
+    border-radius: 50%; background: #a8aeb8; }
+
+  .head-2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-bottom: 16px; }
+  .ptabs { display: flex; gap: 3px; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 3px; }
+  .ptab { font-size: .85rem; padding: 7px 15px; border-radius: 7px; color: var(--text-muted);
+    white-space: nowrap; cursor: pointer; border: none; background: transparent; font-family: inherit; }
+  .ptab:hover { color: var(--text); }
+  .ptab.active { background: var(--accent); color: #fff; font-weight: 550; }
+
+  /* Rolle-/Filter-Kacheln – echte Kacheln, feste Breite */
+  .ctrl-tile { border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+    padding: 7px 11px 7px 9px; display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
+    width: 150px; font-family: inherit; text-align: left; transition: .15s; }
+  .ctrl-tile:hover { border-color: var(--accent); }
+  .ctrl-tile .ic-wrap { width: 28px; height: 28px; border-radius: 7px; background: var(--surface-2);
+    color: var(--text-muted); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .ctrl-tile .ic-wrap .ic { width: 14px; height: 14px; }
+  .ctrl-tile .ic-wrap .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .ctrl-tile .body { display: flex; flex-direction: column; line-height: 1.15; flex: 1; min-width: 0; }
+  .ctrl-tile .lbl { font-size: .66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  .ctrl-tile .val { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ctrl-tile .chev { color: var(--text-muted); flex: 0 0 auto; width: 15px; height: 15px; }
+  .newbtn { font-size: .8rem; padding: 8px 14px; border-radius: 9px; background: var(--surface);
+    color: var(--text); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap; margin-left: auto; cursor: pointer; font-family: inherit; transition: .15s; }
+  .newbtn:hover { border-color: var(--accent); }
+  .newbtn .ic { width: 15px; height: 15px; }
+
+  /* Suchfeld (blendet ein) */
+  .head-search { display: none; align-items: center; gap: 8px; padding: 0 0 14px; }
+  .head-search.open { display: flex; }
+  .head-search input { flex: 1; font-family: inherit; font-size: .9rem; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text); }
+
+  /* feiner Trenner */
+  .rule { height: 1px; background: var(--border); margin: 26px 0; }
+  .rule.soft { background: var(--border-soft); margin: 22px 0; }
+
+  /* Kontext-Kacheln */
+  .context { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+  @media (max-width: 720px) { .context { grid-template-columns: 1fr; } }
+  .ctx { border: 1px solid var(--border); border-radius: var(--r); background: var(--surface);
+    padding: 15px 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: .15s; }
+  .ctx:hover { border-color: var(--accent); }
+  .ctx .ic-wrap { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-2);
+    color: var(--text-muted); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .ctx .ic-wrap .ic { width: 18px; height: 18px; }
+  .ctx .body { flex: 1; min-width: 0; }
+  .ctx .t { font-size: .9rem; font-weight: 600; }
+  .ctx .s { font-size: .76rem; color: var(--text-muted); }
+  .ctx .n { font-size: 1.35rem; font-weight: 700; letter-spacing: -.02em; }
+  .ctx .chev { color: var(--text-muted); flex: 0 0 auto; width: 15px; height: 15px; }
+
+  /* Tagesweise Aufgaben-Sektionen (Heute) */
+  .today-sec { }
+  .today-sechead { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; cursor: pointer; user-select: none; }
+  .today-sechead .chev { color: var(--text-muted); transition: transform .15s; width: 15px; height: 15px; flex: none; }
+  .today-sec.collapsed .today-sechead .chev { transform: rotate(-90deg); }
+  .today-sechead .title { font-size: .98rem; font-weight: 600; }
+  .today-sechead .day { font-size: .82rem; color: var(--text-muted); font-weight: 400; }
+  .today-sechead .count { font-size: .72rem; padding: 1px 8px; border-radius: 20px; background: var(--surface-2);
+    border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; }
+  .today-sechead .spacer { flex: 1; }
+  .today-sec.muted .today-sechead .title { color: var(--text-muted); }
+  .today-sec.collapsed .today-grid { display: none; }
+
+  .today-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--gap); }
+  .tcard { border: 1px solid var(--border); border-left: 3px solid var(--role, var(--border)); border-radius: var(--r);
+    background: var(--surface); padding: 13px 14px; cursor: pointer; transition: box-shadow .12s, transform .12s; }
+  .tcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .tcard .tt { font-size: .88rem; font-weight: 550; margin-bottom: 8px; line-height: 1.35; word-break: break-word; }
+  .tcard.done .tt, .tcard.discarded .tt { text-decoration: line-through; color: var(--text-muted); }
+  .tcard .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tbadge { font-size: .64rem; padding: 2px 7px; border-radius: 20px; color: #fff; font-weight: 600; white-space: nowrap; }
+  .tdue { font-size: .74rem; color: var(--text-muted); }
+  .tdue.over { color: var(--red); font-weight: 600; }
+  .running { font-size: .72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; }
+  .running::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #5f8a70; flex: none; }
+  .today-sec.blocked .today-grid { opacity: .5; }
+  .tlock { font-size: .72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; }
+  .tlock .ic { width: 12px; height: 12px; }
+  .today-empty { color: var(--text-muted); font-size: .85rem; padding: 40px 8px; text-align: center; }
+
+  /* Rolle-Modal Optionsliste */
+  .opt-list { display: flex; flex-direction: column; gap: 6px; }
+  .opt-row { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid var(--border);
+    border-radius: 10px; background: var(--surface-2); cursor: pointer; font-family: inherit; font-size: .9rem;
+    color: var(--text); text-align: left; width: 100%; transition: .12s; }
+  .opt-row:hover { border-color: var(--accent); }
+  .opt-row.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .opt-row .opt-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .opt-row .opt-name { flex: 1; font-weight: 550; }
+  .opt-row .opt-sub { font-size: .76rem; color: var(--text-muted); font-weight: 400; }
+  .opt-row .opt-check { color: var(--accent); width: 16px; height: 16px; visibility: hidden; }
+  .opt-row.sel .opt-check { visibility: visible; }
+
   .hidden { display: none !important; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <div class="title">
-      <h1>Task-Dashboard</h1>
-      <p id="subtitle">Deine Aufgaben & Projekte im Blick</p>
+  <!-- KOPF: zwei feste Zeilen (PEPAPP-Redesign) -->
+  <header class="app-head">
+    <div class="head-1">
+      <div class="brand">
+        <span class="name">PEPAPP</span>
+        <span class="pipe">|</span>
+        <span class="date" id="headDate">—</span>
+      </div>
+      <div class="sys">
+        <button class="iconbtn" id="btnSearch" title="Suchen"><span class="ic" data-ic="search"></span></button>
+        <button class="iconbtn" id="btnProjects" title="Projekte verwalten"><span class="ic" data-ic="folder"></span></button>
+        <button class="iconbtn" id="btnPeople" title="Personen verwalten"><span class="ic" data-ic="user"></span></button>
+        <button class="iconbtn" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span class="gh-dot" id="ghDot"></span></button>
+        <button class="iconbtn" id="btnImport" title="JSON importieren"><span class="ic" data-ic="upload"></span></button>
+        <button class="iconbtn" id="btnExport" title="Als JSON sichern"><span class="ic" data-ic="download"></span></button>
+      </div>
     </div>
-    <div class="top-actions">
-      <button class="ghost" id="btnProjects" title="Projekte verwalten"><span class="ic" data-ic="folder"></span> Projekte</button>
-      <button class="ghost" id="btnPeople" title="Personen verwalten"><span class="ic" data-ic="user"></span> Personen</button>
-      <button class="ghost" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span id="ghDot" style="width:8px;height:8px;border-radius:50%;background:#a8aeb8;display:inline-block;margin-left:2px"></span></button>
-      <button class="ghost" id="btnImport" title="JSON importieren"><span class="ic" data-ic="upload"></span></button>
-      <button class="ghost" id="btnExport" title="Als JSON sichern"><span class="ic" data-ic="download"></span></button>
+    <div class="head-2">
+      <div class="ptabs" id="ptabs">
+        <button class="ptab active" data-tab="heute">Heute</button>
+        <button class="ptab" data-tab="planen">Planen</button>
+        <button class="ptab" data-tab="auswerten">Auswerten</button>
+        <button class="ptab" data-tab="sammeln">Sammeln</button>
+        <button class="ptab" data-tab="notizen" title="folgt">Notizen</button>
+      </div>
+      <button class="ctrl-tile" id="tileRole">
+        <span class="ic-wrap"><span class="dot" id="roleDot" style="background:var(--meta)"></span></span>
+        <span class="body"><span class="lbl">Rolle</span><span class="val" id="roleVal">Alle</span></span>
+        <span class="ic chev" data-ic="chevronDown"></span>
+      </button>
+      <button class="ctrl-tile" id="tileFilter">
+        <span class="ic-wrap"><span class="ic" data-ic="filter"></span></span>
+        <span class="body"><span class="lbl">Filter</span><span class="val" id="filterVal">Alle</span></span>
+        <span class="ic chev" data-ic="chevronDown"></span>
+      </button>
+      <button class="newbtn" id="btnNewTab"><span class="ic" data-ic="plus"></span> Neue Aufgabe</button>
+    </div>
+    <div class="head-search" id="headSearch">
+      <input type="search" id="fSearch" placeholder="Suchen …">
+      <button class="ghost sm" id="searchClose">Schließen</button>
     </div>
   </header>
 
+  <!-- ================= HEUTE-BEREICH (neu) ================= -->
+  <div id="todayArea">
+    <div class="context" id="ctxTiles"></div>
+    <div class="rule"></div>
+    <div id="todaySections"></div>
+  </div>
+
+  <!-- ================= NOTIZEN (folgt in Etappe 2) ================= -->
+  <div id="notizenArea" class="hidden">
+    <div class="today-empty">Der Notizen-Tab folgt im nächsten Bau-Schritt.</div>
+  </div>
+
+  <!-- ================= BESTEHENDER BEREICH (unverändert) ================= -->
+  <div id="legacyArea" class="hidden">
   <div class="roleswitch" id="roleswitch"></div>
 
   <section class="stats" id="stats"></section>
 
   <div class="filters">
-    <input class="search" id="fSearch" type="search" placeholder="Suchen …">
     <span class="flabel">Projekt:</span>
     <select id="fProj"><option value="">Alle</option><option value="__none">Ohne Projekt</option></select>
     <span class="flabel">Priorität:</span>
@@ -378,7 +535,7 @@
       <button class="vbtn" data-view="statistik"><span class="ic" data-ic="stats"></span> Statistik</button>
       <button class="vbtn" data-view="archiv"><span class="ic" data-ic="archive"></span> Archiv</button>
     </div>
-    <button class="primary pill-new" id="btnNewTab"><span class="ic" data-ic="plus"></span> Neue Aufgabe</button>
+    <button class="primary pill-new" id="btnNewLegacy"><span class="ic" data-ic="plus"></span> Neue Aufgabe</button>
   </div>
 
   <div class="cal-controls" id="boardGroupBar">
@@ -399,6 +556,7 @@
   <div id="gantt" class="hidden"></div>
   <div id="statistik" class="hidden"></div>
   <div id="archiv" class="hidden"></div>
+  </div><!-- /#legacyArea -->
 </div>
 
 <!-- Aufgabe-Modal -->
@@ -603,6 +761,55 @@
   </div>
 </div>
 
+<!-- Rolle-Modal -->
+<div class="overlay" id="roleOverlay">
+  <div class="modal">
+    <h2>Rolle wählen</h2>
+    <div class="body">
+      <div class="opt-list" id="roleOptList"></div>
+    </div>
+    <div class="foot"><div class="spacer"></div><button class="ghost" id="roleModalClose">Schließen</button></div>
+  </div>
+</div>
+
+<!-- Filter-Modal -->
+<div class="overlay" id="filterOverlay">
+  <div class="modal">
+    <h2>Filter</h2>
+    <div class="body">
+      <div class="field">
+        <label for="mfProj">Projekt</label>
+        <select id="mfProj"><option value="">Alle</option><option value="__none">Ohne Projekt</option></select>
+      </div>
+      <div class="field">
+        <label for="mfEH">Priorität</label>
+        <select id="mfEH">
+          <option value="">Alle</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="mfPeople">Person</label>
+        <select id="mfPeople"><option value="">Alle</option></select>
+      </div>
+      <div class="field" id="mfGroupField">
+        <label>Board-Gruppierung (nur „Planen“ · Board)</label>
+        <div class="cal-modes" id="mfGroup">
+          <button type="button" class="cmode active" data-bg="status">Status</button>
+          <button type="button" class="cmode" data-bg="prio">Priorität</button>
+          <button type="button" class="cmode" data-bg="person">Person</button>
+          <button type="button" class="cmode" data-bg="project">Projekt</button>
+          <button type="button" class="cmode" data-bg="termin">Termin</button>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="ghost" id="filterReset" style="color:var(--q1)">Zurücksetzen</button>
+      <div class="spacer"></div>
+      <button class="ghost" id="filterModalClose">Fertig</button>
+    </div>
+  </div>
+</div>
+
 <!-- Personen-Modal -->
 <div class="overlay" id="peopleOverlay">
   <div class="modal">
@@ -744,6 +951,11 @@ const ICON = {
   cloud:'<svg viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1 0-8 5.5 5.5 0 0 1 10.5-1.2A4 4 0 0 1 17.5 18z"/><path d="M9 14l2 2 4-4"/></svg>',
   plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   chevron:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  chevronDown:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+  chevronRight:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  filter:'<svg viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></svg>',
+  clipboard:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 4v16"/></svg>',
+  mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
 };
 const ic = name => `<span class="ic">${ICON[name]||''}</span>`;
 const roleById = id => ROLES.find(r => r.id === id) || null;
@@ -756,7 +968,10 @@ function taskRole(t){
 /* ============================== STATE ============================== */
 let tasks = [], projects = [], people = [];
 let view = 'board';
+let purpose = 'heute';   // Zweck-Tab: heute | planen | auswerten | sammeln | notizen
 let boardGroup = 'status';
+let todayCollapsed = (()=>{ try { return new Set(JSON.parse(localStorage.getItem('taskDashboard.todayCollapsed')||'[]')); } catch(e){ return new Set(); } })();
+function saveTodayCollapsed(){ try { localStorage.setItem('taskDashboard.todayCollapsed', JSON.stringify([...todayCollapsed])); } catch(e){} }
 let boardOpen = (()=>{ try { return new Set(JSON.parse(localStorage.getItem('taskDashboard.boardOpen')||'[]')); } catch(e){ return new Set(); } })();
 function saveBoardOpen(){ try { localStorage.setItem('taskDashboard.boardOpen', JSON.stringify([...boardOpen])); } catch(e){} }
 function toggleCol(key){ if(boardOpen.has(key)) boardOpen.delete(key); else boardOpen.add(key); saveBoardOpen(); renderBoard(); }
@@ -787,7 +1002,73 @@ function migrateTasks(arr){
 }
 
 /* ============================== RENDER ============================== */
-function render(){ renderRoleSwitch(); renderStats(); renderFilters(); renderViewSwitch(); renderCurrent(); }
+function render(){
+  renderHead();
+  renderPurpose();
+  renderRoleSwitch(); renderStats(); renderFilters(); renderViewSwitch();
+  if(purpose==='heute') renderToday();
+  else if(['planen','auswerten','sammeln'].includes(purpose)) renderCurrent();
+}
+
+/* ---------- Zweck-Tabs (Purpose) ---------- */
+// Welche Alt-Ansichten gehören zu welchem Zweck-Tab
+const PURPOSE_VIEWS = {
+  planen:    ['board','calendar','gantt'],
+  auswerten: ['statistik','archiv'],
+  sammeln:   ['backlog'],
+};
+function renderPurpose(){
+  document.querySelectorAll('#ptabs .ptab').forEach(b=>b.classList.toggle('active', b.dataset.tab===purpose));
+  const show = id => { const e=document.getElementById(id); if(e) e.classList.toggle('hidden', false); };
+  const hide = id => { const e=document.getElementById(id); if(e) e.classList.add('hidden'); };
+  // Bereiche umschalten
+  document.getElementById('todayArea').classList.toggle('hidden', purpose!=='heute');
+  document.getElementById('notizenArea').classList.toggle('hidden', purpose!=='notizen');
+  const legacy = ['planen','auswerten','sammeln'].includes(purpose);
+  document.getElementById('legacyArea').classList.toggle('hidden', !legacy);
+  if(legacy){
+    // Wenn der aktuelle View nicht zum Zweck-Tab passt, auf den ersten passenden wechseln
+    const allowed = PURPOSE_VIEWS[purpose];
+    if(!allowed.includes(view)) view = allowed[0];
+    // Nur die zum Zweck-Tab passenden View-Buttons zeigen
+    document.querySelectorAll('.vbtn').forEach(b=>{
+      b.classList.toggle('hidden', !allowed.includes(b.dataset.view));
+    });
+  }
+}
+function setPurpose(p){
+  purpose = p;
+  if(p==='heute') closeSearchIfEmpty();
+  render();
+}
+function closeSearchIfEmpty(){ /* Suche bleibt tab-übergreifend erhalten */ }
+
+/* ---------- Kopf: Datum, Rolle-/Filter-Kachel-Werte ---------- */
+function renderHead(){
+  const d = new Date();
+  document.getElementById('headDate').textContent =
+    d.toLocaleDateString('de-DE',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  // Rolle-Kachel
+  const rDot = document.getElementById('roleDot');
+  const rVal = document.getElementById('roleVal');
+  if(filters.role){
+    const r = roleById(filters.role);
+    rDot.style.background = r ? r.color : 'var(--meta)';
+    rVal.textContent = r ? r.code : 'Alle';
+  } else {
+    rDot.style.background = 'var(--meta)';
+    rVal.textContent = 'Alle';
+  }
+  // Filter-Kachel: Zähler-Prinzip über Projekt/Prio/Person (Suche zählt separat nicht mit)
+  const active = [filters.proj, filters.eh, filters.people].filter(Boolean).length;
+  const fVal = document.getElementById('filterVal');
+  if(active===0) fVal.textContent = 'Alle';
+  else if(active===1){
+    if(filters.proj) fVal.textContent = filters.proj==='__none' ? 'Ohne Projekt' : (projById(filters.proj)?.name || '1 aktiv');
+    else if(filters.eh) fVal.textContent = 'Prio '+filters.eh;
+    else if(filters.people) fVal.textContent = personById(filters.people)?.name || '1 aktiv';
+  } else fVal.textContent = active+' aktiv';
+}
 
 function renderRoleSwitch(){
   const el = document.getElementById('roleswitch');
@@ -820,6 +1101,165 @@ function renderCurrent(){
   else if(view==='statistik') renderStatistik();
   else if(view==='archiv') renderArchiv();
 }
+/* ============================== HEUTE-ANSICHT ============================== */
+// Kontext-Kacheln (Platzhalter mit Beispieldaten – echte MS-Anbindung folgt separat)
+const CTX_DEMO = {
+  plaene:  { icon:'clipboard', title:'Pläne',          sub:'4 Pläne · 27 Aufgaben', n:4,
+             items:[['Redesign PEPAPP','8 Aufgaben'],['Spenderbetreuung Q3','6 Aufgaben'],['SEPP-Migration','9 Aufgaben'],['ICT-Wartung','4 Aufgaben']] },
+  termine: { icon:'calendar',  title:'Termine',        sub:'Diese & nächste Woche', n:6,
+             items:[['Teammeeting','Mo 09:00'],['Spender-Call','Di 14:00'],['SEPP-Review','Mi 10:30'],['Wartungsfenster','Do 07:00'],['Freigabe Layout','Fr 11:00'],['Planung KW31','Mo 09:00']] },
+  mails:   { icon:'mail',      title:'Markierte Mails', sub:'Zur Bearbeitung geflaggt', n:3,
+             items:[['Rückfrage Spender 4821','geflaggt'],['Angebot Dienstleister','geflaggt'],['Freigabe QM-Doku','geflaggt']] },
+};
+function renderCtxTiles(){
+  const el = document.getElementById('ctxTiles');
+  el.innerHTML = Object.entries(CTX_DEMO).map(([key,c])=>`
+    <div class="ctx" onclick="openCtxList('${key}')">
+      <span class="ic-wrap"><span class="ic">${ICON[c.icon]||''}</span></span>
+      <div class="body"><div class="t">${c.title}</div><div class="s">${c.sub}</div></div>
+      <span class="n">${c.n}</span>
+      <span class="ic chev">${ICON.chevronRight}</span>
+    </div>`).join('');
+}
+function openCtxList(key){
+  const c = CTX_DEMO[key]; if(!c) return;
+  document.getElementById('listTitle').textContent = c.title;
+  const rows = c.items.map(([a,b])=>`
+    <div class="link-row" style="cursor:default">
+      <span style="flex:1">${esc(a)}</span>
+      <span style="font-size:.76rem;color:var(--text-muted)">${esc(b)}</span>
+    </div>`).join('');
+  document.getElementById('listBody').innerHTML =
+    `<div class="eh-hint" style="margin-bottom:12px">Beispieldaten · noch nicht mit Microsoft verbunden. Die echte Anbindung (Planner, Outlook, geflaggte Mails) folgt separat.</div>
+     <div class="tag-list">${rows}</div>`;
+  listOverlay.classList.add('open');
+}
+
+// Tagesweise Gruppen: Heute -> Überfällig -> Morgen -> Folgetage dieser Woche -> Wartet noch
+function todaySections(){
+  const base = tasks.filter(matchesFilter)
+    .filter(t=>t.status!=='done' && t.status!=='discarded');
+  const today = ymd(new Date());
+  const t1=new Date(); t1.setDate(t1.getDate()+1); const tomorrow=ymd(t1);
+  // Ende dieser Woche (Sonntag)
+  const {sun} = weekRange(new Date()); const weekEnd = ymd(sun);
+  const isBlocked = t => (t.dependsOn||[]).some(id=>{ const d=tasks.find(x=>x.id===id); return d && d.status!=='done' && d.status!=='discarded'; }) || t.status==='waiting';
+  const prioSort = (a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
+
+  const blocked = base.filter(isBlocked);
+  const flow = base.filter(t=>!isBlocked(t));   // nicht blockierte
+
+  const secs = [];
+  const heute = flow.filter(t=>t.due===today).sort(prioSort);
+  const overdue = flow.filter(t=>t.due && t.due<today).sort(prioSort);
+  const morgen = flow.filter(t=>t.due===tomorrow).sort(prioSort);
+  if(heute.length)   secs.push({ key:'heute',   title:'Heute',      day:dayLabel(today),    items:heute });
+  if(overdue.length) secs.push({ key:'overdue', title:'Überfällig', day:'',                 items:overdue, over:true });
+  if(morgen.length)  secs.push({ key:'morgen',  title:'Morgen',     day:dayLabel(tomorrow), items:morgen });
+  // Folgetage bis Ende dieser Woche (nach übermorgen)
+  const beyond = flow.filter(t=>t.due && t.due>tomorrow && t.due<=weekEnd);
+  const byDate={};
+  beyond.forEach(t=>{ (byDate[t.due]=byDate[t.due]||[]).push(t); });
+  Object.keys(byDate).sort().forEach(d=>{
+    const dt=new Date(d+'T00:00:00');
+    secs.push({ key:'d'+d, title:dt.toLocaleDateString('de-DE',{weekday:'long'}), day:dayLabel(d), items:byDate[d].sort(prioSort) });
+  });
+  if(blocked.length) secs.push({ key:'wartet', title:'Wartet noch', day:'', items:blocked.sort(prioSort), blocked:true });
+  return secs;
+}
+function dayLabel(ds){
+  const dt=new Date(ds+'T00:00:00');
+  return dt.toLocaleDateString('de-DE',{weekday:'short', day:'numeric', month:'long'});
+}
+function isRunning(t){ return t.status==='in_progress'; }
+function todayCardHTML(t, blocked){
+  const r = roleById(taskRole(t));
+  const roleColor = r ? r.color : 'var(--border)';
+  const over = isOverdue(t);
+  const badge = r ? `<span class="tbadge" style="background:${r.color}">${r.code}</span>` : '';
+  let extra = '';
+  if(blocked){
+    const dep = (t.dependsOn||[]).map(id=>tasks.find(x=>x.id===id)).find(d=>d&&d.status!=='done'&&d.status!=='discarded');
+    const lbl = dep ? `wartet auf „${esc(dep.title)}“` : (t.status==='waiting'?'wartet':'blockiert');
+    extra = `<span class="tlock">${ic('lock')} ${lbl}</span>`;
+  } else if(isRunning(t)){
+    extra = `<span class="running">läuft</span>`;
+  } else if(t.due && (over || false)){
+    extra = `<span class="tdue over">${fmtDate(t.due)}</span>`;
+  }
+  return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
+    <div class="tt">${esc(t.title)}</div>
+    <div class="meta">${badge}${extra}</div>
+  </div>`;
+}
+function renderToday(){
+  renderCtxTiles();
+  const secs = todaySections();
+  const host = document.getElementById('todaySections');
+  if(!secs.length){
+    host.innerHTML = '<div class="today-empty">Für diese Woche sind keine Aufgaben terminiert. Aufgaben mit Fälligkeitsdatum erscheinen hier – Heute zuerst, dann Überfällig, Morgen und die Folgetage.</div>';
+    return;
+  }
+  host.innerHTML = secs.map((s,i)=>{
+    const collapsed = todayCollapsed.has(s.key);
+    const dayHTML = s.day ? `<span class="day">${s.day}</span>` : '';
+    const cards = s.items.map(t=>todayCardHTML(t, s.blocked)).join('');
+    const secClass = ['today-sec', collapsed?'collapsed':'', s.blocked?'blocked muted':''].join(' ').trim();
+    const titleStyle = s.over ? ' style="color:var(--red)"' : '';
+    const rule = i>0 ? '<div class="rule soft"></div>' : '';
+    return `${rule}<div class="${secClass}">
+      <div class="today-sechead" onclick="toggleTodaySec('${s.key}')">
+        <span class="ic chev">${ICON.chevronDown}</span>
+        <span class="title"${titleStyle}>${esc(s.title)}</span>${dayHTML}
+        <span class="count">${s.items.length}</span>
+      </div>
+      <div class="today-grid">${cards}</div>
+    </div>`;
+  }).join('');
+}
+function toggleTodaySec(key){ if(todayCollapsed.has(key)) todayCollapsed.delete(key); else todayCollapsed.add(key); saveTodayCollapsed(); renderToday(); }
+
+/* ---------- Rolle-Modal ---------- */
+const roleOverlay = document.getElementById('roleOverlay');
+function openRoleModal(){
+  const el = document.getElementById('roleOptList');
+  const row = (id,name,sub,color)=>{
+    const sel = filters.role===id;
+    const dot = color ? `<span class="opt-dot" style="background:${color}"></span>` : `<span class="opt-dot" style="background:var(--text-muted)"></span>`;
+    return `<button class="opt-row ${sel?'sel':''}" onclick="pickRole('${id}')">
+      ${dot}<span class="opt-name">${esc(name)}</span><span class="opt-sub">${sub||''}</span>
+      <span class="ic opt-check">${ICON.check}</span></button>`;
+  };
+  el.innerHTML = row('','Alle Rollen','') + ROLES.map(r=>row(r.id, r.code, r.label, r.color)).join('');
+  roleOverlay.classList.add('open');
+}
+function pickRole(id){ filters.role=id; roleOverlay.classList.remove('open'); render(); }
+
+/* ---------- Filter-Modal ---------- */
+const filterOverlay = document.getElementById('filterOverlay');
+function openFilterModal(){
+  // Projekt-Select (nach Rolle gefiltert wie im Legacy-Filter)
+  const projPool = filters.role ? projects.filter(p=>p.role===filters.role) : projects;
+  const psel = document.getElementById('mfProj');
+  psel.innerHTML = '<option value="">Alle</option><option value="__none">Ohne Projekt</option>' +
+    projPool.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  psel.value = projPool.some(p=>p.id===filters.proj) ? filters.proj : (filters.proj==='__none'?'__none':'');
+  document.getElementById('mfEH').value = filters.eh;
+  const pesel = document.getElementById('mfPeople');
+  pesel.innerHTML = '<option value="">Alle</option>' + people.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  pesel.value = people.some(p=>p.id===filters.people) ? filters.people : '';
+  // Board-Gruppierung nur bei Planen sinnvoll
+  document.getElementById('mfGroupField').style.display = (purpose==='planen') ? '' : 'none';
+  document.querySelectorAll('#mfGroup .cmode').forEach(b=>b.classList.toggle('active', b.dataset.bg===boardGroup));
+  filterOverlay.classList.add('open');
+}
+function applyFilterFromModal(){
+  filters.proj = document.getElementById('mfProj').value;
+  filters.eh = document.getElementById('mfEH').value;
+  filters.people = document.getElementById('mfPeople').value;
+  render();
+}
+
 function renderFocus(){
   const today=todayStr();
   const base = tasks.filter(matchesFilter)
@@ -1789,10 +2229,37 @@ function importJSON(file){
 }
 
 /* ============================== EVENTS ============================== */
+// Zweck-Tabs
+document.querySelectorAll('#ptabs .ptab').forEach(b => b.onclick = () => setPurpose(b.dataset.tab));
+// Rolle-/Filter-Kacheln
+document.getElementById('tileRole').onclick = openRoleModal;
+document.getElementById('tileFilter').onclick = openFilterModal;
+document.getElementById('roleModalClose').onclick = ()=>roleOverlay.classList.remove('open');
+roleOverlay.addEventListener('click',e=>{ if(e.target===roleOverlay) roleOverlay.classList.remove('open'); });
+document.getElementById('mfProj').onchange = applyFilterFromModal;
+document.getElementById('mfEH').onchange = applyFilterFromModal;
+document.getElementById('mfPeople').onchange = applyFilterFromModal;
+document.querySelectorAll('#mfGroup .cmode').forEach(b=>b.onclick=()=>{ setBoardGroup(b.dataset.bg); document.querySelectorAll('#mfGroup .cmode').forEach(x=>x.classList.toggle('active', x.dataset.bg===boardGroup)); });
+document.getElementById('filterReset').onclick = ()=>{ filters.proj=filters.eh=filters.people=''; openFilterModal(); render(); };
+document.getElementById('filterModalClose').onclick = ()=>filterOverlay.classList.remove('open');
+filterOverlay.addEventListener('click',e=>{ if(e.target===filterOverlay) filterOverlay.classList.remove('open'); });
+// Suche (Lupe blendet Feld ein)
+document.getElementById('btnSearch').onclick = ()=>{
+  const s=document.getElementById('headSearch'); s.classList.toggle('open');
+  if(s.classList.contains('open')) setTimeout(()=>document.getElementById('fSearch').focus(),40);
+};
+document.getElementById('searchClose').onclick = ()=>{
+  const s=document.getElementById('headSearch'); s.classList.remove('open');
+  filters.search=''; document.getElementById('fSearch').value=''; refreshActive();
+};
+
 document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => setView(b.dataset.view));
 document.querySelectorAll('#boardGroupBar .cmode').forEach(b => b.onclick = () => setBoardGroup(b.dataset.bg));
 document.querySelectorAll('.mtab-btn').forEach(b=>b.onclick=()=>setModalTab(b.dataset.mtab));
 document.getElementById('btnNewTab').onclick=()=>openNew();
+document.getElementById('btnNewLegacy').onclick=()=>openNew();
+// Aktive Ansicht neu zeichnen (Heute oder Legacy-View)
+function refreshActive(){ if(purpose==='heute') renderToday(); else renderCurrent(); renderHead(); }
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('mCancel').onclick=closeModal;
 document.getElementById('mDelete').onclick=deleteModal;
@@ -1827,20 +2294,20 @@ document.getElementById('pCancelEdit').onclick=resetProjForm;
 document.getElementById('pSave').onclick=saveProject;
 projOverlay.addEventListener('click',e=>{ if(e.target===projOverlay) projOverlay.classList.remove('open'); });
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); roleOverlay.classList.remove('open'); filterOverlay.classList.remove('open'); } });
 
 document.getElementById('btnExport').onclick=exportJSON;
 document.getElementById('btnImport').onclick=()=>document.getElementById('fileInput').click();
 document.getElementById('fileInput').onchange=e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=''; };
 
-document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; renderCurrent(); };
-document.getElementById('fProj').onchange=e=>{ filters.proj=e.target.value; renderCurrent(); };
-document.getElementById('fEH').onchange=e=>{ filters.eh=e.target.value; renderCurrent(); };
-document.getElementById('fPeople').onchange=e=>{ filters.people=e.target.value; renderCurrent(); };
+document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; refreshActive(); };
+document.getElementById('fProj').onchange=e=>{ filters.proj=e.target.value; refreshActive(); };
+document.getElementById('fEH').onchange=e=>{ filters.eh=e.target.value; refreshActive(); };
+document.getElementById('fPeople').onchange=e=>{ filters.people=e.target.value; refreshActive(); };
 document.getElementById('fReset').onclick=()=>{
-  filters.search=filters.proj=filters.eh=filters.people='';
-  document.getElementById('fSearch').value=''; document.getElementById('fProj').value='';
-  document.getElementById('fEH').value=''; document.getElementById('fPeople').value=''; renderCurrent();
+  filters.proj=filters.eh=filters.people='';
+  document.getElementById('fProj').value='';
+  document.getElementById('fEH').value=''; document.getElementById('fPeople').value=''; refreshActive();
 };
 
 /* ============================== INIT ============================== */
@@ -1868,8 +2335,6 @@ document.getElementById('fReset').onclick=()=>{
   }
   normalizePrio();
   await persist();
-  document.getElementById('subtitle').textContent =
-    'Stand: ' + new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   render();
 })();
 </script>
