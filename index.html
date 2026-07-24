@@ -443,6 +443,43 @@
   .opt-row .opt-check { color: var(--accent); width: 16px; height: 16px; visibility: hidden; }
   .opt-row.sel .opt-check { visibility: visible; }
 
+  /* Ansichts-Umschalter-Zeile (Planen/Auswerten/Sammeln) */
+  .switch-row { display: flex; gap: var(--gap); align-items: stretch; flex-wrap: wrap; }
+  .vtile { border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); padding: 13px 16px;
+    display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 0 0 auto; min-width: 170px;
+    font-family: inherit; text-align: left; transition: .15s; }
+  .vtile:hover { border-color: var(--accent); }
+  .vtile .ic-wrap { width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2); color: var(--text-muted);
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .vtile .ic-wrap .ic { width: 18px; height: 18px; }
+  .vtile .vt-body { display: flex; flex-direction: column; line-height: 1.2; }
+  .vtile .vt-t { font-size: .9rem; font-weight: 600; }
+  .vtile .vt-s { font-size: .74rem; color: var(--text-muted); }
+  .vtile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .vtile.active .ic-wrap { background: var(--accent); color: #fff; }
+  .vtile .ctrl-tile.group-tile { margin: 0; }
+  .switch-row .group-tile { margin-left: auto; width: 170px; }
+
+  /* Board Variante A – Spalten ohne Kästen */
+  .board-a { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; align-items: start; }
+  .cola .cola-head { display: flex; align-items: center; gap: 9px; padding-bottom: 9px; margin-bottom: 12px;
+    border-bottom: 2px solid var(--col, var(--border)); cursor: pointer; user-select: none; }
+  .cola .cola-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--col, var(--text-muted)); flex: none; }
+  .cola .cola-name { font-size: .9rem; font-weight: 600; }
+  .cola .cola-count { margin-left: auto; font-size: .72rem; color: var(--text-muted); background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; font-weight: 600; }
+  .cola .col-body { display: flex; flex-direction: column; gap: 10px; }
+  .cola .col-body.collapsed { display: none; }
+  .cola .cola-chev { color: var(--text-muted); width: 14px; height: 14px; flex: none; transition: transform .12s; }
+  .cola.is-collapsed .cola-chev { transform: rotate(-90deg); }
+  .prio-chip { font-size: .63rem; padding: 2px 7px; border-radius: 20px; font-weight: 600; background: var(--surface-2);
+    color: var(--text-muted); border: 1px solid var(--border); }
+  .colnew { border: 1px dashed var(--border); background: transparent; color: var(--text-muted); width: 100%;
+    border-radius: 9px; padding: 7px; font-size: .8rem; margin-top: 2px; cursor: pointer; font-family: inherit; transition: .15s; }
+  .colnew:hover { border-color: var(--accent); color: var(--text); }
+  /* Planen-Ansicht: tagesweise (Termin-Gruppierung) nutzt today-sec Vokabular */
+  #board .today-sec + .today-sec { margin-top: 0; }
+
   .hidden { display: none !important; }
 </style>
 </head>
@@ -503,59 +540,18 @@
     <div class="today-empty">Der Notizen-Tab folgt im nächsten Bau-Schritt.</div>
   </div>
 
-  <!-- ================= BESTEHENDER BEREICH (unverändert) ================= -->
+  <!-- ================= PLANEN / AUSWERTEN / SAMMELN (neues Kachel-System) ================= -->
   <div id="legacyArea" class="hidden">
-  <div class="roleswitch" id="roleswitch"></div>
+    <div class="switch-row" id="viewSwitchRow"></div>
+    <div class="rule"></div>
+    <span id="backlogCount" class="hidden">0</span>
 
-  <section class="stats" id="stats"></section>
-
-  <div class="filters">
-    <span class="flabel">Projekt:</span>
-    <select id="fProj"><option value="">Alle</option><option value="__none">Ohne Projekt</option></select>
-    <span class="flabel">Priorität:</span>
-    <select id="fEH">
-      <option value="">Alle</option>
-      <option value="A">A</option>
-      <option value="B">B</option>
-      <option value="C">C</option>
-      <option value="D">D</option>
-    </select>
-    <span class="flabel">Person:</span>
-    <select id="fPeople"><option value="">Alle</option></select>
-    <button class="ghost sm" id="fReset">Zurücksetzen</button>
-  </div>
-
-  <div class="viewbar">
-    <div class="viewswitch" id="viewswitch">
-      <button class="vbtn active" data-view="board"><span class="ic" data-ic="board"></span> Board</button>
-      <button class="vbtn" data-view="focus"><span class="ic" data-ic="focus"></span> Mein Tag</button>
-      <button class="vbtn" data-view="backlog"><span class="ic" data-ic="backlog"></span> Backlog <span class="vcount" id="backlogCount">0</span></button>
-      <button class="vbtn" data-view="calendar"><span class="ic" data-ic="calendar"></span> Kalender</button>
-      <button class="vbtn" data-view="gantt"><span class="ic" data-ic="gantt"></span> Gantt</button>
-      <button class="vbtn" data-view="statistik"><span class="ic" data-ic="stats"></span> Statistik</button>
-      <button class="vbtn" data-view="archiv"><span class="ic" data-ic="archive"></span> Archiv</button>
-    </div>
-    <button class="primary pill-new" id="btnNewLegacy"><span class="ic" data-ic="plus"></span> Neue Aufgabe</button>
-  </div>
-
-  <div class="cal-controls" id="boardGroupBar">
-    <span class="flabel">Gruppieren nach:</span>
-    <div class="cal-modes">
-      <button class="cmode active" data-bg="status">Status</button>
-      <button class="cmode" data-bg="prio">Priorität</button>
-      <button class="cmode" data-bg="person">Person</button>
-      <button class="cmode" data-bg="project">Projekt</button>
-      <button class="cmode" data-bg="termin">Termin</button>
-    </div>
-  </div>
-
-  <div class="board" id="board"></div>
-  <div id="focus" class="hidden"></div>
-  <div id="backlog" class="hidden"></div>
-  <div id="calendar" class="hidden"></div>
-  <div id="gantt" class="hidden"></div>
-  <div id="statistik" class="hidden"></div>
-  <div id="archiv" class="hidden"></div>
+    <div class="board" id="board"></div>
+    <div id="backlog" class="hidden"></div>
+    <div id="calendar" class="hidden"></div>
+    <div id="gantt" class="hidden"></div>
+    <div id="statistik" class="hidden"></div>
+    <div id="archiv" class="hidden"></div>
   </div><!-- /#legacyArea -->
 </div>
 
@@ -810,6 +806,17 @@
   </div>
 </div>
 
+<!-- Gruppieren-Modal (nur Planen/Board) -->
+<div class="overlay" id="groupOverlay">
+  <div class="modal">
+    <h2>Gruppieren nach</h2>
+    <div class="body">
+      <div class="opt-list" id="groupOptList"></div>
+    </div>
+    <div class="foot"><div class="spacer"></div><button class="ghost" id="groupModalClose">Schließen</button></div>
+  </div>
+</div>
+
 <!-- Personen-Modal -->
 <div class="overlay" id="peopleOverlay">
   <div class="modal">
@@ -956,6 +963,8 @@ const ICON = {
   filter:'<svg viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></svg>',
   clipboard:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 4v16"/></svg>',
   mail:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  grid:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .6-4.5 4 1.3 5.9L12 17.8 6.6 19l1.3-5.9-4.5-4 6-.6z"/></svg>',
 };
 const ic = name => `<span class="ic">${ICON[name]||''}</span>`;
 const roleById = id => ROLES.find(r => r.id === id) || null;
@@ -1005,43 +1014,57 @@ function migrateTasks(arr){
 function render(){
   renderHead();
   renderPurpose();
-  renderRoleSwitch(); renderStats(); renderFilters(); renderViewSwitch();
   if(purpose==='heute') renderToday();
-  else if(['planen','auswerten','sammeln'].includes(purpose)) renderCurrent();
+  else if(['planen','auswerten','sammeln'].includes(purpose)){ renderViewSwitchRow(); renderCurrent(); }
 }
 
 /* ---------- Zweck-Tabs (Purpose) ---------- */
-// Welche Alt-Ansichten gehören zu welchem Zweck-Tab
+// Ansichten je Zweck-Tab, als Kacheln (Titel + Untertitel + Icon)
 const PURPOSE_VIEWS = {
-  planen:    ['board','calendar','gantt'],
-  auswerten: ['statistik','archiv'],
-  sammeln:   ['backlog'],
+  planen:    [
+    { id:'board',    t:'Board',    s:'Kanban',        icon:'board' },
+    { id:'calendar', t:'Kalender', s:'Monat · Woche', icon:'calendar' },
+    { id:'gantt',    t:'Gantt',    s:'Zeitachse',     icon:'gantt' },
+  ],
+  auswerten: [
+    { id:'statistik', t:'Statistik', s:'Auslastung', icon:'stats' },
+    { id:'archiv',    t:'Archiv',    s:'Erledigt',   icon:'archive' },
+  ],
+  sammeln:   [
+    { id:'backlog', t:'Backlog', s:'Ideen & Später', icon:'backlog' },
+  ],
 };
 function renderPurpose(){
   document.querySelectorAll('#ptabs .ptab').forEach(b=>b.classList.toggle('active', b.dataset.tab===purpose));
-  const show = id => { const e=document.getElementById(id); if(e) e.classList.toggle('hidden', false); };
-  const hide = id => { const e=document.getElementById(id); if(e) e.classList.add('hidden'); };
-  // Bereiche umschalten
   document.getElementById('todayArea').classList.toggle('hidden', purpose!=='heute');
   document.getElementById('notizenArea').classList.toggle('hidden', purpose!=='notizen');
   const legacy = ['planen','auswerten','sammeln'].includes(purpose);
   document.getElementById('legacyArea').classList.toggle('hidden', !legacy);
   if(legacy){
-    // Wenn der aktuelle View nicht zum Zweck-Tab passt, auf den ersten passenden wechseln
-    const allowed = PURPOSE_VIEWS[purpose];
+    const allowed = PURPOSE_VIEWS[purpose].map(v=>v.id);
     if(!allowed.includes(view)) view = allowed[0];
-    // Nur die zum Zweck-Tab passenden View-Buttons zeigen
-    document.querySelectorAll('.vbtn').forEach(b=>{
-      b.classList.toggle('hidden', !allowed.includes(b.dataset.view));
-    });
   }
 }
-function setPurpose(p){
-  purpose = p;
-  if(p==='heute') closeSearchIfEmpty();
-  render();
+// Kachel-Zeile: Ansichts-Kacheln + (bei Planen/Board) Gruppieren-Kachel
+function renderViewSwitchRow(){
+  const views = PURPOSE_VIEWS[purpose] || [];
+  const tiles = views.map(v=>`
+    <button class="vtile ${v.id===view?'active':''}" onclick="setView('${v.id}')">
+      <span class="ic-wrap"><span class="ic">${ICON[v.icon]||''}</span></span>
+      <span class="vt-body"><span class="vt-t">${v.t}</span><span class="vt-s">${v.s}</span></span>
+    </button>`).join('');
+  // Gruppieren-Kachel nur bei Planen + Board
+  let groupTile = '';
+  if(purpose==='planen' && view==='board'){
+    groupTile = `<button class="ctrl-tile group-tile" onclick="openGroupModal()">
+      <span class="ic-wrap"><span class="ic">${ICON.grid||''}</span></span>
+      <span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[boardGroup]||'Status'}</span></span>
+      <span class="ic chev">${ICON.chevronDown}</span>
+    </button>`;
+  }
+  document.getElementById('viewSwitchRow').innerHTML = tiles + groupTile;
 }
-function closeSearchIfEmpty(){ /* Suche bleibt tab-übergreifend erhalten */ }
+function setPurpose(p){ purpose = p; render(); }
 
 /* ---------- Kopf: Datum, Rolle-/Filter-Kachel-Werte ---------- */
 function renderHead(){
@@ -1070,37 +1093,41 @@ function renderHead(){
   } else fVal.textContent = active+' aktiv';
 }
 
-function renderRoleSwitch(){
-  const el = document.getElementById('roleswitch');
-  const chip = (id,label,color) => {
-    const active = filters.role === id;
-    const style = active && color ? `style="background:${color};border-color:${color};color:#fff"` : '';
-    const dot = color ? `<span class="rdot" style="background:${active?'#fff':color}"></span>` : '';
-    return `<button class="rchip ${active?'active':''}" data-role="${id}" ${style}>${dot}${label}</button>`;
-  };
-  el.innerHTML = chip('','Alle','') + ROLES.map(r => chip(r.id, r.code, r.color)).join('');
-  el.querySelectorAll('.rchip').forEach(b => b.onclick = () => { filters.role = b.dataset.role; render(); });
-}
 function inRole(t){ return !filters.role || taskRole(t) === filters.role; }
 
-function renderViewSwitch(){
-  document.querySelectorAll('.vbtn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-  document.getElementById('backlogCount').textContent = tasks.filter(t => t.status === 'backlog' && inRole(t)).length;
-}
-function setView(v){ view = v; renderViewSwitch(); renderCurrent(); }
-function setBoardGroup(g){ boardGroup=g; document.querySelectorAll('#boardGroupBar .cmode').forEach(b=>b.classList.toggle('active', b.dataset.bg===g)); renderBoard(); }
+const BOARD_GROUP_LABEL = { status:'Status', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
+function setView(v){ view = v; renderViewSwitchRow(); renderCurrent(); }
+function setBoardGroup(g){ boardGroup=g; renderViewSwitchRow(); renderBoard(); }
 function renderCurrent(){
-  ['board','focus','backlog','calendar','gantt','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
+  ['board','backlog','calendar','gantt','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
   const cur=document.getElementById(view); if(cur) cur.classList.remove('hidden');
-  document.getElementById('boardGroupBar').classList.toggle('hidden', view!=='board');
   if(view==='board') renderBoard();
-  else if(view==='focus') renderFocus();
   else if(view==='backlog') renderBacklog();
   else if(view==='calendar') renderCalendar();
   else if(view==='gantt') renderGantt();
   else if(view==='statistik') renderStatistik();
   else if(view==='archiv') renderArchiv();
 }
+
+/* ---------- Gruppieren-Modal ---------- */
+const GROUP_OPTS = [
+  { id:'status',  label:'Status',    icon:'grid' },
+  { id:'prio',    label:'Priorität', icon:'star' },
+  { id:'person',  label:'Person',    icon:'user' },
+  { id:'project', label:'Projekt',   icon:'folder' },
+  { id:'termin',  label:'Termin',    icon:'calendar' },
+];
+const groupOverlay = document.getElementById('groupOverlay');
+function openGroupModal(){
+  document.getElementById('groupOptList').innerHTML = GROUP_OPTS.map(o=>`
+    <button class="opt-row ${boardGroup===o.id?'sel':''}" onclick="pickGroup('${o.id}')">
+      <span class="opt-dot" style="background:transparent;width:auto;height:auto"><span class="ic" style="width:16px;height:16px;color:var(--text-muted)">${ICON[o.icon]||''}</span></span>
+      <span class="opt-name">${o.label}</span>
+      <span class="ic opt-check">${ICON.check}</span>
+    </button>`).join('');
+  groupOverlay.classList.add('open');
+}
+function pickGroup(g){ boardGroup=g; groupOverlay.classList.remove('open'); renderViewSwitchRow(); renderBoard(); }
 /* ============================== HEUTE-ANSICHT ============================== */
 // Kontext-Kacheln (Platzhalter mit Beispieldaten – echte MS-Anbindung folgt separat)
 const CTX_DEMO = {
@@ -1361,17 +1388,7 @@ const STAT_DEFS={
   waiting:{lbl:'Waiting', pred:t=>t.status==='waiting'},
   overdue:{lbl:'Überfällig', pred:isOverdue},
 };
-function renderStats(){
-  const pool = tasks.filter(inRole);
-  const data = [
-    { key:'inbox', num: pool.filter(STAT_DEFS.inbox.pred).length, lbl:'Inbox', cls:'' },
-    { key:'in_progress', num: pool.filter(STAT_DEFS.in_progress.pred).length, lbl:'In Progress', cls:'' },
-    { key:'waiting', num: pool.filter(STAT_DEFS.waiting.pred).length, lbl:'Waiting', cls:'' },
-    { key:'overdue', num: pool.filter(STAT_DEFS.overdue.pred).length, lbl:'Überfällig', cls:'overdue' },
-  ];
-  document.getElementById('stats').innerHTML = data.map(s =>
-    `<div class="stat ${s.cls}" onclick="openStatList('${s.key}')" title="Aufgaben anzeigen"><div class="num">${s.num}</div><div class="lbl">${s.lbl}</div></div>`).join('');
-}
+function renderStats(){ /* Stat-Cards im Redesign entfernt – Steuerung läuft über Kopf-Kacheln */ }
 const listOverlay = document.getElementById('listOverlay');
 function openStatList(key){
   const def=STAT_DEFS[key]; if(!def) return;
@@ -1389,21 +1406,7 @@ function openStatList(key){
 }
 function fromListEdit(id){ listOverlay.classList.remove('open'); openEdit(id); }
 
-function renderFilters(){
-  const sel = document.getElementById('fProj');
-  const cur = sel.value;
-  const projPool = filters.role ? projects.filter(p=>p.role===filters.role) : projects;
-  sel.innerHTML = '<option value="">Alle</option><option value="__none">Ohne Projekt</option>' +
-    projPool.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
-  sel.value = projPool.some(p=>p.id===cur) ? cur : '';
-  if(sel.value !== cur) filters.proj = sel.value;
-
-  const psel = document.getElementById('fPeople');
-  const pcur = psel.value;
-  psel.innerHTML = '<option value="">Alle</option>' + people.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
-  psel.value = people.some(p=>p.id===pcur) ? pcur : '';
-  if(psel.value !== pcur) filters.people = psel.value;
-}
+function renderFilters(){ /* alte Filterleiste entfernt – Filter läuft über die Filter-Kachel/Modal */ }
 
 function matchesFilter(t){
   if(!inRole(t)) return false;
@@ -1466,31 +1469,50 @@ function renderPlanned(){
   const visible = tasks.filter(matchesFilter).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const sections=plannedSections(visible);
   document.getElementById('board').innerHTML = sections.length
-    ? sections.map(s=>`<div class="focus-section"><h3${s.over?' style="color:var(--q1)"':''}>${esc(s.label)} <span class="col-count">${s.items.length}</span></h3><div class="backlog-grid">${s.items.map(cardHTML).join('')}</div></div>`).join('')
-    : '<div class="empty-col" style="padding:44px 8px">Keine terminierten Aufgaben.<br>Aufgaben mit Fälligkeitsdatum erscheinen hier chronologisch – Überfällig, Heute, Morgen, dann nach Tag.</div>';
+    ? sections.map((s,i)=>`${i>0?'<div class="rule soft"></div>':''}<div class="today-sec"><div class="today-sechead" style="cursor:default"><span class="title"${s.over?' style="color:var(--red)"':''}>${esc(s.label)}</span><span class="count">${s.items.length}</span></div><div class="today-grid">${s.items.map(boardCardHTML).join('')}</div></div>`).join('')
+    : '<div class="today-empty">Keine terminierten Aufgaben. Aufgaben mit Fälligkeitsdatum erscheinen hier chronologisch – Überfällig, Heute, Morgen, dann nach Tag.</div>';
+}
+// Card im tcard-Vokabular (Variante A) – mit Status-Umschalter beim Hover-losen Klick über Modal
+function boardCardHTML(t){
+  const r = roleById(taskRole(t));
+  const roleColor = r ? r.color : 'var(--border)';
+  const badge = r ? `<span class="tbadge" style="background:${r.color}">${r.code}</span>` : '';
+  const over = isOverdue(t);
+  const prioHTML = `<span class="prio-chip">${t.prio||'D'}</span>`;
+  const dueHTML = t.due ? `<span class="tdue ${over?'over':''}">${fmtDate(t.due)}</span>` : '';
+  const runHTML = t.status==='in_progress' ? `<span class="running">läuft</span>` : '';
+  const projHTML = (()=>{ const p=projById(t.projectId); return p?`<span class="tbadge" style="background:${p.color}">${esc(p.name)}</span>`:''; })();
+  return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
+    <div class="tt">${esc(t.title)}</div>
+    <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${dueHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
+  </div>`;
 }
 function renderBoard(){
-  const board=document.getElementById('board');
-  board.classList.toggle('planned', boardGroup==='termin');
   if(boardGroup==='termin'){ renderPlanned(); return; }
-  // Nur Board-Status (Backlog bleibt seinem eigenen Tab vorbehalten – gilt für alle Gruppierungen)
   const visible = tasks.filter(matchesFilter).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const groups = boardGroups();
-  document.getElementById('board').innerHTML = groups.map(col => {
+  document.getElementById('board').innerHTML = `<div class="board-a">` + groups.map(col => {
     const items = visible.filter(col.match).sort((a,b)=>{
       const e = ehRank(a)-ehRank(b); if(e!==0) return e;
       return (a.due||'9999') < (b.due||'9999') ? -1 : 1;
     });
-    const cards = items.length ? items.map(cardHTML).join('') : '<div class="empty-col">—</div>';
-    const addBtn = boardGroup==='status' ? `<button class="col-add" onclick="openNew('${col.key}')">+ Aufgabe</button>` : '';
+    const cards = items.map(boardCardHTML).join('');
+    const addBtn = boardGroup==='status' ? `<button class="colnew" onclick="event.stopPropagation();openNew('${col.key}')">+ Aufgabe</button>` : '';
     const openKey = boardGroup+':'+col.key;
-    const isOpen = boardOpen.has(openKey);
-    return `<div class="column ${isOpen?'is-open':'is-collapsed'}">
-      <div class="col-head" onclick="toggleCol('${openKey}')"><span class="col-chev">${ic('chevron')}</span><span class="col-dot" style="background:${col.color}"></span>${esc(col.label)}
-        <span class="col-count">${items.length}</span></div>
-      <div class="col-body">${cards}${addBtn}</div></div>`;
-  }).join('');
+    const collapsed = boardOpen.has(openKey) ? false : false; // Spalten immer offen (ruhiger); Klick auf Titel klappt ein
+    const isCollapsed = boardCollapsed.has(openKey);
+    return `<div class="cola ${isCollapsed?'is-collapsed':''}" style="--col:${col.color}">
+      <div class="cola-head" onclick="toggleColA('${openKey}')">
+        <span class="ic cola-chev">${ICON.chevronDown}</span>
+        <span class="cola-dot"></span><span class="cola-name">${esc(col.label)}</span>
+        <span class="cola-count">${items.length}</span>
+      </div>
+      <div class="col-body ${isCollapsed?'collapsed':''}">${cards}${addBtn}</div>
+    </div>`;
+  }).join('') + `</div>`;
 }
+let boardCollapsed = (()=>{ try{ return new Set(JSON.parse(localStorage.getItem('taskDashboard.boardCollapsed')||'[]')); }catch(e){ return new Set(); } })();
+function toggleColA(key){ if(boardCollapsed.has(key)) boardCollapsed.delete(key); else boardCollapsed.add(key); try{localStorage.setItem('taskDashboard.boardCollapsed', JSON.stringify([...boardCollapsed]));}catch(e){} renderBoard(); }
 
 function roleBadge(t){
   const r = roleById(taskRole(t));
@@ -2148,7 +2170,7 @@ function saveProject(){
   const data={ name, role:document.getElementById('pRole').value, color:pColor, start:document.getElementById('pStart').value, end:document.getElementById('pEnd').value };
   if(pEditId){ Object.assign(projById(pEditId), data); }
   else { projects.push({ id:uid('p'), ...data }); }
-  persist(); resetProjForm(); renderProjList(); renderFilters(); renderBoard();
+  persist(); resetProjForm(); renderProjList(); renderBoard();
 }
 function delProject(id){
   const p=projById(id); if(!p) return;
@@ -2156,7 +2178,7 @@ function delProject(id){
   if(confirm(`Projekt „${p.name}" löschen?` + (n?`\n${n} Aufgabe(n) bleiben erhalten, verlieren aber die Zuordnung.`:''))){
     tasks.forEach(t=>{ if(t.projectId===id){ t.role = p.role; t.projectId=null; } });
     projects=projects.filter(x=>x.id!==id);
-    persist(); renderProjList(); renderFilters(); renderBoard();
+    persist(); renderProjList(); renderBoard();
   }
 }
 
@@ -2239,10 +2261,12 @@ roleOverlay.addEventListener('click',e=>{ if(e.target===roleOverlay) roleOverlay
 document.getElementById('mfProj').onchange = applyFilterFromModal;
 document.getElementById('mfEH').onchange = applyFilterFromModal;
 document.getElementById('mfPeople').onchange = applyFilterFromModal;
-document.querySelectorAll('#mfGroup .cmode').forEach(b=>b.onclick=()=>{ setBoardGroup(b.dataset.bg); document.querySelectorAll('#mfGroup .cmode').forEach(x=>x.classList.toggle('active', x.dataset.bg===boardGroup)); });
 document.getElementById('filterReset').onclick = ()=>{ filters.proj=filters.eh=filters.people=''; openFilterModal(); render(); };
 document.getElementById('filterModalClose').onclick = ()=>filterOverlay.classList.remove('open');
 filterOverlay.addEventListener('click',e=>{ if(e.target===filterOverlay) filterOverlay.classList.remove('open'); });
+// Gruppieren-Modal
+document.getElementById('groupModalClose').onclick = ()=>groupOverlay.classList.remove('open');
+groupOverlay.addEventListener('click',e=>{ if(e.target===groupOverlay) groupOverlay.classList.remove('open'); });
 // Suche (Lupe blendet Feld ein)
 document.getElementById('btnSearch').onclick = ()=>{
   const s=document.getElementById('headSearch'); s.classList.toggle('open');
@@ -2253,11 +2277,8 @@ document.getElementById('searchClose').onclick = ()=>{
   filters.search=''; document.getElementById('fSearch').value=''; refreshActive();
 };
 
-document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => setView(b.dataset.view));
-document.querySelectorAll('#boardGroupBar .cmode').forEach(b => b.onclick = () => setBoardGroup(b.dataset.bg));
 document.querySelectorAll('.mtab-btn').forEach(b=>b.onclick=()=>setModalTab(b.dataset.mtab));
 document.getElementById('btnNewTab').onclick=()=>openNew();
-document.getElementById('btnNewLegacy').onclick=()=>openNew();
 // Aktive Ansicht neu zeichnen (Heute oder Legacy-View)
 function refreshActive(){ if(purpose==='heute') renderToday(); else renderCurrent(); renderHead(); }
 document.getElementById('mSave').onclick=saveModal;
@@ -2294,21 +2315,13 @@ document.getElementById('pCancelEdit').onclick=resetProjForm;
 document.getElementById('pSave').onclick=saveProject;
 projOverlay.addEventListener('click',e=>{ if(e.target===projOverlay) projOverlay.classList.remove('open'); });
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); roleOverlay.classList.remove('open'); filterOverlay.classList.remove('open'); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); roleOverlay.classList.remove('open'); filterOverlay.classList.remove('open'); groupOverlay.classList.remove('open'); } });
 
 document.getElementById('btnExport').onclick=exportJSON;
 document.getElementById('btnImport').onclick=()=>document.getElementById('fileInput').click();
 document.getElementById('fileInput').onchange=e=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=''; };
 
 document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; refreshActive(); };
-document.getElementById('fProj').onchange=e=>{ filters.proj=e.target.value; refreshActive(); };
-document.getElementById('fEH').onchange=e=>{ filters.eh=e.target.value; refreshActive(); };
-document.getElementById('fPeople').onchange=e=>{ filters.people=e.target.value; refreshActive(); };
-document.getElementById('fReset').onclick=()=>{
-  filters.proj=filters.eh=filters.people='';
-  document.getElementById('fProj').value='';
-  document.getElementById('fEH').value=''; document.getElementById('fPeople').value=''; refreshActive();
-};
 
 /* ============================== INIT ============================== */
 (async function init(){
