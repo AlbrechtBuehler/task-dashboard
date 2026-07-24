@@ -240,30 +240,47 @@
   .cal-cell.other { opacity: .4; }
   .cal-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .cal-daynum { font-size: .76rem; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-  .cal-ev { font-size: .72rem; padding: 2px 6px; border-radius: 5px; margin-bottom: 3px; color: #fff; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev { font-size: .72rem; padding: 2px 6px 2px 8px; border-radius: 5px; margin-bottom: 3px;
+    color: var(--text); background: var(--surface-2); border-left: 3px solid var(--role, var(--border));
+    cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-ev.over { color: var(--red); }
   .cal-ev.ev-start { border-top-right-radius: 0; border-bottom-right-radius: 0; }
   .cal-ev.ev-end { border-top-left-radius: 0; border-bottom-left-radius: 0; }
-  .cal-ev.ev-mid { border-radius: 0; opacity: .92; }
+  .cal-ev.ev-mid { border-radius: 0; }
   .cal-more { font-size: .68rem; color: var(--text-muted); }
-  .cal-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-  .cal-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 8px; min-height: 120px; cursor: pointer; }
-  .cal-col:hover { border-color: var(--accent); }
-  .cal-col h4 { margin: 0 0 8px; font-size: .8rem; }
-  .cal-col.today h4 { color: var(--accent); }
+  .cal-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .cal-col { min-width: 0; }
+  .cal-col .cw-head { display: flex; align-items: baseline; gap: 6px; padding-bottom: 8px; margin-bottom: 12px;
+    border-bottom: 1px solid var(--border); }
+  .cal-col .cw-dow { font-size: .82rem; font-weight: 600; }
+  .cal-col .cw-date { font-size: .72rem; color: var(--text-muted); }
+  .cal-col.today { border-top: 2px solid var(--accent); border-radius: 2px; padding-top: 8px; margin-top: -10px; }
+  .cal-col.today .cw-dow { color: var(--accent); }
+  .cal-col .cw-body { display: flex; flex-direction: column; gap: 10px; }
+  .cal-col .cw-empty { font-size: .74rem; color: var(--text-muted); opacity: .6; padding: 2px 0; }
+  .cw-card { border: 1px solid var(--border); border-left: 3px solid var(--role, var(--border)); border-radius: var(--r);
+    background: var(--surface); padding: 9px 10px; cursor: pointer; transition: box-shadow .12s, transform .12s; }
+  .cw-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .cw-card .cw-t { font-size: .78rem; font-weight: 550; line-height: 1.3; word-break: break-word; margin-bottom: 6px; }
+  .cw-card.over .cw-t { color: var(--red); }
+  .cw-card .cw-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .cw-span { font-size: .64rem; color: var(--text-muted); }
   .cal-year { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  .cal-month-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 14px; cursor: pointer; box-shadow: var(--shadow); }
+  .cal-month-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; cursor: pointer; transition: border-color .12s; }
   .cal-month-tile:hover { border-color: var(--accent); }
   .cal-month-tile.cur { border-color: var(--accent); }
   .cal-month-tile .mt-name { font-weight: 700; }
   .cal-month-tile .mt-count { font-size: 1.6rem; font-weight: 700; margin-top: 6px; }
   .cal-month-tile .mt-lbl { font-size: .74rem; color: var(--text-muted); }
   .cal-empty { color: var(--text-muted); text-align: center; padding: 30px; }
-  @media (max-width: 720px) { .cal-year { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 1100px) { .cal-week { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 720px) { .cal-year { grid-template-columns: repeat(2, 1fr); } .cal-week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 640px) { .cal-cell { min-height: 62px; } .cal-week { grid-template-columns: 1fr; } }
 
   /* Gantt */
-  .gantt-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
-  .gantt-inner { position: relative; }
+  .gantt-wrap { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: var(--r); background: var(--surface);
+    min-height: calc(100vh - 240px); }
+  .gantt-inner { position: relative; min-height: calc(100vh - 242px); }
   .g-head { display: flex; position: sticky; top: 0; z-index: 3; background: var(--surface-2); border-bottom: 1px solid var(--border); }
   .g-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); min-height: 38px; }
   .g-row:last-child { border-bottom: none; }
@@ -272,6 +289,7 @@
     background: var(--surface); border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
   .g-head .g-label { background: var(--surface-2); font-weight: 700; align-items: flex-end; }
   .g-group { background: var(--surface-2); font-weight: 700; }
+  .g-group .col-count { margin-left: auto; }
   .g-lname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .g-chev { display: inline-flex; width: 14px; flex: none; cursor: pointer; color: var(--text-muted); transition: transform .12s ease; }
   .g-chev .ic { width: 13px; height: 13px; }
@@ -369,11 +387,22 @@
   .ctrl-tile .lbl { font-size: .66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
   .ctrl-tile .val { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ctrl-tile .chev { color: var(--text-muted); flex: 0 0 auto; width: 15px; height: 15px; }
+  .new-wrap { position: relative; margin-left: auto; }
   .newbtn { font-size: .8rem; padding: 8px 14px; border-radius: 9px; background: var(--surface);
     color: var(--text); border: 1px solid var(--border); display: inline-flex; align-items: center; gap: 6px;
-    white-space: nowrap; margin-left: auto; cursor: pointer; font-family: inherit; transition: .15s; }
+    white-space: nowrap; cursor: pointer; font-family: inherit; transition: .15s; }
   .newbtn:hover { border-color: var(--accent); }
   .newbtn .ic { width: 15px; height: 15px; }
+  .newbtn .chev { width: 13px; height: 13px; color: var(--text-muted); }
+  .new-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; min-width: 160px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+    padding: 5px; display: none; }
+  .new-menu.open { display: block; }
+  .new-opt { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px 11px; border: none;
+    background: transparent; color: var(--text); font-size: .85rem; font-family: inherit; cursor: pointer;
+    border-radius: 7px; text-align: left; }
+  .new-opt:hover { background: var(--surface-2); }
+  .new-opt .ic { width: 15px; height: 15px; color: var(--text-muted); }
 
   /* Suchfeld (blendet ein) */
   .head-search { display: none; align-items: center; gap: 8px; padding: 0 0 14px; }
@@ -417,9 +446,17 @@
   .tcard { border: 1px solid var(--border); border-left: 3px solid var(--role, var(--border)); border-radius: var(--r);
     background: var(--surface); padding: 13px 14px; cursor: pointer; transition: box-shadow .12s, transform .12s; }
   .tcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
-  .tcard .tt { font-size: .88rem; font-weight: 550; margin-bottom: 8px; line-height: 1.35; word-break: break-word; }
+  .tcard .tt { font-size: .88rem; font-weight: 550; line-height: 1.35; word-break: break-word; }
   .tcard.done .tt, .tcard.discarded .tt { text-decoration: line-through; color: var(--text-muted); }
-  .tcard .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  /* Datum: immer sichtbar, direkt unter dem Titel (zugeklappte Kern-Info) */
+  .tcard .tcard-date { font-size: .74rem; color: var(--text-muted); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
+  .tcard .tcard-date.over { color: var(--red); font-weight: 600; }
+  /* Restliche Meta: erst bei Hover (ein Vokabular, ruhige, gleich hohe Karten) */
+  .tcard .meta { display: none; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .tcard:hover .meta { display: flex; }
+  .tcard .meta:empty { margin-top: 0; }
+  /* Touch/kein Hover: Meta dauerhaft sichtbar, damit mobil nichts verborgen bleibt */
+  @media (hover: none) { .tcard .meta { display: flex; } }
   .tbadge { font-size: .64rem; padding: 2px 7px; border-radius: 20px; color: #fff; font-weight: 600; white-space: nowrap; }
   .tdue { font-size: .74rem; color: var(--text-muted); }
   .tdue.over { color: var(--red); font-weight: 600; }
@@ -429,6 +466,34 @@
   .tlock { font-size: .72rem; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; }
   .tlock .ic { width: 12px; height: 12px; }
   .today-empty { color: var(--text-muted); font-size: .85rem; padding: 40px 8px; text-align: center; }
+
+  /* Agenda-Sektion (unten in Heute, standardmäßig eingeklappt) – tagesweise Kanban-Spalten */
+  .agenda-sec .today-sechead .title { color: var(--text-muted); }
+  .agenda-sec.collapsed .agenda-body { display: none; }
+  .agenda-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: var(--gap); align-items: start; }
+  .agenda-col { min-width: 0; }
+  .agenda-colhead { display: flex; align-items: center; gap: 8px; padding-bottom: 7px; margin-bottom: 11px;
+    border-bottom: 1px solid var(--border); }
+  .agenda-colday { font-size: .82rem; font-weight: 600; color: var(--text-muted); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; }
+  .agenda-colhead .count { font-size: .68rem; padding: 1px 7px; border-radius: 20px; background: var(--surface-2);
+    border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; flex: none; margin-left: auto; }
+  .agenda-colbody { display: flex; flex-direction: column; gap: 10px; }
+
+  /* Notizen */
+  .note-card { position: relative; padding-right: 40px; }
+  .note-card .tt { margin-bottom: 6px; }
+  .note-card .note-text { font-size: .8rem; color: var(--text-muted); line-height: 1.45;
+    white-space: pre-wrap; word-break: break-word; margin-bottom: 8px; }
+  .note-card.done .note-text { text-decoration: line-through; }
+  .note-card .meta:empty { display: none; }
+  .note-check { position: absolute; top: 11px; right: 11px; width: 22px; height: 22px; padding: 0;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer;
+    color: transparent; display: inline-flex; align-items: center; justify-content: center; transition: all .12s; }
+  .note-check .ic, .note-check svg { width: 14px; height: 14px; }
+  .note-check:hover { border-color: var(--text-muted); color: var(--text-muted); }
+  .note-check.on { background: #5f8a70; border-color: #5f8a70; color: #fff; }
+  .switch-row .newbtn.note-new { margin-left: auto; }
 
   /* Rolle-Modal Optionsliste */
   .opt-list { display: flex; flex-direction: column; gap: 6px; }
@@ -458,7 +523,11 @@
   .vtile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .vtile.active .ic-wrap { background: var(--accent); color: #fff; }
   .vtile .ctrl-tile.group-tile { margin: 0; }
-  .switch-row .group-tile { margin-left: auto; width: 170px; }
+  .switch-row .group-tile { width: 170px; }
+  .switch-row .scope-tile { margin-left: auto; width: 165px; }
+  .switch-row .scope-tile ~ .group-tile { margin-left: 0; }
+  .ctrl-tile.scope-tile.is-active { border-color: var(--accent); }
+  .ctrl-tile.scope-tile.is-active .val { color: var(--accent); }
 
   /* Board Variante A – Spalten ohne Kästen */
   .board-a { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; align-items: start; }
@@ -507,8 +576,7 @@
         <button class="ptab active" data-tab="heute">Heute</button>
         <button class="ptab" data-tab="planen">Planen</button>
         <button class="ptab" data-tab="auswerten">Auswerten</button>
-        <button class="ptab" data-tab="sammeln">Sammeln</button>
-        <button class="ptab" data-tab="notizen" title="folgt">Notizen</button>
+        <button class="ptab" data-tab="backlog">Backlog</button>
       </div>
       <button class="ctrl-tile" id="tileRole">
         <span class="ic-wrap"><span class="dot" id="roleDot" style="background:var(--meta)"></span></span>
@@ -520,7 +588,13 @@
         <span class="body"><span class="lbl">Filter</span><span class="val" id="filterVal">Alle</span></span>
         <span class="ic chev" data-ic="chevronDown"></span>
       </button>
-      <button class="newbtn" id="btnNewTab"><span class="ic" data-ic="plus"></span> Neue Aufgabe</button>
+      <div class="new-wrap">
+        <button class="newbtn" id="btnNewTab"><span class="ic" data-ic="plus"></span> Neu<span class="ic chev" data-ic="chevronDown" style="margin-left:2px"></span></button>
+        <div class="new-menu" id="newMenu">
+          <button class="new-opt" id="newTask"><span class="ic" data-ic="board"></span> Aufgabe</button>
+          <button class="new-opt" id="newNote"><span class="ic" data-ic="edit"></span> Notiz</button>
+        </div>
+      </div>
     </div>
     <div class="head-search" id="headSearch">
       <input type="search" id="fSearch" placeholder="Suchen …">
@@ -535,12 +609,7 @@
     <div id="todaySections"></div>
   </div>
 
-  <!-- ================= NOTIZEN (folgt in Etappe 2) ================= -->
-  <div id="notizenArea" class="hidden">
-    <div class="today-empty">Der Notizen-Tab folgt im nächsten Bau-Schritt.</div>
-  </div>
-
-  <!-- ================= PLANEN / AUSWERTEN / SAMMELN (neues Kachel-System) ================= -->
+  <!-- ================= PLANEN / AUSWERTEN / BACKLOG (Kachel-System) ================= -->
   <div id="legacyArea" class="hidden">
     <div class="switch-row" id="viewSwitchRow"></div>
     <div class="rule"></div>
@@ -690,6 +759,34 @@
   </div>
 </div>
 
+<!-- Notiz-Modal -->
+<div class="overlay" id="noteOverlay">
+  <div class="modal">
+    <h2 id="noteModalTitle">Neue Notiz</h2>
+    <div class="body">
+      <input type="hidden" id="nId">
+      <div class="field">
+        <label for="nTitle">Titel *</label>
+        <input id="nTitle" type="text" placeholder="Worum geht es?">
+      </div>
+      <div class="field">
+        <label for="nText">Notiz</label>
+        <textarea id="nText" placeholder="Text …" style="min-height:120px"></textarea>
+      </div>
+      <div class="field">
+        <label for="nRole">Rolle</label>
+        <select id="nRole"></select>
+      </div>
+    </div>
+    <div class="foot">
+      <button class="ghost" id="nDelete" style="color:var(--q1);display:none">Löschen</button>
+      <div class="spacer"></div>
+      <button class="ghost" id="nCancel">Abbrechen</button>
+      <button class="primary" id="nSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
 <!-- Projekt-Modal -->
 <div class="overlay" id="projOverlay">
   <div class="modal">
@@ -814,6 +911,18 @@
       <div class="opt-list" id="groupOptList"></div>
     </div>
     <div class="foot"><div class="spacer"></div><button class="ghost" id="groupModalClose">Schließen</button></div>
+  </div>
+</div>
+
+<!-- Zeitraum-Modal -->
+<div class="overlay" id="scopeOverlay">
+  <div class="modal">
+    <h2>Zeitraum</h2>
+    <div class="body">
+      <div class="eh-hint" style="margin-bottom:10px">Wirkt auf Board, Kalender und Gantt gemeinsam.</div>
+      <div class="opt-list" id="scopeOptList"></div>
+    </div>
+    <div class="foot"><div class="spacer"></div><button class="ghost" id="scopeModalClose">Schließen</button></div>
   </div>
 </div>
 
@@ -975,10 +1084,11 @@ function taskRole(t){
 }
 
 /* ============================== STATE ============================== */
-let tasks = [], projects = [], people = [];
+let tasks = [], projects = [], people = [], notes = [];
 let view = 'board';
-let purpose = 'heute';   // Zweck-Tab: heute | planen | auswerten | sammeln | notizen
-let boardGroup = 'status';
+let purpose = 'heute';   // Zweck-Tab: heute | planen | auswerten | backlog
+let boardGroup = (()=>{ try { return localStorage.getItem('taskDashboard.boardGroup') || 'role'; } catch(e){ return 'role'; } })();
+let timeScope = (()=>{ try { return localStorage.getItem('taskDashboard.timeScope') || 'all'; } catch(e){ return 'all'; } })(); // all | today | week | month
 let todayCollapsed = (()=>{ try { return new Set(JSON.parse(localStorage.getItem('taskDashboard.todayCollapsed')||'[]')); } catch(e){ return new Set(); } })();
 function saveTodayCollapsed(){ try { localStorage.setItem('taskDashboard.todayCollapsed', JSON.stringify([...todayCollapsed])); } catch(e){} }
 let boardOpen = (()=>{ try { return new Set(JSON.parse(localStorage.getItem('taskDashboard.boardOpen')||'[]')); } catch(e){ return new Set(); } })();
@@ -1015,7 +1125,7 @@ function render(){
   renderHead();
   renderPurpose();
   if(purpose==='heute') renderToday();
-  else if(['planen','auswerten','sammeln'].includes(purpose)){ renderViewSwitchRow(); renderCurrent(); }
+  else if(['planen','auswerten','backlog'].includes(purpose)){ renderViewSwitchRow(); renderCurrent(); }
 }
 
 /* ---------- Zweck-Tabs (Purpose) ---------- */
@@ -1030,15 +1140,16 @@ const PURPOSE_VIEWS = {
     { id:'statistik', t:'Statistik', s:'Auslastung', icon:'stats' },
     { id:'archiv',    t:'Archiv',    s:'Erledigt',   icon:'archive' },
   ],
-  sammeln:   [
-    { id:'backlog', t:'Backlog', s:'Ideen & Später', icon:'backlog' },
+  backlog:   [
+    { id:'bl_all',   t:'Alle',     s:'Aufgaben & Notizen', icon:'backlog' },
+    { id:'bl_tasks', t:'Aufgaben', s:'Ideen & Später',     icon:'board' },
+    { id:'bl_notes', t:'Notizen',  s:'Nach Rolle',         icon:'edit' },
   ],
 };
 function renderPurpose(){
   document.querySelectorAll('#ptabs .ptab').forEach(b=>b.classList.toggle('active', b.dataset.tab===purpose));
   document.getElementById('todayArea').classList.toggle('hidden', purpose!=='heute');
-  document.getElementById('notizenArea').classList.toggle('hidden', purpose!=='notizen');
-  const legacy = ['planen','auswerten','sammeln'].includes(purpose);
+  const legacy = ['planen','auswerten','backlog'].includes(purpose);
   document.getElementById('legacyArea').classList.toggle('hidden', !legacy);
   if(legacy){
     const allowed = PURPOSE_VIEWS[purpose].map(v=>v.id);
@@ -1053,6 +1164,16 @@ function renderViewSwitchRow(){
       <span class="ic-wrap"><span class="ic">${ICON[v.icon]||''}</span></span>
       <span class="vt-body"><span class="vt-t">${v.t}</span><span class="vt-s">${v.s}</span></span>
     </button>`).join('');
+  // Zeitraum-Kachel: bei Planen für alle drei Ansichten (Board/Kalender/Gantt)
+  let scopeTile = '';
+  if(purpose==='planen'){
+    const active = timeScope!=='all';
+    scopeTile = `<button class="ctrl-tile scope-tile ${active?'is-active':''}" onclick="openScopeModal()">
+      <span class="ic-wrap"><span class="ic">${ICON.calendar||''}</span></span>
+      <span class="body"><span class="lbl">Zeitraum</span><span class="val">${TIME_SCOPE_LABEL[timeScope]||'Alle'}</span></span>
+      <span class="ic chev">${ICON.chevronDown}</span>
+    </button>`;
+  }
   // Gruppieren-Kachel nur bei Planen + Board
   let groupTile = '';
   if(purpose==='planen' && view==='board'){
@@ -1062,7 +1183,7 @@ function renderViewSwitchRow(){
       <span class="ic chev">${ICON.chevronDown}</span>
     </button>`;
   }
-  document.getElementById('viewSwitchRow').innerHTML = tiles + groupTile;
+  document.getElementById('viewSwitchRow').innerHTML = tiles + scopeTile + groupTile;
 }
 function setPurpose(p){ purpose = p; render(); }
 
@@ -1095,14 +1216,47 @@ function renderHead(){
 
 function inRole(t){ return !filters.role || taskRole(t) === filters.role; }
 
-const BOARD_GROUP_LABEL = { status:'Status', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
+const BOARD_GROUP_LABEL = { status:'Status', role:'Rolle', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
+const TIME_SCOPE_LABEL = { all:'Alle', today:'Heute', week:'Diese Woche', month:'Dieser Monat' };
+const TIME_SCOPE_OPTS = [
+  { id:'all',   label:'Alle',        sub:'Kein Zeitfilter', icon:'backlog' },
+  { id:'today', label:'Heute',       sub:'Nur heute',       icon:'focus' },
+  { id:'week',  label:'Diese Woche', sub:'Mo–So',           icon:'calendar' },
+  { id:'month', label:'Dieser Monat',sub:'Aktueller Monat', icon:'calendar' },
+];
+// Fenstergrenzen für den aktuellen timeScope (oder null bei 'all')
+function scopeWindow(){
+  if(timeScope==='all') return null;
+  const now=new Date();
+  if(timeScope==='today'){ const d=ymd(now); return { s:d, e:d }; }
+  if(timeScope==='week'){ const {mon,sun}=weekRange(now); return { s:ymd(mon), e:ymd(sun) }; }
+  if(timeScope==='month'){ const s=new Date(now.getFullYear(),now.getMonth(),1); const e=new Date(now.getFullYear(),now.getMonth()+1,0); return { s:ymd(s), e:ymd(e) }; }
+  return null;
+}
+// Überschneidet der Aufgaben-Zeitraum (Start–Ende, Fallback due) das Fenster?
+function inTimeScope(t){
+  const w=scopeWindow(); if(!w) return true;
+  const a=t.start||t.due, b=t.due||t.start;
+  if(!a && !b) return false;           // ganz ohne Datum: bei aktivem Zeitfilter ausblenden
+  const s=(a<b?a:b), e=(a<b?b:a);
+  return s<=w.e && e>=w.s;             // Überschneidung
+}
+const SCOPE_TO_CALMODE = { all:'month', today:'day', week:'week', month:'month' };
+function setTimeScope(s){
+  timeScope=s; try{localStorage.setItem('taskDashboard.timeScope',s);}catch(e){}
+  calMode = SCOPE_TO_CALMODE[s] || 'month';
+  if(typeof calRef!=='undefined'){ calRef=new Date(); }
+  closeScopeModal(); renderViewSwitchRow(); renderCurrent();
+}
 function setView(v){ view = v; renderViewSwitchRow(); renderCurrent(); }
-function setBoardGroup(g){ boardGroup=g; renderViewSwitchRow(); renderBoard(); }
+function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderBoard(); }
 function renderCurrent(){
   ['board','backlog','calendar','gantt','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
-  const cur=document.getElementById(view); if(cur) cur.classList.remove('hidden');
+  const isBacklog = view==='bl_all' || view==='bl_tasks' || view==='bl_notes';
+  const domId = isBacklog ? 'backlog' : view;
+  const cur=document.getElementById(domId); if(cur) cur.classList.remove('hidden');
   if(view==='board') renderBoard();
-  else if(view==='backlog') renderBacklog();
+  else if(isBacklog) renderBacklog();
   else if(view==='calendar') renderCalendar();
   else if(view==='gantt') renderGantt();
   else if(view==='statistik') renderStatistik();
@@ -1111,6 +1265,7 @@ function renderCurrent(){
 
 /* ---------- Gruppieren-Modal ---------- */
 const GROUP_OPTS = [
+  { id:'role',    label:'Rolle',     icon:'user' },
   { id:'status',  label:'Status',    icon:'grid' },
   { id:'prio',    label:'Priorität', icon:'star' },
   { id:'person',  label:'Person',    icon:'user' },
@@ -1127,7 +1282,18 @@ function openGroupModal(){
     </button>`).join('');
   groupOverlay.classList.add('open');
 }
-function pickGroup(g){ boardGroup=g; groupOverlay.classList.remove('open'); renderViewSwitchRow(); renderBoard(); }
+function pickGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} groupOverlay.classList.remove('open'); renderViewSwitchRow(); renderBoard(); }
+const scopeOverlay = document.getElementById('scopeOverlay');
+function openScopeModal(){
+  document.getElementById('scopeOptList').innerHTML = TIME_SCOPE_OPTS.map(o=>`
+    <button class="opt-row ${timeScope===o.id?'sel':''}" onclick="setTimeScope('${o.id}')">
+      <span class="opt-dot" style="background:transparent;width:auto;height:auto"><span class="ic" style="width:16px;height:16px;color:var(--text-muted)">${ICON[o.icon]||''}</span></span>
+      <span class="opt-name">${o.label}<span style="color:var(--text-muted);font-weight:400;font-size:.78rem;margin-left:8px">${o.sub}</span></span>
+      <span class="ic opt-check">${ICON.check}</span>
+    </button>`).join('');
+  scopeOverlay.classList.add('open');
+}
+function closeScopeModal(){ scopeOverlay.classList.remove('open'); }
 /* ============================== HEUTE-ANSICHT ============================== */
 // Kontext-Kacheln (Platzhalter mit Beispieldaten – echte MS-Anbindung folgt separat)
 const CTX_DEMO = {
@@ -1138,15 +1304,49 @@ const CTX_DEMO = {
   mails:   { icon:'mail',      title:'Markierte Mails', sub:'Zur Bearbeitung geflaggt', n:3,
              items:[['Rückfrage Spender 4821','geflaggt'],['Angebot Dienstleister','geflaggt'],['Freigabe QM-Doku','geflaggt']] },
 };
+// Erscheint die Aufgabe bereits in den oberen Heute-Sektionen (nach Fälligkeit)?
+// Wenn ja, gehört sie NICHT nochmal in die Agenda-Vorausschau (keine Doppelung).
+function appearsInToday(t){
+  if(t.status==='done' || t.status==='discarded') return false;
+  const today = ymd(new Date());
+  const t1=new Date(); t1.setDate(t1.getDate()+1); const tomorrow=ymd(t1);
+  const {sun} = weekRange(new Date()); const weekEnd = ymd(sun);
+  const isBlocked = (t.dependsOn||[]).some(id=>{ const d=tasks.find(x=>x.id===id); return d && d.status!=='done' && d.status!=='discarded'; }) || t.status==='waiting';
+  if(isBlocked) return true;                                  // "Wartet noch"
+  if(!t.due) return t.status==='in_progress';                 // "Ohne Datum – läuft"
+  return t.due <= weekEnd;                                    // heute/überfällig/morgen/Folgetage dieser Woche
+}
+// Agenda = reine Vorausschau nach STARTDATUM, tagesweise als Spalten.
+// Doppelungen mit der Heute-Ansicht (nach Fälligkeit) werden ausgeschlossen.
+function agendaData(){
+  const today=ymd(new Date());
+  const base=tasks.filter(matchesFilter)
+    .filter(t=>t.status!=='done' && t.status!=='discarded')
+    .filter(t=>t.start && t.start>=today)   // nur ab heute startende, datierte Aufgaben
+    .filter(t=>!appearsInToday(t));          // nicht doppeln, was oben schon steht
+  const byDay={};
+  base.forEach(t=>{ (byDay[t.start]=byDay[t.start]||[]).push(t); });
+  const cols = Object.keys(byDay).sort().map(d=>({
+    day:d,
+    title:dayLabel(d),
+    items:byDay[d].sort((a,b)=>{
+      const x=(a.due||'9999'), y=(b.due||'9999');
+      if(x!==y) return x<y?-1:1;
+      return ehRank(a)-ehRank(b);
+    })
+  }));
+  return { cols, total: base.length };
+}
 function renderCtxTiles(){
   const el = document.getElementById('ctxTiles');
-  el.innerHTML = Object.entries(CTX_DEMO).map(([key,c])=>`
+  const demo = Object.entries(CTX_DEMO).map(([key,c])=>`
     <div class="ctx" onclick="openCtxList('${key}')">
       <span class="ic-wrap"><span class="ic">${ICON[c.icon]||''}</span></span>
       <div class="body"><div class="t">${c.title}</div><div class="s">${c.sub}</div></div>
       <span class="n">${c.n}</span>
       <span class="ic chev">${ICON.chevronRight}</span>
     </div>`).join('');
+  el.innerHTML = demo;
 }
 function openCtxList(key){
   const c = CTX_DEMO[key]; if(!c) return;
@@ -1180,7 +1380,10 @@ function todaySections(){
   const heute = flow.filter(t=>t.due===today).sort(prioSort);
   const overdue = flow.filter(t=>t.due && t.due<today).sort(prioSort);
   const morgen = flow.filter(t=>t.due===tomorrow).sort(prioSort);
-  if(heute.length)   secs.push({ key:'heute',   title:'Heute',      day:dayLabel(today),    items:heute });
+  // Undatiert, aber laufend: gehört in den Fokus, direkt unter „Heute“
+  const runningUndated = flow.filter(t=>!t.due && t.status==='in_progress').sort(prioSort);
+  if(heute.length)         secs.push({ key:'heute',    title:'Heute',            day:dayLabel(today), items:heute });
+  if(runningUndated.length) secs.push({ key:'runNoDate', title:'Ohne Datum – läuft', day:'',            items:runningUndated });
   if(overdue.length) secs.push({ key:'overdue', title:'Überfällig', day:'',                 items:overdue, over:true });
   if(morgen.length)  secs.push({ key:'morgen',  title:'Morgen',     day:dayLabel(tomorrow), items:morgen });
   // Folgetage bis Ende dieser Woche (nach übermorgen)
@@ -1204,6 +1407,9 @@ function todayCardHTML(t, blocked){
   const roleColor = r ? r.color : 'var(--border)';
   const over = isOverdue(t);
   const badge = r ? `<span class="tbadge" style="background:${r.color}">${r.code}</span>` : '';
+  // Datum: immer sichtbar unter dem Titel
+  const dateHTML = t.due ? `<div class="tcard-date ${over?'over':''}">${fmtDate(t.due)}</div>` : '';
+  // Statusmarker (läuft/wartet/blockiert) in die Hover-Meta
   let extra = '';
   if(blocked){
     const dep = (t.dependsOn||[]).map(id=>tasks.find(x=>x.id===id)).find(d=>d&&d.status!=='done'&&d.status!=='discarded');
@@ -1211,11 +1417,9 @@ function todayCardHTML(t, blocked){
     extra = `<span class="tlock">${ic('lock')} ${lbl}</span>`;
   } else if(isRunning(t)){
     extra = `<span class="running">läuft</span>`;
-  } else if(t.due && (over || false)){
-    extra = `<span class="tdue over">${fmtDate(t.due)}</span>`;
   }
   return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
-    <div class="tt">${esc(t.title)}</div>
+    <div class="tt">${esc(t.title)}</div>${dateHTML}
     <div class="meta">${badge}${extra}</div>
   </div>`;
 }
@@ -1227,7 +1431,7 @@ function renderToday(){
     host.innerHTML = '<div class="today-empty">Für diese Woche sind keine Aufgaben terminiert. Aufgaben mit Fälligkeitsdatum erscheinen hier – Heute zuerst, dann Überfällig, Morgen und die Folgetage.</div>';
     return;
   }
-  host.innerHTML = secs.map((s,i)=>{
+  const secHTML = secs.map((s,i)=>{
     const collapsed = todayCollapsed.has(s.key);
     const dayHTML = s.day ? `<span class="day">${s.day}</span>` : '';
     const cards = s.items.map(t=>todayCardHTML(t, s.blocked)).join('');
@@ -1243,6 +1447,32 @@ function renderToday(){
       <div class="today-grid">${cards}</div>
     </div>`;
   }).join('');
+  host.innerHTML = secHTML + agendaSectionHTML(secs.length>0);
+}
+// Agenda-Vorausschau als tagesweise Kanban-Spalten (unter "Wartet noch", Default eingeklappt).
+function agendaSectionHTML(hasRule){
+  const ag = agendaData();
+  const collapsed = !todayCollapsed.has('agenda:open'); // Default: eingeklappt
+  const rule = hasRule ? '<div class="rule soft"></div>' : '';
+  const inner = ag.cols.length
+    ? `<div class="agenda-board">${ag.cols.map(c=>`
+        <div class="agenda-col">
+          <div class="agenda-colhead">
+            <span class="agenda-colday">${esc(c.title)}</span>
+            <span class="count">${c.items.length}</span>
+          </div>
+          <div class="agenda-colbody">${c.items.map(boardCardHTML).join('')}</div>
+        </div>`).join('')}</div>`
+    : '<div class="today-empty" style="padding:20px 8px">Keine anstehenden Starttermine.</div>';
+  return `${rule}<div class="today-sec agenda-sec ${collapsed?'collapsed':''}">
+    <div class="today-sechead" onclick="toggleTodaySec('agenda:open')">
+      <span class="ic chev">${ICON.chevronDown}</span>
+      <span class="title">Agenda</span>
+      <span class="day">Vorausschau nach Startdatum</span>
+      <span class="count">${ag.total}</span>
+    </div>
+    <div class="agenda-body">${inner}</div>
+  </div>`;
 }
 function toggleTodaySec(key){ if(todayCollapsed.has(key)) todayCollapsed.delete(key); else todayCollapsed.add(key); saveTodayCollapsed(); renderToday(); }
 
@@ -1338,18 +1568,12 @@ function renderStatistik(){
 let archMode='done';
 function setArchMode(m){ archMode=m; renderArchiv(); }
 function renderArchiv(){
+  if(archMode==='notes'){ renderArchivNotes(); return; }
   const items = tasks.filter(t=>t.status===archMode).filter(matchesFilter);
   const groups={};
   items.forEach(t=>{ const d=t.archivedAt||t.created||''; const key=d?d.slice(0,7):'unbekannt'; (groups[key]=groups[key]||[]).push(t); });
   const keys=Object.keys(groups).sort().reverse();
   const monthName=k=>{ if(k==='unbekannt') return 'Ohne Datum'; const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('de-DE',{month:'long',year:'numeric'}); };
-  const controls=`<div class="arch-controls">
-    <div class="cal-modes">
-      <button class="cmode ${archMode==='done'?'active':''}" onclick="setArchMode('done')">Erledigt</button>
-      <button class="cmode ${archMode==='discarded'?'active':''}" onclick="setArchMode('discarded')">Verworfen</button>
-    </div>
-    <span class="flabel">${items.length} Einträge</span>
-  </div>`;
   const body = keys.length ? keys.map(k=>{
     const rows=groups[k].sort((a,b)=>(a.archivedAt||'')<(b.archivedAt||'')?1:-1).map(t=>{
       const p=projById(t.projectId);
@@ -1358,16 +1582,77 @@ function renderArchiv(){
     }).join('');
     return `<div class="arch-month"><h4>${monthName(k)} (${groups[k].length})</h4>${rows}</div>`;
   }).join('') : `<div class="cal-empty">Keine ${archMode==='done'?'erledigten':'verworfenen'} Aufgaben.</div>`;
-  document.getElementById('archiv').innerHTML = controls + body;
+  document.getElementById('archiv').innerHTML = archControls(items.length) + body;
+}
+function archControls(count){
+  const doneNotes = notes.filter(n=>n.done).length;
+  return `<div class="arch-controls">
+    <div class="cal-modes">
+      <button class="cmode ${archMode==='done'?'active':''}" onclick="setArchMode('done')">Erledigt</button>
+      <button class="cmode ${archMode==='discarded'?'active':''}" onclick="setArchMode('discarded')">Verworfen</button>
+      <button class="cmode ${archMode==='notes'?'active':''}" onclick="setArchMode('notes')">Notizen${doneNotes?` (${doneNotes})`:''}</button>
+    </div>
+    <span class="flabel">${count} Einträge</span>
+  </div>`;
+}
+function renderArchivNotes(){
+  const done = notes.filter(n=>n.done);
+  const body = !done.length
+    ? `<div class="cal-empty">Keine erledigten Notizen.</div>`
+    : ROLES.map(r=>{
+        const items = done.filter(n=>noteRole(n)===r.id)
+          .sort((a,b)=>(b.doneAt||'').localeCompare(a.doneAt||''));
+        if(!items.length) return '';
+        const rows = items.map(n=>{
+          const dstr = n.doneAt ? new Date(n.doneAt+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'short'}) : '';
+          return `<div class="arch-row" onclick="openNote('${n.id}')">
+            <span class="tbadge" style="background:${r.color}">${r.code}</span>
+            <span class="a-title" style="text-decoration:line-through;color:var(--text-muted)">${esc(n.title)}</span>
+            <span class="a-date">${dstr}</span>
+            <button class="ghost sm" title="Wiederherstellen" onclick="event.stopPropagation();toggleNoteDone('${n.id}')">↺</button>
+          </div>`;
+        }).join('');
+        return `<div class="arch-month"><h4>${r.label} (${items.length})</h4>${rows}</div>`;
+      }).filter(Boolean).join('');
+  document.getElementById('archiv').innerHTML = archControls(done.length) + body;
 }
 function renderBacklog(){
-  const items = tasks.filter(t => t.status === 'backlog').filter(matchesFilter).sort((a,b) => {
-    const e = ehRank(a) - ehRank(b); if(e !== 0) return e;
-    return (a.title||'').localeCompare(b.title||'', 'de');
-  });
-  document.getElementById('backlog').innerHTML = items.length
-    ? `<div class="backlog-grid">${items.map(backlogCardHTML).join('')}</div>`
-    : '<div class="empty-col" style="padding:44px 8px">Backlog ist leer.<br>Leg hier Ideen & „Später"-Aufgaben ab – sie halten das Board frei.</div>';
+  const showTasks = view==='bl_all' || view==='bl_tasks';
+  const showNotes = view==='bl_all' || view==='bl_notes';
+  const blTasks = showTasks ? tasks.filter(t => t.status === 'backlog').filter(matchesFilter) : [];
+  // Notizen respektieren nur den Rollenfilter (Projekt/Prio/Person greifen bei Notizen nicht)
+  const blNotes = showNotes ? notes.filter(n=>!n.done).filter(n=>!filters.role || noteRole(n)===filters.role) : [];
+
+  if(!blTasks.length && !blNotes.length){
+    const msg = view==='bl_notes'
+      ? 'Keine offenen Notizen.<br>Leg mit „Neu → Notiz" die erste an – sie wird nach Rolle einsortiert.'
+      : view==='bl_tasks'
+        ? 'Keine Aufgaben im Backlog.<br>Leg mit „Neu → Aufgabe" Ideen & „Später"-Aufgaben ab.'
+        : 'Backlog ist leer.<br>Leg mit „Neu" Aufgaben oder Notizen ab – nach Rolle sortiert.';
+    document.getElementById('backlog').innerHTML = `<div class="empty-col" style="padding:44px 8px">${msg}</div>`;
+    return;
+  }
+  // Pro Rolle: erst Aufgaben (nach Priorität), dann Notizen (alphabetisch). Nur Rollen mit Inhalt.
+  const html = ROLES.map(r=>{
+    const rTasks = blTasks.filter(t=>taskRole(t)===r.id).sort((a,b)=>{
+      const e = ehRank(a) - ehRank(b); if(e !== 0) return e;
+      return (a.title||'').localeCompare(b.title||'', 'de');
+    });
+    const rNotes = blNotes.filter(n=>noteRole(n)===r.id).sort((a,b)=>(a.title||'').localeCompare(b.title||'','de'));
+    const total = rTasks.length + rNotes.length;
+    if(!total) return '';
+    const cards = rTasks.map(backlogCardHTML).join('') + rNotes.map(noteCardHTML).join('');
+    return `<section class="today-sec">
+      <div class="today-sechead" style="cursor:default">
+        <span class="dot" style="width:9px;height:9px;border-radius:50%;background:${r.color};flex:none"></span>
+        <span class="title">${r.label}</span>
+        <span class="count">${total}</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="backlog-grid">${cards}</div>
+    </section>`;
+  }).filter(Boolean).join('<div class="rule soft"></div>');
+  document.getElementById('backlog').innerHTML = html;
 }
 function backlogCardHTML(t){
   const q = quadrant(t); const p = projById(t.projectId);
@@ -1380,6 +1665,71 @@ function backlogCardHTML(t){
       <span style="flex:1"></span>
       <button class="icon ghost" title="Bearbeiten" onclick="openEdit('${t.id}')">${ic('edit')}</button>
     </div></div>`;
+}
+
+/* ============================== NOTIZEN ============================== */
+function noteRole(n){ return roleById(n.role) ? n.role : 'meta'; }
+function noteCardHTML(n){
+  const r = roleById(noteRole(n));
+  const color = r ? r.color : 'var(--meta)';
+  const roleBadgeHTML = r ? `<span class="tbadge" style="background:${color}">${r.code}</span>` : '';
+  const textHTML = n.text ? `<div class="note-text">${esc(n.text)}</div>` : '';
+  return `<div class="tcard note-card ${n.done?'done':''}" style="--role:${color}" onclick="openNote('${n.id}')">
+    <button class="note-check ${n.done?'on':''}" title="${n.done?'Als offen markieren':'Als erledigt markieren'}"
+      onclick="event.stopPropagation();toggleNoteDone('${n.id}')">${ICON.check}</button>
+    <div class="tt">${esc(n.title)}</div>${textHTML}
+    <div class="meta">${roleBadgeHTML}</div>
+  </div>`;
+}
+function toggleNoteDone(id){
+  const n = notes.find(x=>x.id===id); if(!n) return;
+  n.done = !n.done;
+  n.doneAt = n.done ? todayStr() : '';
+  persist();
+  refreshActive();
+}
+
+/* ---------- Notiz-Modal ---------- */
+const noteOverlay = document.getElementById('noteOverlay');
+function fillNoteRoleSelect(sel){
+  const el = document.getElementById('nRole');
+  el.innerHTML = ROLES.map(r=>`<option value="${r.id}" ${r.id===sel?'selected':''}>${r.label}</option>`).join('');
+}
+function openNote(id){
+  const editing = !!id;
+  const n = editing ? notes.find(x=>x.id===id) : null;
+  document.getElementById('noteModalTitle').textContent = editing ? 'Notiz bearbeiten' : 'Neue Notiz';
+  document.getElementById('nId').value = editing ? n.id : '';
+  document.getElementById('nTitle').value = editing ? (n.title||'') : '';
+  document.getElementById('nText').value  = editing ? (n.text||'')  : '';
+  fillNoteRoleSelect(editing ? noteRole(n) : (filters.role || 'meta'));
+  document.getElementById('nDelete').style.display = editing ? '' : 'none';
+  noteOverlay.classList.add('open');
+  setTimeout(()=>document.getElementById('nTitle').focus(), 30);
+}
+function closeNote(){ noteOverlay.classList.remove('open'); }
+function saveNote(){
+  const id = document.getElementById('nId').value;
+  const title = document.getElementById('nTitle').value.trim();
+  const text  = document.getElementById('nText').value.trim();
+  const role  = document.getElementById('nRole').value || 'meta';
+  if(!title){ document.getElementById('nTitle').focus(); return; }
+  if(id){
+    const n = notes.find(x=>x.id===id);
+    if(n){ n.title=title; n.text=text; n.role=role; }
+  } else {
+    notes.push({ id:uid('n'), title, text, role, done:false });
+  }
+  persist(); closeNote();
+  // Neue Notiz sichtbar machen: in den Backlog-Tab wechseln, falls man woanders war
+  if(!id && purpose!=='backlog'){ purpose='backlog'; if(!String(view).startsWith('bl_')) view='bl_all'; render(); }
+  else refreshActive();
+}
+function deleteNote(){
+  const id = document.getElementById('nId').value;
+  if(id && confirm('Diese Notiz wirklich löschen?')){
+    notes = notes.filter(x=>x.id!==id); persist(); closeNote(); refreshActive();
+  }
 }
 
 const STAT_DEFS={
@@ -1438,6 +1788,9 @@ function boardGroups(){
     g.push({ key:'__none', label:'Ohne Projekt', color:'#a8aeb8', match:t=>!t.projectId });
     return g;
   }
+  if(boardGroup==='role'){
+    return ROLES.map(r=>({ key:r.id, label:r.label, color:r.color, match:t=>taskRole(t)===r.id }));
+  }
   return STATUS.filter(s=>s.board).map(s=>({ key:s.id, label:s.label, color:s.color, match:t=>t.status===s.id }));
 }
 function plannedSections(visible){
@@ -1466,7 +1819,7 @@ function plannedSections(visible){
   return sections;
 }
 function renderPlanned(){
-  const visible = tasks.filter(matchesFilter).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
+  const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const sections=plannedSections(visible);
   document.getElementById('board').innerHTML = sections.length
     ? sections.map((s,i)=>`${i>0?'<div class="rule soft"></div>':''}<div class="today-sec"><div class="today-sechead" style="cursor:default"><span class="title"${s.over?' style="color:var(--red)"':''}>${esc(s.label)}</span><span class="count">${s.items.length}</span></div><div class="today-grid">${s.items.map(boardCardHTML).join('')}</div></div>`).join('')
@@ -1479,17 +1832,18 @@ function boardCardHTML(t){
   const badge = r ? `<span class="tbadge" style="background:${r.color}">${r.code}</span>` : '';
   const over = isOverdue(t);
   const prioHTML = `<span class="prio-chip">${t.prio||'D'}</span>`;
-  const dueHTML = t.due ? `<span class="tdue ${over?'over':''}">${fmtDate(t.due)}</span>` : '';
+  // Datum: immer sichtbar unter dem Titel
+  const dateHTML = t.due ? `<div class="tcard-date ${over?'over':''}">${fmtDate(t.due)}</div>` : '';
   const runHTML = t.status==='in_progress' ? `<span class="running">läuft</span>` : '';
   const projHTML = (()=>{ const p=projById(t.projectId); return p?`<span class="tbadge" style="background:${p.color}">${esc(p.name)}</span>`:''; })();
   return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
-    <div class="tt">${esc(t.title)}</div>
-    <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${dueHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
+    <div class="tt">${esc(t.title)}</div>${dateHTML}
+    <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
   </div>`;
 }
 function renderBoard(){
   if(boardGroup==='termin'){ renderPlanned(); return; }
-  const visible = tasks.filter(matchesFilter).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
+  const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const groups = boardGroups();
   document.getElementById('board').innerHTML = `<div class="board-a">` + groups.map(col => {
     const items = visible.filter(col.match).sort((a,b)=>{
@@ -1537,19 +1891,17 @@ function cardHTML(t){
 }
 
 /* ============================== KALENDER ============================== */
-let calMode = 'month';
+let calMode = ({ all:'month', today:'day', week:'week', month:'month' })[timeScope] || 'month';
 let calRef = new Date();
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function calTasks(){ return tasks.filter(matchesFilter).filter(t=>t.due); }
 function evColor(t){ const r=roleById(taskRole(t)); return r?r.color:'#8a909c'; }
-function setCalMode(m){ calMode=m; renderCalendar(); }
 function calToday(){ calRef=new Date(); renderCalendar(); }
 function calNav(dir){
   const d=new Date(calRef);
   if(calMode==='day') d.setDate(d.getDate()+dir);
   else if(calMode==='week') d.setDate(d.getDate()+7*dir);
-  else if(calMode==='month') d.setMonth(d.getMonth()+dir);
-  else d.setFullYear(d.getFullYear()+dir);
+  else d.setMonth(d.getMonth()+dir);
   calRef=d; renderCalendar();
 }
 function weekRange(ref){
@@ -1573,32 +1925,27 @@ function evChip(t, ds){
   let pos='single';
   if(span) pos = ds===sp.s ? 'start' : ds===sp.e ? 'end' : 'mid';
   const tip = span ? `${esc(t.title)} (${fmtDate(sp.s)}–${fmtDate(sp.e)})` : esc(t.title);
-  return `<div class="cal-ev ev-${pos}" style="background:${evColor(t)}" title="${tip}" onclick="event.stopPropagation();openEdit('${t.id}')">${esc(t.title)}</div>`;
+  const over = isOverdue(t) ? ' over' : '';
+  return `<div class="cal-ev ev-${pos}${over}" style="--role:${evColor(t)}" title="${tip}" onclick="event.stopPropagation();openEdit('${t.id}')">${esc(t.title)}</div>`;
 }
 
 function renderCalendar(){
+  // Kalender-Modus folgt dem globalen Zeitregler (außer nach openDay-Klick = Tag)
+  if(calMode!=='day' && calMode!=='week' && calMode!=='month'){ calMode = SCOPE_TO_CALMODE[timeScope] || 'month'; }
   let title='';
   if(calMode==='day') title=calRef.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   else if(calMode==='week'){ const {mon,sun}=weekRange(calRef); title=`${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
-  else if(calMode==='month') title=calRef.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
-  else if(calMode==='year') title=String(calRef.getFullYear());
-  else title='Vorausschau nach Startdatum';
-  const modes=[['day','Tag'],['week','Woche'],['month','Monat'],['year','Jahr'],['agenda','Agenda']];
-  const nav = calMode==='agenda' ? `<span class="cal-title">${title}</span>` : `
+  else title=calRef.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+  const controls=`<div class="cal-controls">
     <button class="ghost sm" onclick="calNav(-1)">◀</button>
     <button class="ghost sm" onclick="calToday()">Heute</button>
     <button class="ghost sm" onclick="calNav(1)">▶</button>
-    <span class="cal-title">${title}</span>`;
-  const controls=`<div class="cal-controls">
-    <div class="cal-modes">${modes.map(m=>`<button class="cmode ${calMode===m[0]?'active':''}" onclick="setCalMode('${m[0]}')">${m[1]}</button>`).join('')}</div>
-    ${nav}
+    <span class="cal-title">${title}</span>
   </div>`;
   let body;
-  if(calMode==='month') body=calMonth();
-  else if(calMode==='week') body=calWeek();
+  if(calMode==='week') body=calWeek();
   else if(calMode==='day') body=calDay();
-  else if(calMode==='year') body=calYear();
-  else body=calAgenda();
+  else body=calMonth();
   document.getElementById('calendar').innerHTML=controls+body;
 }
 function calMonth(){
@@ -1625,55 +1972,37 @@ function calWeek(){
   for(let i=0;i<7;i++){
     const d=new Date(mon); d.setDate(mon.getDate()+i); const ds=ymd(d);
     const evs=spans.filter(x=>coversDay(x.sp,ds));
-    cols+=`<div class="cal-col ${ds===today?'today':''}" onclick="openDay('${ds}')" title="${esc(dayTip(evs))}"><h4>${DOW[i]} ${d.getDate()}.${d.getMonth()+1}.</h4>${evs.length?evs.map(x=>evChip(x.t, ds)).join(''):'<div class="cal-more">—</div>'}</div>`;
+    const cards = evs.length
+      ? `<div class="cw-body">${evs.map(x=>weekCardHTML(x.t, ds)).join('')}</div>`
+      : `<div class="cw-empty">—</div>`;
+    cols+=`<div class="cal-col ${ds===today?'today':''}">
+      <div class="cw-head" onclick="openDay('${ds}')" style="cursor:pointer" title="Tagesansicht öffnen">
+        <span class="cw-dow">${DOW[i]}</span><span class="cw-date">${d.getDate()}.${d.getMonth()+1}.</span>
+      </div>${cards}</div>`;
   }
   return `<div class="cal-week">${cols}</div>`;
 }
+function weekCardHTML(t, ds){
+  const r = roleById(taskRole(t));
+  const roleColor = r ? r.color : 'var(--border)';
+  const badge = r ? `<span class="tbadge" style="background:${r.color}">${r.code}</span>` : '';
+  const over = isOverdue(t);
+  const sp = taskSpan(t);
+  const isSpan = sp && sp.s!==sp.e;
+  const spanHTML = isSpan ? `<span class="cw-span">${fmtDate(sp.s)}–${fmtDate(sp.e)}</span>` : '';
+  const runHTML = t.status==='in_progress' ? `<span class="running">läuft</span>` : '';
+  return `<div class="cw-card ${over?'over':''}" style="--role:${roleColor}" title="${esc(t.title)}" onclick="event.stopPropagation();openEdit('${t.id}')">
+    <div class="cw-t">${esc(t.title)}</div>
+    <div class="cw-meta">${badge}${runHTML}${spanHTML}</div>
+  </div>`;
+}
 function calDay(){
   const ds=ymd(calRef);
-  const evs=spanTasks().filter(x=>coversDay(x.sp,ds)).map(x=>x.t);
-  return evs.length ? `<div class="backlog-grid">${evs.map(cardHTML).join('')}</div>`
+  const evs=spanTasks().filter(x=>coversDay(x.sp,ds)).map(x=>x.t)
+    .sort((a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.title||'').localeCompare(b.title||'','de'); });
+  return evs.length ? `<div class="backlog-grid">${evs.map(boardCardHTML).join('')}</div>`
     : '<div class="cal-empty">Keine Aufgaben an diesem Tag (weder Start noch Fälligkeit).</div>';
 }
-function calYear(){
-  const spans=spanTasks();
-  const y=calRef.getFullYear();
-  const now=new Date(), curM=now.getMonth(), curY=now.getFullYear();
-  let tiles='';
-  for(let m=0;m<12;m++){
-    const nm=new Date(y,m,1).toLocaleDateString('de-DE',{month:'long'});
-    const mStart=ymd(new Date(y,m,1)), mEnd=ymd(new Date(y,m+1,0));
-    const cnt=spans.filter(x=>x.sp.s<=mEnd && x.sp.e>=mStart).length;
-    const cur=(m===curM&&y===curY)?'cur':'';
-    tiles+=`<div class="cal-month-tile ${cur}" onclick="calRef=new Date(${y},${m},1); calMode='month'; renderCalendar();"><div class="mt-name">${nm}</div><div class="mt-count">${cnt}</div><div class="mt-lbl">Aufgaben</div></div>`;
-  }
-  return `<div class="cal-year">${tiles}</div>`;
-}
-function calAgenda(){
-  const today=ymd(new Date());
-  const tmD=new Date(); tmD.setDate(tmD.getDate()+1); const tomorrow=ymd(tmD);
-  const {sun}=weekRange(new Date()); const weekEnd=ymd(sun);
-  const base=tasks.filter(matchesFilter).filter(t=>t.status!=='done' && t.status!=='discarded');
-  const sections=[
-    { title:'Bereits gestartet', pred:t=>t.start && t.start<today },
-    { title:'Heute startet',     pred:t=>t.start===today },
-    { title:'Morgen startet',    pred:t=>t.start===tomorrow },
-    { title:'Diese Woche',       pred:t=>t.start && t.start>tomorrow && t.start<=weekEnd },
-    { title:'Später',            pred:t=>t.start && t.start>weekEnd },
-    { title:'Ohne Startdatum',   pred:t=>!t.start },
-  ];
-  const html=sections.map(s=>{
-    const items=base.filter(s.pred).sort((a,b)=>{
-      const x=(a.start||a.due||'9999'), y=(b.start||b.due||'9999');
-      if(x!==y) return x<y?-1:1;
-      return ehRank(a)-ehRank(b);
-    });
-    if(!items.length) return '';
-    return `<div class="focus-section"><h3>${s.title} <span class="col-count">${items.length}</span></h3><div class="backlog-grid">${items.map(cardHTML).join('')}</div></div>`;
-  }).join('');
-  return html || '<div class="cal-empty">Keine offenen Aufgaben.</div>';
-}
-
 /* ============================== GANTT ============================== */
 const GDAY_W = 34, GLABEL_W = 280;
 function gRange(a,b){ if(!a && !b) return null; return { start: a<b?a:b, end: a<b?b:a }; }
@@ -1694,7 +2023,7 @@ function toggleGantt(id){ if(ganttCollapsed.has(id)) ganttCollapsed.delete(id); 
 
 function renderGantt(){
   const el=document.getElementById('gantt');
-  const vis=tasks.filter(matchesFilter);
+  const vis=tasks.filter(matchesFilter).filter(inTimeScope);
   const dated=vis.map(t=>({t, r:ganttParse(t)})).filter(x=>x.r);
   const undatedCount=vis.length-dated.length;
   const todayD=new Date(); const today=ymd(todayD);
@@ -1742,7 +2071,11 @@ function renderGantt(){
   groups.forEach(g=>{
     const items=dated.filter(x=>(x.t.projectId||null)===g.id);
     if(!items.length) return;
-    rows+=`<div class="g-row"><div class="g-group">${esc(g.name)}</div><div class="g-track" style="width:${trackW}px"></div></div>`;
+    const grpKey='grp:'+(g.id||'__none');
+    const grpCollapsed=ganttCollapsed.has(grpKey);
+    const grpChev=`<span class="g-chev ${grpCollapsed?'':'open'}" style="margin-right:2px">${ic('chevron')}</span>`;
+    rows+=`<div class="g-row g-grouprow ${grpCollapsed?'is-collapsed':''}"><div class="g-group" onclick="toggleGantt('${grpKey}')" style="cursor:pointer">${grpChev}<span>${esc(g.name)}</span><span class="col-count">${items.length}</span></div><div class="g-track" style="width:${trackW}px"></div></div>`;
+    if(grpCollapsed) return;
     items.forEach(({t,r})=>{
       const color=(t.projectId&&projById(t.projectId))?projById(t.projectId).color:evColor(t);
       const done=(t.status==='done'||t.status==='discarded')?'opacity:.5;':'';
@@ -1808,7 +2141,7 @@ function drawGanttDeps(el){
 }
 
 /* ============================== ACTIONS ============================== */
-async function persist(){ await Store.save({ tasks, projects, people }); }
+async function persist(){ await Store.save({ tasks, projects, people, notes }); }
 const personById = id => people.find(p => p.id === id) || null;
 const selfPerson = () => people.find(p => p.self) || null;
 function personInitials(name){
@@ -2212,7 +2545,7 @@ async function ghConnect(){
       await Store.ghPut({tasks, projects, people}, 'tasks.json anlegen');
       state.textContent='Verbunden. tasks.json wurde mit deinen aktuellen Daten angelegt.';
     } else {
-      tasks=res.data.tasks||[]; projects=res.data.projects||[]; people=res.data.people||[];
+      tasks=res.data.tasks||[]; projects=res.data.projects||[]; people=res.data.people||[]; notes=res.data.notes||[];
       projects.forEach(p=>{ if(!p.role) p.role='meta'; }); normalizePrio();
       state.textContent='Verbunden. Daten aus dem Repo geladen ('+tasks.length+' Aufgaben).';
       render();
@@ -2234,7 +2567,7 @@ function ghDisconnect(){
 
 /* ---------- Export / Import ---------- */
 function exportJSON(){
-  const blob=new Blob([JSON.stringify({tasks,projects,people},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({tasks,projects,people,notes},null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
   a.href=url; a.download='task-dashboard.json'; a.click(); URL.revokeObjectURL(url);
 }
@@ -2242,8 +2575,8 @@ function importJSON(file){
   const r=new FileReader();
   r.onload=()=>{ try{
     const d=JSON.parse(r.result);
-    if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; }
-    else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; }
+    if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; notes=[]; }
+    else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; notes=(d.notes||[]).map(n=>({role:'meta',done:false,...n})); }
     normalizePrio();
     persist(); render(); alert('Import erfolgreich: '+tasks.length+' Aufgaben, '+projects.length+' Projekte, '+people.length+' Personen.');
   }catch(e){ alert('Import fehlgeschlagen: '+e.message); } };
@@ -2267,6 +2600,8 @@ filterOverlay.addEventListener('click',e=>{ if(e.target===filterOverlay) filterO
 // Gruppieren-Modal
 document.getElementById('groupModalClose').onclick = ()=>groupOverlay.classList.remove('open');
 groupOverlay.addEventListener('click',e=>{ if(e.target===groupOverlay) groupOverlay.classList.remove('open'); });
+document.getElementById('scopeModalClose').onclick = ()=>scopeOverlay.classList.remove('open');
+scopeOverlay.addEventListener('click',e=>{ if(e.target===scopeOverlay) closeScopeModal(); });
 // Suche (Lupe blendet Feld ein)
 document.getElementById('btnSearch').onclick = ()=>{
   const s=document.getElementById('headSearch'); s.classList.toggle('open');
@@ -2278,12 +2613,24 @@ document.getElementById('searchClose').onclick = ()=>{
 };
 
 document.querySelectorAll('.mtab-btn').forEach(b=>b.onclick=()=>setModalTab(b.dataset.mtab));
-document.getElementById('btnNewTab').onclick=()=>openNew();
+// „Neu"-Button mit Menü (Aufgabe / Notiz)
+const newMenu = document.getElementById('newMenu');
+function closeNewMenu(){ newMenu.classList.remove('open'); }
+document.getElementById('btnNewTab').onclick=(e)=>{ e.stopPropagation(); newMenu.classList.toggle('open'); };
+document.getElementById('newTask').onclick=()=>{ closeNewMenu(); openNew(); };
+document.getElementById('newNote').onclick=()=>{ closeNewMenu(); openNote(); };
+document.addEventListener('click',(e)=>{ if(!e.target.closest('.new-wrap')) closeNewMenu(); });
 // Aktive Ansicht neu zeichnen (Heute oder Legacy-View)
 function refreshActive(){ if(purpose==='heute') renderToday(); else renderCurrent(); renderHead(); }
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('mCancel').onclick=closeModal;
 document.getElementById('mDelete').onclick=deleteModal;
+// Notiz-Modal
+document.getElementById('nSave').onclick=saveNote;
+document.getElementById('nCancel').onclick=closeNote;
+document.getElementById('nDelete').onclick=deleteNote;
+noteOverlay.addEventListener('click',e=>{ if(e.target===noteOverlay) closeNote(); });
+document.getElementById('nTitle').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveNote(); } });
 document.getElementById('mProj').onchange=updateRoleField;
 document.getElementById('mClAdd').onclick=addCl;
 document.getElementById('mClInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addCl(); } });
@@ -2327,7 +2674,7 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
 (async function init(){
   document.querySelectorAll('[data-ic]').forEach(e=>{ e.innerHTML=ICON[e.dataset.ic]||''; });
   const data = await Store.load();
-  if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; }
+  if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; notes=data.notes||[]; }
   // Normalisierung: sicherstellen, dass alles eine Rolle hat
   projects.forEach(p => { if(!p.role) p.role='meta'; });
   if(!data || (tasks.length===0 && projects.length===0)){
