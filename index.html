@@ -493,6 +493,10 @@
   .note-card .note-hasnote { display: inline-flex; color: var(--text-muted); opacity: .7; }
   .note-card .note-hasnote .ic, .note-card .note-hasnote svg { width: 12px; height: 12px; }
   .note-card .meta:empty { display: none; }
+  /* Notiz-Personen-Chip: Person (grau) + kleiner Beziehungs-Tag (besprechen/Input/informieren) */
+  .person-chip.note-person { gap: 5px; }
+  .person-chip.note-person .rel-tag { font-size: .62rem; font-weight: 500; color: var(--text-muted);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0 6px; opacity: .9; }
   .note-check { position: absolute; top: 11px; right: 11px; width: 22px; height: 22px; padding: 0;
     border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer;
     color: transparent; display: inline-flex; align-items: center; justify-content: center; transition: all .12s; }
@@ -816,6 +820,13 @@
       <div class="field">
         <label for="nRole">Rolle</label>
         <select id="nRole"></select>
+      </div>
+      <div class="field">
+        <label>Personen (mit wem besprechen · von wem Input · wen informieren)</label>
+        <div class="tag-list" id="nPeople"></div>
+        <div class="addrow">
+          <select id="nPeopleSel"></select>
+        </div>
       </div>
     </div>
     <div class="foot">
@@ -1179,6 +1190,13 @@ function normalizeProjects(){
     if(!Array.isArray(p.members)) p.members=[];
     if(typeof p.goal!=='string') p.goal='';
     if(typeof p.desc!=='string') p.desc='';
+  });
+}
+// Notizen robust: people-Array (mit Beziehungstyp) sicherstellen (Altdaten ohne people)
+function normalizeNotes(){
+  notes.forEach(n=>{
+    if(!Array.isArray(n.people)) n.people=[];
+    else n.people = n.people.filter(pp=>pp && pp.personId).map(pp=>({personId:pp.personId, rel:pp.rel||'talk'}));
   });
 }
 function ehRank(t){ const q=quadrant(t).key; return {q1:0,q2:1,q3:2,q4:3}[q]; }
@@ -1838,11 +1856,18 @@ function projectCardHTML(p){
 
 /* ============================== NOTIZEN ============================== */
 function noteRole(n){ return roleById(n.role) ? n.role : 'meta'; }
+// Personen-Chips einer Notiz mit Beziehungstyp: grau (Person) + kleiner Typ-Tag (besprechen/Input/informieren)
+function notePeopleChips(n){
+  return (n.people||[]).map(pp=>{ const p=personById(pp.personId); if(!p) return '';
+    const rel = NOTE_REL_MAP[pp.rel] || 'besprechen mit';
+    return `<span class="person-chip note-person" title="${esc(p.name)} – ${rel}">${ic('user')}${esc(personLabel(p.name))}<span class="rel-tag">${rel}</span></span>`;
+  }).join('');
+}
 function noteCardHTML(n){
   const r = roleById(noteRole(n));
   const color = r ? r.color : 'var(--meta)';
   const roleBadgeHTML = r ? `<span class="tbadge" style="background:${color}">${r.code}</span>` : '';
-  // Wie Task-Cards: zugeklappt nur Titel; Text-Vorschau erst bei Hover (gekürzt, ruhig). Klick öffnet.
+  // Wie Task-Cards: zugeklappt nur Titel; Text-Vorschau + Personen erst bei Hover (ruhig). Klick öffnet.
   const preview = (n.text||'').replace(/\s+/g,' ').trim();
   const short = preview.length>90 ? preview.slice(0,90)+'…' : preview;
   const textHTML = short ? `<span class="note-preview">${esc(short)}</span>` : '';
@@ -1851,7 +1876,7 @@ function noteCardHTML(n){
     <button class="note-check ${n.done?'on':''}" title="${n.done?'Als offen markieren':'Als erledigt markieren'}"
       onclick="event.stopPropagation();toggleNoteDone('${n.id}')">${ICON.check}</button>
     <div class="tt">${esc(n.title)}</div>
-    <div class="meta">${roleBadgeHTML}${hasNote}${textHTML}</div>
+    <div class="meta">${roleBadgeHTML}${hasNote}${notePeopleChips(n)}${textHTML}</div>
   </div>`;
 }
 function toggleNoteDone(id){
@@ -1868,6 +1893,37 @@ function fillNoteRoleSelect(sel){
   const el = document.getElementById('nRole');
   el.innerHTML = ROLES.map(r=>`<option value="${r.id}" ${r.id===sel?'selected':''}>${r.label}</option>`).join('');
 }
+
+/* Notiz-Personen mit Beziehungstyp: talk = besprechen mit · input = Input von · info = informieren */
+const NOTE_REL = [
+  { id:'talk',  label:'besprechen mit' },
+  { id:'input', label:'Input von' },
+  { id:'info',  label:'informieren' },
+];
+const NOTE_REL_MAP = Object.fromEntries(NOTE_REL.map(r=>[r.id,r.label]));
+let modalNotePeople = [];   // [{personId, rel}]
+function renderNotePeople(){
+  document.getElementById('nPeople').innerHTML = modalNotePeople.map((pp,i)=>{
+    const p=personById(pp.personId); if(!p) return '';
+    const sel = NOTE_REL.map(r=>`<option value="${r.id}" ${pp.rel===r.id?'selected':''}>${r.label}</option>`).join('');
+    return `<div class="tag-row">
+      ${personChip(p, false)}
+      <span class="tr-name">${esc(p.name)}</span>
+      <select onchange="setNotePersonRel(${i}, this.value)" style="flex:0 0 auto;width:auto;font-size:.78rem;padding:4px 6px">${sel}</select>
+      <button type="button" onclick="removeNotePerson(${i})">✕</button>
+    </div>`;
+  }).join('');
+  const sel=document.getElementById('nPeopleSel');
+  const used=new Set(modalNotePeople.map(pp=>pp.personId));
+  const avail=people.filter(p=>!used.has(p.id));
+  sel.innerHTML = !people.length
+    ? '<option value="">— erst über „Personen" oben anlegen —</option>'
+    : '<option value="">Person hinzufügen …</option>' + avail.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+}
+function addNotePerson(){ const sel=document.getElementById('nPeopleSel'); const id=sel.value; if(!id) return; modalNotePeople.push({personId:id, rel:'talk'}); renderNotePeople(); }
+function setNotePersonRel(i,v){ modalNotePeople[i].rel=v; renderNotePeople(); }
+function removeNotePerson(i){ modalNotePeople.splice(i,1); renderNotePeople(); }
+
 function openNote(id){
   const editing = !!id;
   const n = editing ? notes.find(x=>x.id===id) : null;
@@ -1876,6 +1932,8 @@ function openNote(id){
   document.getElementById('nTitle').value = editing ? (n.title||'') : '';
   document.getElementById('nText').value  = editing ? (n.text||'')  : '';
   fillNoteRoleSelect(editing ? noteRole(n) : (filters.role || 'meta'));
+  modalNotePeople = editing ? (n.people||[]).map(x=>({personId:x.personId, rel:x.rel||'talk'})) : [];
+  renderNotePeople();
   document.getElementById('nDelete').style.display = editing ? '' : 'none';
   noteOverlay.classList.add('open');
   setTimeout(()=>document.getElementById('nTitle').focus(), 30);
@@ -1887,11 +1945,12 @@ function saveNote(){
   const text  = document.getElementById('nText').value.trim();
   const role  = document.getElementById('nRole').value || 'meta';
   if(!title){ document.getElementById('nTitle').focus(); return; }
+  const notePeople = modalNotePeople.map(x=>({personId:x.personId, rel:x.rel||'talk'}));
   if(id){
     const n = notes.find(x=>x.id===id);
-    if(n){ n.title=title; n.text=text; n.role=role; }
+    if(n){ n.title=title; n.text=text; n.role=role; n.people=notePeople; }
   } else {
-    notes.push({ id:uid('n'), title, text, role, done:false });
+    notes.push({ id:uid('n'), title, text, role, done:false, people:notePeople });
   }
   persist(); closeNote();
   // Neue Notiz sichtbar machen: in den Backlog-Tab wechseln, falls man woanders war
@@ -2786,7 +2845,7 @@ async function ghConnect(){
       state.textContent='Verbunden. tasks.json wurde mit deinen aktuellen Daten angelegt.';
     } else {
       tasks=res.data.tasks||[]; projects=res.data.projects||[]; people=res.data.people||[]; notes=res.data.notes||[];
-      normalizeProjects(); normalizePrio();
+      normalizeProjects(); normalizeNotes(); normalizePrio();
       state.textContent='Verbunden. Daten aus dem Repo geladen ('+tasks.length+' Aufgaben).';
       render();
     }
@@ -2817,7 +2876,7 @@ function importJSON(file){
     const d=JSON.parse(r.result);
     if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; notes=[]; }
     else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; notes=(d.notes||[]).map(n=>({role:'meta',done:false,...n})); }
-    normalizeProjects(); normalizePrio();
+    normalizeProjects(); normalizeNotes(); normalizePrio();
     persist(); render(); alert('Import erfolgreich: '+tasks.length+' Aufgaben, '+projects.length+' Projekte, '+people.length+' Personen.');
   }catch(e){ alert('Import fehlgeschlagen: '+e.message); } };
   r.readAsText(file);
@@ -2870,6 +2929,7 @@ document.getElementById('mDelete').onclick=deleteModal;
 document.getElementById('nSave').onclick=saveNote;
 document.getElementById('nCancel').onclick=closeNote;
 document.getElementById('nDelete').onclick=deleteNote;
+document.getElementById('nPeopleSel').onchange=addNotePerson;
 noteOverlay.addEventListener('click',e=>{ if(e.target===noteOverlay) closeNote(); });
 document.getElementById('nTitle').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveNote(); } });
 document.getElementById('mProj').onchange=updateRoleField;
@@ -2918,7 +2978,7 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
   const data = await Store.load();
   if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; notes=data.notes||[]; }
   // Normalisierung: Projekte aufs erweiterte Modell bringen (Rolle, status, members, goal, desc)
-  normalizeProjects();
+  normalizeProjects(); normalizeNotes();
   if(!data || (tasks.length===0 && projects.length===0)){
     const rel=n=>{ const d=new Date(); d.setDate(d.getDate()+n); return ymd(d); };
     people=[{ id:uid('pe'), name:'AlbBue', self:true }];
@@ -2935,7 +2995,7 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
       { id:uid(), title:'Idee für später (liegt im Backlog)', projectId:null, role:'meta', status:'backlog', important:false, urgent:false, start:'', due:'', created:todayStr() },
     ];
   }
-  normalizeProjects(); normalizePrio();
+  normalizeProjects(); normalizeNotes(); normalizePrio();
   await persist();
   render();
 })();
