@@ -199,9 +199,14 @@
   @media (max-width: 800px) { .stat-grid { grid-template-columns: 1fr; } .bar-label { flex-basis: 100px; } }
 
   /* Personen / Abhängigkeiten / Marker */
-  .person-chip { font-size: .71rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap;
-    background: #6b727e; color: #fff; }
-  .person-chip.approval { background: #b07a5f; }
+  /* Personen-Chip: ton-in-ton grau, Personen-Icon + Kürzel. Klar vom Prio-Chip (einzelner Buchstabe) unterscheidbar. */
+  .person-chip { font-size: .71rem; padding: 2px 8px 2px 6px; border-radius: 20px; font-weight: 600; white-space: nowrap;
+    background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border);
+    display: inline-flex; align-items: center; gap: 4px; }
+  .person-chip .ic { width: 11px; height: 11px; flex: none; }
+  .person-chip svg { stroke-width: 2; }
+  /* „Freigabe nötig" (nur bei Aufgaben): dezenter warmer Rand statt Vollfläche */
+  .person-chip.approval { border-color: #b07a5f; color: #a06a4a; }
   .marker { font-size: .71rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
   .marker.blocked { background: rgba(176,106,106,.18); color: var(--q1); }
   .marker.followup { background: rgba(176,122,95,.20); color: #a06a4a; }
@@ -495,6 +500,39 @@
   .note-check.on { background: #5f8a70; border-color: #5f8a70; color: #fff; }
   .switch-row .newbtn.note-new { margin-left: auto; }
 
+  /* ===== Projekte-Ansicht (Planen) – größere Cards, Infos offen sichtbar ===== */
+  .proj-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .proj-toolbar .pt-hint { font-size: .8rem; color: var(--text-muted); }
+  .proj-toolbar .spacer { flex: 1; }
+  .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--gap); align-items: start; }
+  .pcard { border: 1px solid var(--border); border-left: 3px solid var(--role, var(--border)); border-radius: var(--r);
+    background: var(--surface); padding: 16px 18px; cursor: pointer; transition: box-shadow .12s, transform .12s;
+    display: flex; flex-direction: column; gap: 11px; }
+  .pcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .pcard.is-done { opacity: .72; }
+  .pcard-head { display: flex; align-items: flex-start; gap: 9px; }
+  .pcard-title { font-size: 1rem; font-weight: 650; line-height: 1.3; word-break: break-word; flex: 1; }
+  .pcard-badges { display: flex; align-items: center; gap: 6px; flex: none; }
+  .pcard-goal { font-size: .82rem; color: var(--text-muted); line-height: 1.4; margin-top: -3px; }
+  /* Fortschritt */
+  .pcard-prog { display: flex; flex-direction: column; gap: 5px; }
+  .pcard-prog-top { display: flex; align-items: baseline; justify-content: space-between; font-size: .78rem; color: var(--text-muted); }
+  .pcard-prog-top b { color: var(--text); font-weight: 650; }
+  .pcard-bar { height: 6px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+  .pcard-bar > i { display: block; height: 100%; background: #5f8a70; border-radius: 4px; transition: width .2s; }
+  .pcard-bar.full > i { background: #6b8a6b; }
+  /* Info-Zeilen */
+  .pcard-line { display: flex; align-items: center; gap: 7px; font-size: .8rem; color: var(--text-muted); }
+  .pcard-line .ic { width: 13px; height: 13px; flex: none; }
+  .pcard-line.over { color: var(--red); font-weight: 600; }
+  .pcard-line .pl-label { color: var(--text-muted); }
+  .pcard-line .pl-val { color: var(--text); }
+  .pcard-members { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pcard-status { font-size: .64rem; padding: 2px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap;
+    background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+  .pcard-status.done { color: #5f8a70; border-color: #5f8a70; }
+  .pcard-empty { color: var(--text-muted); font-size: .9rem; padding: 44px 8px; text-align: center; line-height: 1.6; }
+
   /* Rolle-Modal Optionsliste */
   .opt-list { display: flex; flex-direction: column; gap: 6px; }
   .opt-row { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid var(--border);
@@ -564,7 +602,6 @@
       </div>
       <div class="sys">
         <button class="iconbtn" id="btnSearch" title="Suchen"><span class="ic" data-ic="search"></span></button>
-        <button class="iconbtn" id="btnProjects" title="Projekte verwalten"><span class="ic" data-ic="folder"></span></button>
         <button class="iconbtn" id="btnPeople" title="Personen verwalten"><span class="ic" data-ic="user"></span></button>
         <button class="iconbtn" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span class="gh-dot" id="ghDot"></span></button>
         <button class="iconbtn" id="btnImport" title="JSON importieren"><span class="ic" data-ic="upload"></span></button>
@@ -593,6 +630,7 @@
         <div class="new-menu" id="newMenu">
           <button class="new-opt" id="newTask"><span class="ic" data-ic="board"></span> Aufgabe</button>
           <button class="new-opt" id="newNote"><span class="ic" data-ic="edit"></span> Notiz</button>
+          <button class="new-opt" id="newProject"><span class="ic" data-ic="folder"></span> Projekt</button>
         </div>
       </div>
     </div>
@@ -619,6 +657,7 @@
     <div id="backlog" class="hidden"></div>
     <div id="calendar" class="hidden"></div>
     <div id="gantt" class="hidden"></div>
+    <div id="projekte" class="hidden"></div>
     <div id="statistik" class="hidden"></div>
     <div id="archiv" class="hidden"></div>
   </div><!-- /#legacyArea -->
@@ -787,20 +826,36 @@
   </div>
 </div>
 
-<!-- Projekt-Modal -->
+<!-- Projekt-Modal (Einzel-Projekt: anlegen / bearbeiten) -->
 <div class="overlay" id="projOverlay">
   <div class="modal">
-    <h2>Projekte verwalten</h2>
+    <h2 id="pModalTitle">Neues Projekt</h2>
     <div class="body">
-      <div class="proj-list" id="projList"></div>
-      <hr style="border:none;border-top:1px solid var(--border);margin:2px 0">
+      <input type="hidden" id="pId">
       <div class="field">
-        <label for="pName" id="pFormTitle">Neues Projekt</label>
+        <label for="pName">Name *</label>
         <input id="pName" type="text" placeholder="Projektname">
       </div>
       <div class="field">
-        <label for="pRole">Rolle</label>
-        <select id="pRole"></select>
+        <label for="pGoal">Projektziel (optional)</label>
+        <input id="pGoal" type="text" placeholder="Was soll am Ende erreicht sein?">
+      </div>
+      <div class="field">
+        <label for="pDesc">Beschreibung (optional)</label>
+        <textarea id="pDesc" placeholder="Kurzer Beschrieb …"></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label for="pRole">Rolle</label>
+          <select id="pRole"></select>
+        </div>
+        <div class="field">
+          <label for="pStatus">Status</label>
+          <select id="pStatus">
+            <option value="active">Aktiv</option>
+            <option value="done">Abgeschlossen</option>
+          </select>
+        </div>
       </div>
       <div class="field">
         <label>Farbe</label>
@@ -810,12 +865,19 @@
         <div class="field"><label for="pStart">Start</label><input id="pStart" type="date"></div>
         <div class="field"><label for="pEnd">Ende</label><input id="pEnd" type="date"></div>
       </div>
+      <div class="field">
+        <label>Mitglieder (mehrere möglich)</label>
+        <div class="tag-list" id="pMembers"></div>
+        <div class="addrow">
+          <select id="pMembersSel"></select>
+        </div>
+      </div>
     </div>
     <div class="foot">
-      <button class="ghost" id="pCancelEdit" style="display:none">Abbrechen</button>
+      <button class="ghost" id="pDelete" style="color:var(--q1);display:none">Löschen</button>
       <div class="spacer"></div>
-      <button class="ghost" id="projClose">Schließen</button>
-      <button class="primary" id="pSave">+ Anlegen</button>
+      <button class="ghost" id="projClose">Abbrechen</button>
+      <button class="primary" id="pSave">Speichern</button>
     </div>
   </div>
 </div>
@@ -934,8 +996,8 @@
       <div class="proj-list" id="peopleList"></div>
       <hr style="border:none;border-top:1px solid var(--border);margin:2px 0">
       <div class="field">
-        <label for="personName">Neue Person</label>
-        <input id="personName" type="text" placeholder="Name">
+        <label for="personName">Neue Person (Kürzel)</label>
+        <input id="personName" type="text" placeholder="z. B. AlbBue, LorInd">
       </div>
     </div>
     <div class="foot">
@@ -1108,6 +1170,16 @@ function quadrant(t){ const p=t.prio||'D'; return { key: PRIO_MAP[p]||'q4', labe
 function normalizePrio(){
   tasks.forEach(t=>{ if(!t.prio) t.prio = (t.important&&t.urgent)?'A':t.important?'B':t.urgent?'C':'D'; });
 }
+// Projekte robust auf das erweiterte Modell bringen (Altdaten ohne status/members/goal/desc)
+function normalizeProjects(){
+  projects.forEach(p=>{
+    if(!p.role) p.role='meta';
+    if(!p.status) p.status='active';
+    if(!Array.isArray(p.members)) p.members=[];
+    if(typeof p.goal!=='string') p.goal='';
+    if(typeof p.desc!=='string') p.desc='';
+  });
+}
 function ehRank(t){ const q=quadrant(t).key; return {q1:0,q2:1,q3:2,q4:3}[q]; }
 function projById(id){ return projects.find(p=>p.id===id) || null; }
 function migrateTasks(arr){
@@ -1135,6 +1207,7 @@ const PURPOSE_VIEWS = {
     { id:'board',    t:'Board',    s:'Kanban',        icon:'board' },
     { id:'calendar', t:'Kalender', s:'Monat · Woche', icon:'calendar' },
     { id:'gantt',    t:'Gantt',    s:'Zeitachse',     icon:'gantt' },
+    { id:'projekte', t:'Projekte', s:'Übersicht',     icon:'folder' },
   ],
   auswerten: [
     { id:'statistik', t:'Statistik', s:'Auslastung', icon:'stats' },
@@ -1166,7 +1239,7 @@ function renderViewSwitchRow(){
     </button>`).join('');
   // Zeitraum-Kachel: bei Planen für alle drei Ansichten (Board/Kalender/Gantt)
   let scopeTile = '';
-  if(purpose==='planen'){
+  if(purpose==='planen' && view!=='projekte'){  // Zeitregler wirkt nicht auf die Projekte-Übersicht
     const active = timeScope!=='all';
     scopeTile = `<button class="ctrl-tile scope-tile ${active?'is-active':''}" onclick="openScopeModal()">
       <span class="ic-wrap"><span class="ic">${ICON.calendar||''}</span></span>
@@ -1251,7 +1324,7 @@ function setTimeScope(s){
 function setView(v){ view = v; renderViewSwitchRow(); renderCurrent(); }
 function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderBoard(); }
 function renderCurrent(){
-  ['board','backlog','calendar','gantt','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
+  ['board','backlog','calendar','gantt','projekte','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
   const isBacklog = view==='bl_all' || view==='bl_tasks' || view==='bl_notes';
   const domId = isBacklog ? 'backlog' : view;
   const cur=document.getElementById(domId); if(cur) cur.classList.remove('hidden');
@@ -1259,6 +1332,7 @@ function renderCurrent(){
   else if(isBacklog) renderBacklog();
   else if(view==='calendar') renderCalendar();
   else if(view==='gantt') renderGantt();
+  else if(view==='projekte') renderProjekte();
   else if(view==='statistik') renderStatistik();
   else if(view==='archiv') renderArchiv();
 }
@@ -1667,6 +1741,93 @@ function backlogCardHTML(t){
     </div></div>`;
 }
 
+/* ============================== PROJEKTE-ANSICHT ============================== */
+// Sichtbarkeit abgeschlossener Projekte (Default: nur aktive zeigen)
+let showDoneProjects = false;
+function toggleDoneProjects(){ showDoneProjects=!showDoneProjects; renderProjekte(); }
+function renderProjekte(){
+  const el=document.getElementById('projekte');
+  // Rollenfilter aus dem Kopf respektieren; Projekt-Status nach Toggle
+  let pool = projects.filter(p=>!filters.role || p.role===filters.role);
+  const doneCount = pool.filter(p=>projStatus(p)==='done').length;
+  const shown = showDoneProjects ? pool : pool.filter(p=>projStatus(p)!=='done');
+  // Anlegen läuft über „+ Neu → Projekt" (kein redundanter Button hier). Nur Zähler + Abgeschlossene-Toggle.
+  const toolbar = `<div class="proj-toolbar">
+    <span class="pt-hint">${shown.length} Projekt(e)</span>
+    <span class="spacer"></span>
+    ${doneCount ? `<button class="ghost sm" onclick="toggleDoneProjects()">${showDoneProjects?'Abgeschlossene ausblenden':`Abgeschlossene zeigen (${doneCount})`}</button>` : ''}
+  </div>`;
+  if(!shown.length){
+    const msg = pool.length && !showDoneProjects
+      ? 'Keine aktiven Projekte.<br>Alle abgeschlossen? Mit „Abgeschlossene zeigen" einblenden – oder mit „+ Neu → Projekt" starten.'
+      : 'Noch keine Projekte.<br>Leg mit „+ Neu → Projekt" das erste an.';
+    el.innerHTML = toolbar + `<div class="pcard-empty">${msg}</div>`;
+    return;
+  }
+  // Nach Rolle gruppiert – wie Backlog/Board. Feste ROLES-Reihenfolge, nur Rollen mit Projekten.
+  // Innerhalb: aktive zuerst, dann alphabetisch.
+  const sortProj = (a,b)=>{
+    const sa=projStatus(a)==='done'?1:0, sb=projStatus(b)==='done'?1:0;
+    if(sa!==sb) return sa-sb;
+    return (a.name||'').localeCompare(b.name||'','de');
+  };
+  const sections = ROLES.map(r=>{
+    const items = shown.filter(p=>(p.role||'meta')===r.id).sort(sortProj);
+    if(!items.length) return '';
+    return `<section class="today-sec">
+      <div class="today-sechead" style="cursor:default">
+        <span class="dot" style="width:9px;height:9px;border-radius:50%;background:${r.color};flex:none"></span>
+        <span class="title">${r.label}</span>
+        <span class="count">${items.length}</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="proj-grid">${items.map(projectCardHTML).join('')}</div>
+    </section>`;
+  }).filter(Boolean).join('<div class="rule soft"></div>');
+  el.innerHTML = toolbar + sections;
+}
+function projectCardHTML(p){
+  const r = roleById(p.role);
+  const roleColor = r ? r.color : 'var(--border)';
+  // Rollen-Badge entfällt: die Rolle steht schon in der Sektions-Überschrift (wie Backlog). Rollen-Rand links bleibt.
+  const st = projectStats(p.id);
+  const isDone = projStatus(p)==='done';
+  const statusHTML = isDone ? `<span class="pcard-status done">${ic('check')} abgeschlossen</span>` : '';
+  const pct = st.total ? Math.round(st.done/st.total*100) : 0;
+  const barFull = st.total && st.done===st.total ? 'full' : '';
+  const progTop = st.total
+    ? `<span><b>${st.done}</b> von ${st.total} erledigt</span><span>${pct}%</span>`
+    : `<span>Noch keine Aufgaben</span><span></span>`;
+  const progBar = `<div class="pcard-bar ${barFull}"><i style="width:${st.total?pct:0}%"></i></div>`;
+  // Nächste fällige Aufgabe
+  const nextHTML = st.next
+    ? `<div class="pcard-line"><span class="ic">${ICON.calendar}</span><span class="pl-label">Nächste:</span><span class="pl-val">${esc(st.next.title)}${st.next.due?` · ${fmtDate(st.next.due)}`:''}</span></div>`
+    : (st.open>0 ? `<div class="pcard-line"><span class="ic">${ICON.board}</span><span class="pl-val">${st.open} offen, ohne Datum</span></div>` : '');
+  // Überfällig (nur wenn >0)
+  const overHTML = st.overdue>0
+    ? `<div class="pcard-line over"><span class="ic">${ICON.bell}</span>${st.overdue} überfällig</div>` : '';
+  // Zeitraum
+  const range = (p.start||p.end) ? `${p.start?fmtDate(p.start):'…'} – ${p.end?fmtDate(p.end):'…'}` : '';
+  const rangeHTML = range ? `<div class="pcard-line"><span class="ic">${ICON.calendar}</span>${range}</div>` : '';
+  // Mitglieder
+  const members = (p.members||[]).map(id=>personById(id)).filter(Boolean);
+  const membersHTML = members.length
+    ? `<div class="pcard-members">${members.map(m=>personChip(m,false)).join('')}</div>` : '';
+  const goalHTML = p.goal ? `<div class="pcard-goal">${esc(p.goal)}</div>` : '';
+  return `<div class="pcard ${isDone?'is-done':''}" style="--role:${roleColor}" onclick="openProject('${p.id}')">
+    <div class="pcard-head">
+      <div class="pcard-title">${esc(p.name)}</div>
+      ${statusHTML?`<div class="pcard-badges">${statusHTML}</div>`:''}
+    </div>
+    ${goalHTML}
+    <div class="pcard-prog">
+      <div class="pcard-prog-top">${progTop}</div>
+      ${progBar}
+    </div>
+    ${nextHTML}${overHTML}${rangeHTML}${membersHTML}
+  </div>`;
+}
+
 /* ============================== NOTIZEN ============================== */
 function noteRole(n){ return roleById(n.role) ? n.role : 'meta'; }
 function noteCardHTML(n){
@@ -1835,7 +1996,7 @@ function boardCardHTML(t){
   // Datum: immer sichtbar unter dem Titel
   const dateHTML = t.due ? `<div class="tcard-date ${over?'over':''}">${fmtDate(t.due)}</div>` : '';
   const runHTML = t.status==='in_progress' ? `<span class="running">läuft</span>` : '';
-  const projHTML = (()=>{ const p=projById(t.projectId); return p?`<span class="tbadge" style="background:${p.color}">${esc(p.name)}</span>`:''; })();
+  const projHTML = (()=>{ const p=projById(t.projectId); return p?`<span class="tbadge" style="background:${p.color};cursor:pointer" title="Projekt öffnen" onclick="event.stopPropagation();openProject('${p.id}')">${esc(p.name)}</span>`:''; })();
   return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
     <div class="tt">${esc(t.title)}</div>${dateHTML}
     <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
@@ -2074,7 +2235,9 @@ function renderGantt(){
     const grpKey='grp:'+(g.id||'__none');
     const grpCollapsed=ganttCollapsed.has(grpKey);
     const grpChev=`<span class="g-chev ${grpCollapsed?'':'open'}" style="margin-right:2px">${ic('chevron')}</span>`;
-    rows+=`<div class="g-row g-grouprow ${grpCollapsed?'is-collapsed':''}"><div class="g-group" onclick="toggleGantt('${grpKey}')" style="cursor:pointer">${grpChev}<span>${esc(g.name)}</span><span class="col-count">${items.length}</span></div><div class="g-track" style="width:${trackW}px"></div></div>`;
+    // Projektname öffnet das Projekt-Modal (nur echte Projekte, nicht „Ohne Projekt")
+    const grpOpen = g.id ? ` onclick="event.stopPropagation();openProject('${g.id}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px" title="Projekt öffnen"` : '';
+    rows+=`<div class="g-row g-grouprow ${grpCollapsed?'is-collapsed':''}"><div class="g-group" onclick="toggleGantt('${grpKey}')" style="cursor:pointer">${grpChev}<span${grpOpen}>${esc(g.name)}</span><span class="col-count">${items.length}</span></div><div class="g-track" style="width:${trackW}px"></div></div>`;
     if(grpCollapsed) return;
     items.forEach(({t,r})=>{
       const color=(t.projectId&&projById(t.projectId))?projById(t.projectId).color:evColor(t);
@@ -2144,8 +2307,19 @@ function drawGanttDeps(el){
 async function persist(){ await Store.save({ tasks, projects, people, notes }); }
 const personById = id => people.find(p => p.id === id) || null;
 const selfPerson = () => people.find(p => p.self) || null;
-function personInitials(name){
-  return (name||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+// Anzeige-Kürzel einer Person = der erfasste Name selbst (Albrecht erfasst Personen als Kürzel, z. B. AlbBue).
+// Fallback für Altdaten mit langem Namen: erste 6 Zeichen des ersten Worts.
+function personLabel(name){
+  const n=(name||'?').trim();
+  if(!n) return '?';
+  if(/\s/.test(n)) return n.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase(); // Altdaten „Vor Nach"
+  return n; // Kürzel unverändert zeigen
+}
+// Einheitlicher Personen-Chip: grau, Personen-Icon + Kürzel. approval-Rand nur bei Aufgaben.
+function personChip(person, approval, extraTitle){
+  if(!person) return '';
+  const title = esc(person.name||'') + (approval?' – Freigabe nötig':'') + (extraTitle||'');
+  return `<span class="person-chip ${approval?'approval':''}" title="${title}">${ic('user')}${esc(personLabel(person.name))}</span>`;
 }
 function setStatus(id, val){ const t=tasks.find(x=>x.id===id); if(t){ const old=t.status; t.status=val; setArchivedAt(t, old, val); maybeRecur(t, old, val); persist(); render(); } }
 
@@ -2204,7 +2378,7 @@ function renderModalPeople(){
   document.getElementById('mPeople').innerHTML = modalPeople.map((pp,i)=>{
     const p=personById(pp.personId); if(!p) return '';
     return `<div class="tag-row">
-      <span class="person-chip ${pp.approval?'approval':''}">${esc(personInitials(p.name))}</span>
+      ${personChip(p, pp.approval)}
       <span class="tr-name">${esc(p.name)}</span>
       <label><input type="checkbox" ${pp.approval?'checked':''} onchange="toggleApproval(${i})"> Freigabe</label>
       <button type="button" onclick="removePerson(${i})">✕</button>
@@ -2280,7 +2454,7 @@ function followUpMarker(t){
 }
 function peopleChips(t){
   return (t.people||[]).map(pp=>{ const p=personById(pp.personId); if(!p) return '';
-    return `<span class="person-chip ${pp.approval?'approval':''}" title="${esc(p.name)}${pp.approval?' – Freigabe nötig':''}">${esc(personInitials(p.name))}</span>`;
+    return personChip(p, pp.approval);
   }).join('');
 }
 function recurMarker(t){
@@ -2318,7 +2492,7 @@ function openPeople(){ renderPeopleList(); peopleOverlay.classList.add('open'); 
 function renderPeopleList(){
   document.getElementById('peopleList').innerHTML = people.length ? people.map(p=>`
     <div class="proj-row">
-      <span class="person-chip">${esc(personInitials(p.name))}</span>
+      ${personChip(p, false)}
       <span class="pn">${esc(p.name)}</span>
       <span class="pd"></span>
       <button class="sm ghost ${p.self?'primary':''}" title="Als „ich" markieren – wird bei neuen Aufgaben vorausgewählt" onclick="setSelf('${p.id}')">${p.self?'ich ✓':'ich?'}</button>
@@ -2447,71 +2621,125 @@ function deleteModal(){
   if(id && confirm('Diese Aufgabe wirklich löschen?')){ tasks=tasks.filter(x=>x.id!==id); persist(); render(); closeModal(); }
 }
 
-/* ---------- Projekt-Modal ---------- */
+/* ---------- Projekt-Helfer (Aufgaben-Kennzahlen je Projekt) ---------- */
+function projectTasks(pid){ return tasks.filter(t=>t.projectId===pid); }
+// zählt offen/erledigt/überfällig + nächste fällige Aufgabe eines Projekts
+function projectStats(pid){
+  const ts=projectTasks(pid);
+  const closed = ts.filter(t=>t.status==='done'||t.status==='discarded');
+  const done = ts.filter(t=>t.status==='done');
+  const open = ts.filter(t=>t.status!=='done'&&t.status!=='discarded');
+  const overdue = open.filter(isOverdue);
+  const next = open.filter(t=>t.due).sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:ehRank(a)-ehRank(b))[0] || null;
+  return { total:ts.length, closed:closed.length, done:done.length, open:open.length,
+           overdue:overdue.length, next, allClosed: ts.length>0 && open.length===0 };
+}
+function projStatus(p){ return p.status==='done' ? 'done' : 'active'; }
+
+/* ---------- Projekt-Modal (Einzel-Projekt) ---------- */
 const projOverlay = document.getElementById('projOverlay');
+let modalMembers = [];
 function renderSwatches(){
   document.getElementById('pSwatches').innerHTML = PALETTE.map(c=>
     `<div class="sw ${c===pColor?'sel':''}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
 }
 function pickColor(c){ pColor=c; renderSwatches(); }
-function renderProjList(){
-  const list=document.getElementById('projList');
-  list.innerHTML = projects.length ? projects.map(p=>{
-    const range = (p.start||p.end) ? `${p.start?fmtDate(p.start):'…'} – ${p.end?fmtDate(p.end):'…'}` : '';
-    const rc = roleById(p.role);
-    const rb = rc ? `<span class="badge" style="background:${rc.color};color:#fff;font-size:.68rem">${rc.code}</span>` : '';
-    return `<div class="proj-row">
-      <span class="proj-swatch" style="background:${p.color}"></span>
-      <span class="pn">${esc(p.name)}</span>
-      ${rb}
-      <span class="pd">${range}</span>
-      <button class="icon ghost sm" title="Bearbeiten" onclick="editProject('${p.id}')">${ic('edit')}</button>
-      <button class="icon ghost sm" title="Löschen" style="color:var(--q1)" onclick="delProject('${p.id}')">${ic('trash')}</button>
+function renderProjMembers(){
+  document.getElementById('pMembers').innerHTML = modalMembers.map((pid,i)=>{
+    const p=personById(pid); if(!p) return '';
+    return `<div class="tag-row">
+      ${personChip(p, false)}
+      <span class="tr-name">${esc(p.name)}</span>
+      <button type="button" onclick="removeProjMember(${i})">✕</button>
     </div>`;
-  }).join('') : '<div class="empty-col">Noch keine Projekte.</div>';
+  }).join('');
+  const sel=document.getElementById('pMembersSel');
+  const used=new Set(modalMembers);
+  const avail=people.filter(p=>!used.has(p.id));
+  sel.innerHTML = !people.length
+    ? '<option value="">— erst über „Personen" oben anlegen —</option>'
+    : '<option value="">Mitglied hinzufügen …</option>' + avail.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
 }
-function openProjects(){
+function addProjMember(){ const sel=document.getElementById('pMembersSel'); const id=sel.value; if(!id) return; modalMembers.push(id); renderProjMembers(); }
+function removeProjMember(i){ modalMembers.splice(i,1); renderProjMembers(); }
+
+function fillProjRoleSelect(){
   document.getElementById('pRole').innerHTML = ROLES.map(r=>`<option value="${r.id}">${r.code} – ${r.label}</option>`).join('');
-  resetProjForm(); renderProjList(); renderSwatches(); projOverlay.classList.add('open');
 }
-function resetProjForm(){
-  pEditId=null; pColor=PALETTE[0];
-  document.getElementById('pFormTitle').textContent='Neues Projekt';
+// Neues Projekt anlegen
+function openNewProject(){
+  fillProjRoleSelect();
+  pEditId=null; pColor=PALETTE[0]; modalMembers=[];
+  document.getElementById('pModalTitle').textContent='Neues Projekt';
+  document.getElementById('pId').value='';
   document.getElementById('pName').value='';
+  document.getElementById('pGoal').value='';
+  document.getElementById('pDesc').value='';
   document.getElementById('pRole').value = filters.role || 'meta';
+  document.getElementById('pStatus').value='active';
   document.getElementById('pStart').value='';
   document.getElementById('pEnd').value='';
-  document.getElementById('pSave').textContent='+ Anlegen';
-  document.getElementById('pCancelEdit').style.display='none';
-  renderSwatches();
+  document.getElementById('pDelete').style.display='none';
+  renderSwatches(); renderProjMembers();
+  projOverlay.classList.add('open');
+  setTimeout(()=>document.getElementById('pName').focus(),40);
 }
-function editProject(id){
+// Bestehendes Projekt bearbeiten
+function openProject(id){
   const p=projById(id); if(!p) return;
-  pEditId=id; pColor=p.color;
-  document.getElementById('pFormTitle').textContent='Projekt bearbeiten';
-  document.getElementById('pName').value=p.name;
+  fillProjRoleSelect();
+  pEditId=id; pColor=p.color||PALETTE[0]; modalMembers=[...(p.members||[])];
+  document.getElementById('pModalTitle').textContent='Projekt bearbeiten';
+  document.getElementById('pId').value=p.id;
+  document.getElementById('pName').value=p.name||'';
+  document.getElementById('pGoal').value=p.goal||'';
+  document.getElementById('pDesc').value=p.desc||'';
   document.getElementById('pRole').value=p.role||'meta';
+  document.getElementById('pStatus').value=projStatus(p);
   document.getElementById('pStart').value=p.start||'';
   document.getElementById('pEnd').value=p.end||'';
-  document.getElementById('pSave').textContent='Speichern';
-  document.getElementById('pCancelEdit').style.display='';
-  renderSwatches();
+  document.getElementById('pDelete').style.display='';
+  renderSwatches(); renderProjMembers();
+  projOverlay.classList.add('open');
 }
+function closeProjModal(){ projOverlay.classList.remove('open'); }
 function saveProject(){
   const name=document.getElementById('pName').value.trim();
   if(!name){ document.getElementById('pName').focus(); return; }
-  const data={ name, role:document.getElementById('pRole').value, color:pColor, start:document.getElementById('pStart').value, end:document.getElementById('pEnd').value };
-  if(pEditId){ Object.assign(projById(pEditId), data); }
+  const id=document.getElementById('pId').value;
+  const wantStatus=document.getElementById('pStatus').value;
+  // Regel: „Abgeschlossen" nur erlaubt, wenn keine offenen Aufgaben mehr da sind.
+  if(wantStatus==='done' && id){
+    const st=projectStats(id);
+    if(st.open>0){
+      alert(`Dieses Projekt hat noch ${st.open} offene Aufgabe(n).\nBitte erst alle Aufgaben abschließen (oder verwerfen), dann kannst du das Projekt abschließen.`);
+      document.getElementById('pStatus').value='active';
+      return;
+    }
+  }
+  const data={
+    name,
+    goal:document.getElementById('pGoal').value.trim(),
+    desc:document.getElementById('pDesc').value.trim(),
+    role:document.getElementById('pRole').value,
+    status:wantStatus,
+    color:pColor,
+    start:document.getElementById('pStart').value,
+    end:document.getElementById('pEnd').value,
+    members:[...modalMembers],
+  };
+  if(id){ Object.assign(projById(id), data); }
   else { projects.push({ id:uid('p'), ...data }); }
-  persist(); resetProjForm(); renderProjList(); renderBoard();
+  persist(); closeProjModal(); render();
 }
-function delProject(id){
+function deleteProject(){
+  const id=document.getElementById('pId').value;
   const p=projById(id); if(!p) return;
-  const n=tasks.filter(t=>t.projectId===id).length;
+  const n=projectTasks(id).length;
   if(confirm(`Projekt „${p.name}" löschen?` + (n?`\n${n} Aufgabe(n) bleiben erhalten, verlieren aber die Zuordnung.`:''))){
     tasks.forEach(t=>{ if(t.projectId===id){ t.role = p.role; t.projectId=null; } });
     projects=projects.filter(x=>x.id!==id);
-    persist(); renderProjList(); renderBoard();
+    persist(); closeProjModal(); render();
   }
 }
 
@@ -2546,7 +2774,7 @@ async function ghConnect(){
       state.textContent='Verbunden. tasks.json wurde mit deinen aktuellen Daten angelegt.';
     } else {
       tasks=res.data.tasks||[]; projects=res.data.projects||[]; people=res.data.people||[]; notes=res.data.notes||[];
-      projects.forEach(p=>{ if(!p.role) p.role='meta'; }); normalizePrio();
+      normalizeProjects(); normalizePrio();
       state.textContent='Verbunden. Daten aus dem Repo geladen ('+tasks.length+' Aufgaben).';
       render();
     }
@@ -2577,7 +2805,7 @@ function importJSON(file){
     const d=JSON.parse(r.result);
     if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; notes=[]; }
     else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; notes=(d.notes||[]).map(n=>({role:'meta',done:false,...n})); }
-    normalizePrio();
+    normalizeProjects(); normalizePrio();
     persist(); render(); alert('Import erfolgreich: '+tasks.length+' Aufgaben, '+projects.length+' Projekte, '+people.length+' Personen.');
   }catch(e){ alert('Import fehlgeschlagen: '+e.message); } };
   r.readAsText(file);
@@ -2619,6 +2847,7 @@ function closeNewMenu(){ newMenu.classList.remove('open'); }
 document.getElementById('btnNewTab').onclick=(e)=>{ e.stopPropagation(); newMenu.classList.toggle('open'); };
 document.getElementById('newTask').onclick=()=>{ closeNewMenu(); openNew(); };
 document.getElementById('newNote').onclick=()=>{ closeNewMenu(); openNote(); };
+document.getElementById('newProject').onclick=()=>{ closeNewMenu(); openNewProject(); };
 document.addEventListener('click',(e)=>{ if(!e.target.closest('.new-wrap')) closeNewMenu(); });
 // Aktive Ansicht neu zeichnen (Heute oder Legacy-View)
 function refreshActive(){ if(purpose==='heute') renderToday(); else renderCurrent(); renderHead(); }
@@ -2656,11 +2885,12 @@ document.getElementById('personName').addEventListener('keydown',e=>{ if(e.key==
 peopleOverlay.addEventListener('click',e=>{ if(e.target===peopleOverlay) peopleOverlay.classList.remove('open'); });
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
 
-document.getElementById('btnProjects').onclick=openProjects;
-document.getElementById('projClose').onclick=()=>projOverlay.classList.remove('open');
-document.getElementById('pCancelEdit').onclick=resetProjForm;
+document.getElementById('projClose').onclick=closeProjModal;
 document.getElementById('pSave').onclick=saveProject;
-projOverlay.addEventListener('click',e=>{ if(e.target===projOverlay) projOverlay.classList.remove('open'); });
+document.getElementById('pDelete').onclick=deleteProject;
+document.getElementById('pMembersSel').onchange=addProjMember;
+document.getElementById('pName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveProject(); } });
+projOverlay.addEventListener('click',e=>{ if(e.target===projOverlay) closeProjModal(); });
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); roleOverlay.classList.remove('open'); filterOverlay.classList.remove('open'); groupOverlay.classList.remove('open'); } });
 
@@ -2675,25 +2905,25 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
   document.querySelectorAll('[data-ic]').forEach(e=>{ e.innerHTML=ICON[e.dataset.ic]||''; });
   const data = await Store.load();
   if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; notes=data.notes||[]; }
-  // Normalisierung: sicherstellen, dass alles eine Rolle hat
-  projects.forEach(p => { if(!p.role) p.role='meta'; });
+  // Normalisierung: Projekte aufs erweiterte Modell bringen (Rolle, status, members, goal, desc)
+  normalizeProjects();
   if(!data || (tasks.length===0 && projects.length===0)){
     const rel=n=>{ const d=new Date(); d.setDate(d.getDate()+n); return ymd(d); };
-    people=[{ id:uid('pe'), name:'Ich', self:true }];
+    people=[{ id:uid('pe'), name:'AlbBue', self:true }];
     projects=[
       { id:uid('p'), name:'Dashboard-Aufbau', role:'meta', color:PALETTE[0], start:rel(-3), end:rel(10) },
       { id:uid('p'), name:'Spenderbetreuung', role:'dc', color:PALETTE[2], start:rel(0), end:rel(14) },
     ];
     tasks=[
       { id:uid(), title:'Dashboard ausprobieren: Rollen, Status, Filter', projectId:projects[0].id, role:null, status:'inbox', important:true, urgent:true, start:rel(-2), due:todayStr(), created:todayStr() },
-      { id:uid(), title:'Ein eigenes Projekt anlegen (Button „Projekte")', projectId:projects[0].id, role:null, status:'todo', important:true, urgent:false, start:rel(1), due:rel(4), created:todayStr(),
+      { id:uid(), title:'Ein eigenes Projekt anlegen („+ Neu → Projekt")', projectId:projects[0].id, role:null, status:'todo', important:true, urgent:false, start:rel(1), due:rel(4), created:todayStr(),
         subtasks:[{title:'Projektname überlegen',status:'done',due:''},{title:'Rolle & Farbe wählen',status:'doing',due:''},{title:'Erste Aufgaben zuordnen',status:'open',due:rel(4)}] },
       { id:uid(), title:'Beispiel: warte auf Rückmeldung eines Spenders', projectId:projects[1].id, role:null, status:'waiting', important:false, urgent:true, start:rel(0), due:rel(7), followUp:rel(2), created:todayStr() },
       { id:uid(), title:'Projektlose ICT-Aufgabe (Rolle direkt gesetzt)', projectId:null, role:'ict', status:'todo', important:false, urgent:false, start:rel(3), due:rel(9), created:todayStr() },
       { id:uid(), title:'Idee für später (liegt im Backlog)', projectId:null, role:'meta', status:'backlog', important:false, urgent:false, start:'', due:'', created:todayStr() },
     ];
   }
-  normalizePrio();
+  normalizeProjects(); normalizePrio();
   await persist();
   render();
 })();
