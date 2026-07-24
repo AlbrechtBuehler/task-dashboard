@@ -283,6 +283,14 @@
   @media (max-width: 640px) { .cal-cell { min-height: 62px; } .cal-week { grid-template-columns: 1fr; } }
 
   /* Gantt */
+  .g-zoom { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .g-zoom-lbl { font-size: .66rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; }
+  .g-zoom-btn { width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 1.05rem; line-height: 1; display: inline-flex;
+    align-items: center; justify-content: center; cursor: pointer; transition: .15s; }
+  .g-zoom-btn:hover:not(:disabled) { border-color: var(--accent); }
+  .g-zoom-btn:disabled { opacity: .4; cursor: default; }
+  .g-zoom-cur { font-size: .82rem; font-weight: 600; min-width: 64px; text-align: center; }
   .gantt-wrap { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: var(--r); background: var(--surface);
     min-height: calc(100vh - 240px); }
   .gantt-inner { position: relative; min-height: calc(100vh - 242px); }
@@ -309,8 +317,10 @@
   .g-mseg { box-sizing: border-box; border-right: 1px solid var(--border); font-size: .72rem; font-weight: 700; padding: 4px 8px;
     white-space: nowrap; overflow: hidden; }
   .g-days { display: flex; }
-  .g-day { box-sizing: border-box; min-width: 34px; max-width: 34px; text-align: center; font-size: .64rem; color: var(--text-muted);
-    padding: 2px 0; border-right: 1px solid var(--border); line-height: 1.2; }
+  .g-day { box-sizing: border-box; text-align: center; font-size: .64rem; color: var(--text-muted);
+    padding: 2px 0; border-right: 1px solid var(--border); line-height: 1.2; overflow: hidden; }
+  .g-day.zoom-compact { font-size: .56rem; }
+  .g-day.zoom-compact .g-wd { display: none; }   /* bei sehr schmal: nur Tageszahl */
   .g-day .g-wd { display: block; font-size: .56rem; opacity: .75; }
   .g-day.we { background: rgba(120,130,150,.08); }
   .g-day.today { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
@@ -2236,7 +2246,22 @@ function calDay(){
     : '<div class="cal-empty">Keine Aufgaben an diesem Tag (weder Start noch Fälligkeit).</div>';
 }
 /* ============================== GANTT ============================== */
-const GDAY_W = 34, GLABEL_W = 280;
+const GLABEL_W = 280;
+// Zoom: feste Stufen (Pixel pro Tag). Stufe wird in localStorage gemerkt.
+const GANTT_ZOOM = [
+  { key:'compact', label:'Kompakt', dayW:16 },
+  { key:'normal',  label:'Normal',  dayW:34 },
+  { key:'wide',    label:'Weit',    dayW:60 },
+];
+let ganttZoom = (()=>{ try{ return localStorage.getItem('taskDashboard.ganttZoom') || 'normal'; }catch(e){ return 'normal'; } })();
+function ganttZoomIdx(){ const i=GANTT_ZOOM.findIndex(z=>z.key===ganttZoom); return i<0?1:i; }
+function GDAY(){ return GANTT_ZOOM[ganttZoomIdx()].dayW; }
+function setGanttZoom(dir){
+  const i=ganttZoomIdx(); const ni=Math.max(0, Math.min(GANTT_ZOOM.length-1, i+dir));
+  ganttZoom=GANTT_ZOOM[ni].key;
+  try{ localStorage.setItem('taskDashboard.ganttZoom', ganttZoom); }catch(e){}
+  renderGantt();
+}
 function gRange(a,b){ if(!a && !b) return null; return { start: a<b?a:b, end: a<b?b:a }; }
 function stRange(s){ return gRange(s.start||s.due, s.due||s.start); }
 function taskOwnRange(t){ return gRange(t.start||t.due, t.due||t.start); }
@@ -2274,13 +2299,13 @@ function renderGantt(){
   if(endD<hi) endD=hi;
   startD.setHours(0,0,0,0); endD.setHours(0,0,0,0);
   const totalDays=Math.round((endD-startD)/86400000)+1;
-  const trackW=totalDays*GDAY_W;
+  const trackW=totalDays*GDAY();
   const dayIdx=ds=>Math.round((new Date(ds+'T00:00:00')-startD)/86400000);
   const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
 
   // Zwei-Zeilen-Kopf: Monat (oben, über die Tage) + Wochentag/Tag (unten)
   let monthRow='', dayRow='', segDays=0, segLabel='';
-  const flushSeg=()=>{ if(segDays) monthRow+=`<div class="g-mseg" style="width:${segDays*GDAY_W}px">${segLabel}</div>`; };
+  const flushSeg=()=>{ if(segDays) monthRow+=`<div class="g-mseg" style="width:${segDays*GDAY()}px">${segLabel}</div>`; };
   for(let i=0;i<totalDays;i++){
     const d=new Date(startD); d.setDate(startD.getDate()+i);
     const mlab=d.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
@@ -2288,13 +2313,14 @@ function renderGantt(){
     else if(d.getDate()===1){ flushSeg(); segLabel=mlab; segDays=1; }
     else segDays++;
     const we=(d.getDay()===0||d.getDay()===6), isToday=ymd(d)===today;
-    dayRow+=`<div class="g-day ${we?'we':''} ${isToday?'today':''}"><span class="g-wd">${WD[d.getDay()]}</span>${d.getDate()}</div>`;
+    const zc = ganttZoom==='compact' ? 'zoom-compact' : '';
+    dayRow+=`<div class="g-day ${we?'we':''} ${isToday?'today':''} ${zc}" style="width:${GDAY()}px"><span class="g-wd">${WD[d.getDay()]}</span>${d.getDate()}</div>`;
   }
   flushSeg();
 
   const bar=(r,color,extra,cls,label,id,attr)=>{
-    const x=dayIdx(r.start)*GDAY_W;
-    const w=Math.max(GDAY_W,(dayIdx(r.end)-dayIdx(r.start)+1)*GDAY_W);
+    const x=dayIdx(r.start)*GDAY();
+    const w=Math.max(GDAY(),(dayIdx(r.end)-dayIdx(r.start)+1)*GDAY());
     return `<div class="g-bar ${cls}" ${attr||''} style="left:${x}px;width:${w-2}px;background:${color};${extra}" onclick="openEdit('${id}')">${esc(label)}</div>`;
   };
 
@@ -2336,9 +2362,17 @@ function renderGantt(){
   }
 
   const ti=dayIdx(today);
-  const todayLine=(ti>=0&&ti<totalDays)?`<div class="g-today-line" style="left:${GLABEL_W+ti*GDAY_W+GDAY_W/2}px"></div>`:'';
+  const todayLine=(ti>=0&&ti<totalDays)?`<div class="g-today-line" style="left:${GLABEL_W+ti*GDAY()+GDAY()/2}px"></div>`:'';
   const note=undatedCount?`<div class="cal-more" style="padding:8px 2px">${undatedCount} Aufgabe(n) ohne Datum werden hier nicht angezeigt.</div>`:'';
-  el.innerHTML=`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
+  // Zoom-Steuerung: – / Stufe / + (drei feste Stufen)
+  const zi=ganttZoomIdx();
+  const zoomBar=`<div class="g-zoom">
+    <span class="g-zoom-lbl">Zoom</span>
+    <button class="g-zoom-btn" title="Verkleinern" ${zi<=0?'disabled':''} onclick="setGanttZoom(-1)">−</button>
+    <span class="g-zoom-cur">${GANTT_ZOOM[zi].label}</span>
+    <button class="g-zoom-btn" title="Vergrößern" ${zi>=GANTT_ZOOM.length-1?'disabled':''} onclick="setGanttZoom(1)">+</button>
+  </div>`;
+  el.innerHTML=zoomBar+`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
     <div class="g-head"><div class="g-label">Aufgabe</div><div class="g-time"><div class="g-months">${monthRow}</div><div class="g-days">${dayRow}</div></div></div>
     ${rows}${todayLine}
   </div></div>${note}`;
