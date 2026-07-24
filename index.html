@@ -485,12 +485,13 @@
     border: 1px solid var(--border); color: var(--text-muted); font-weight: 600; flex: none; margin-left: auto; }
   .agenda-colbody { display: flex; flex-direction: column; gap: 10px; }
 
-  /* Notizen */
+  /* Notizen – wie Task-Cards: zugeklappt nur Titel, Text-Vorschau bei Hover */
   .note-card { position: relative; padding-right: 40px; }
-  .note-card .tt { margin-bottom: 6px; }
-  .note-card .note-text { font-size: .8rem; color: var(--text-muted); line-height: 1.45;
-    white-space: pre-wrap; word-break: break-word; margin-bottom: 8px; }
-  .note-card.done .note-text { text-decoration: line-through; }
+  .note-card .note-preview { font-size: .76rem; color: var(--text-muted); line-height: 1.35;
+    word-break: break-word; }
+  .note-card.done .note-preview { text-decoration: line-through; }
+  .note-card .note-hasnote { display: inline-flex; color: var(--text-muted); opacity: .7; }
+  .note-card .note-hasnote .ic, .note-card .note-hasnote svg { width: 12px; height: 12px; }
   .note-card .meta:empty { display: none; }
   .note-check { position: absolute; top: 11px; right: 11px; width: 22px; height: 22px; padding: 0;
     border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer;
@@ -1494,24 +1495,27 @@ function todayCardHTML(t, blocked){
   }
   return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
     <div class="tt">${esc(t.title)}</div>${dateHTML}
-    <div class="meta">${badge}${extra}</div>
+    <div class="meta">${badge}${extra}${linkBadge(t)}</div>
   </div>`;
 }
 function renderToday(){
   renderCtxTiles();
-  const secs = todaySections();
+  const allSecs = todaySections();
   const host = document.getElementById('todaySections');
-  if(!secs.length){
+  if(!allSecs.length){
     host.innerHTML = '<div class="today-empty">Für diese Woche sind keine Aufgaben terminiert. Aufgaben mit Fälligkeitsdatum erscheinen hier – Heute zuerst, dann Überfällig, Morgen und die Folgetage.</div>';
     return;
   }
-  const secHTML = secs.map((s,i)=>{
+  // „Wartet noch" wird bewusst ganz ans Ende gezogen – auch unter die Agenda (Wunsch 24.07.2026).
+  const secs   = allSecs.filter(s=>s.key!=='wartet');
+  const waiting = allSecs.filter(s=>s.key==='wartet');
+  const secHTML = (list, startIdx)=> list.map((s,i)=>{
     const collapsed = todayCollapsed.has(s.key);
     const dayHTML = s.day ? `<span class="day">${s.day}</span>` : '';
     const cards = s.items.map(t=>todayCardHTML(t, s.blocked)).join('');
     const secClass = ['today-sec', collapsed?'collapsed':'', s.blocked?'blocked muted':''].join(' ').trim();
     const titleStyle = s.over ? ' style="color:var(--red)"' : '';
-    const rule = i>0 ? '<div class="rule soft"></div>' : '';
+    const rule = (startIdx+i)>0 ? '<div class="rule soft"></div>' : '';
     return `${rule}<div class="${secClass}">
       <div class="today-sechead" onclick="toggleTodaySec('${s.key}')">
         <span class="ic chev">${ICON.chevronDown}</span>
@@ -1521,7 +1525,11 @@ function renderToday(){
       <div class="today-grid">${cards}</div>
     </div>`;
   }).join('');
-  host.innerHTML = secHTML + agendaSectionHTML(secs.length>0);
+  const hasAnyAbove = secs.length>0;
+  // Reihenfolge: normale Tagesgruppen -> Agenda -> Wartet noch (ganz unten)
+  host.innerHTML = secHTML(secs, 0)
+    + agendaSectionHTML(hasAnyAbove)
+    + secHTML(waiting, 1);   // startIdx=1 -> immer Trennstrich davor
 }
 // Agenda-Vorausschau als tagesweise Kanban-Spalten (unter "Wartet noch", Default eingeklappt).
 function agendaSectionHTML(hasRule){
@@ -1834,12 +1842,16 @@ function noteCardHTML(n){
   const r = roleById(noteRole(n));
   const color = r ? r.color : 'var(--meta)';
   const roleBadgeHTML = r ? `<span class="tbadge" style="background:${color}">${r.code}</span>` : '';
-  const textHTML = n.text ? `<div class="note-text">${esc(n.text)}</div>` : '';
+  // Wie Task-Cards: zugeklappt nur Titel; Text-Vorschau erst bei Hover (gekürzt, ruhig). Klick öffnet.
+  const preview = (n.text||'').replace(/\s+/g,' ').trim();
+  const short = preview.length>90 ? preview.slice(0,90)+'…' : preview;
+  const textHTML = short ? `<span class="note-preview">${esc(short)}</span>` : '';
+  const hasNote = short ? `<span class="note-hasnote" title="Notiz mit Text">${ic('edit')}</span>` : '';
   return `<div class="tcard note-card ${n.done?'done':''}" style="--role:${color}" onclick="openNote('${n.id}')">
     <button class="note-check ${n.done?'on':''}" title="${n.done?'Als offen markieren':'Als erledigt markieren'}"
       onclick="event.stopPropagation();toggleNoteDone('${n.id}')">${ICON.check}</button>
-    <div class="tt">${esc(n.title)}</div>${textHTML}
-    <div class="meta">${roleBadgeHTML}</div>
+    <div class="tt">${esc(n.title)}</div>
+    <div class="meta">${roleBadgeHTML}${hasNote}${textHTML}</div>
   </div>`;
 }
 function toggleNoteDone(id){
@@ -1999,7 +2011,7 @@ function boardCardHTML(t){
   const projHTML = (()=>{ const p=projById(t.projectId); return p?`<span class="tbadge" style="background:${p.color};cursor:pointer" title="Projekt öffnen" onclick="event.stopPropagation();openProject('${p.id}')">${esc(p.name)}</span>`:''; })();
   return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
     <div class="tt">${esc(t.title)}</div>${dateHTML}
-    <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
+    <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
   </div>`;
 }
 function renderBoard(){
