@@ -6,19 +6,21 @@
 <title>Task-Dashboard</title>
 <style>
   :root {
-    --bg: #f4f6fb; --surface: #ffffff; --surface-2: #f0f2f8; --border: #e2e6f0; --border-soft: #eaedf4;
-    --text: #1c2333; --text-muted: #6b7386; --accent: #343a40; --accent-soft: #e9ecef;
-    --shadow: 0 1px 3px rgba(20,30,60,.08), 0 4px 16px rgba(20,30,60,.05);
+    /* Neutraltöne: Kühlgrau (Stahl) – minimal kühl, ohne Blaustich. Bedeutungsfarben unten unverändert. */
+    --bg: #f3f4f5; --surface: #ffffff; --surface-2: #eef0f1; --border: #e2e4e5; --border-soft: #eaecec;
+    --text: #212324; --text-muted: #6e7173; --accent: #363839; --accent-soft: #e9ebec;
+    --shadow: 0 1px 3px rgba(30,34,36,.08), 0 4px 16px rgba(30,34,36,.05);
     --radius: 14px; --r: 10px; --gap: 14px;
-    --q1: #b06a6a; --q2: #5f7d9c; --q3: #b0895a; --q4: #9aa0ac;
+    --q1: #b06a6a; --q2: #5f7d9c; --q3: #b0895a; --q4: #9ea1a3;
     --dc:#a86a7c; --dm:#5f7d9c; --qm:#6b8a6b; --ict:#7d6f9c; --meta:#6b727e; --red:#b0555a;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #12151d; --surface: #1b1f2a; --surface-2: #232836; --border: #2c3242; --border-soft: #242a37;
-      --text: #e8ebf2; --text-muted: #9aa2b5; --accent: #7c8494; --accent-soft: #2b313c;
+      /* Dark: Kühlgrau (Stahl) – minimal kühl, ohne Blaustich. */
+      --bg: #131415; --surface: #1c1d1f; --surface-2: #252628; --border: #313234; --border-soft: #28292b;
+      --text: #eaebec; --text-muted: #9fa1a3; --accent: #85878a; --accent-soft: #2c2d2f;
       --shadow: 0 1px 3px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
-      --q4: #5c6370; --red:#c76b70;
+      --q4: #656769; --red:#c76b70;
     }
   }
   * { box-sizing: border-box; }
@@ -372,7 +374,7 @@
   .iconbtn:hover { border-color: var(--accent); color: var(--text); }
   .iconbtn .ic { width: 15px; height: 15px; }
   .iconbtn .gh-dot { position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px;
-    border-radius: 50%; background: #a8aeb8; }
+    border-radius: 50%; background: #a7aaac; }
 
   .head-2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-bottom: 16px; }
   .ptabs { display: flex; gap: 3px; background: var(--surface-2); border: 1px solid var(--border);
@@ -702,6 +704,10 @@
     <div class="switch-row" id="viewSwitchRow"></div>
     <div class="rule"></div>
     <span id="backlogCount" class="hidden">0</span>
+
+    <!-- Datumswechsel: oben im Inhalt – exakt die Stelle, an der er im Kalender sass (1:1).
+         Bewusst NEBEN den Ansichts-Containern, nie darin (#board ist ein Grid). -->
+    <div id="scopeNav" class="hidden"></div>
 
     <div class="board" id="board"></div>
     <div id="backlog" class="hidden"></div>
@@ -1184,14 +1190,14 @@ const Store = {
 
 /* ============================== KONSTANTEN ============================== */
 const STATUS = [
-  { id:'inbox',       label:'Inbox',       color:'#8a909c', board:true },
+  { id:'inbox',       label:'Inbox',       color:'#8a8d8f', board:true },
   { id:'todo',        label:'To Do',       color:'#6f88a8', board:true },
   { id:'in_progress', label:'In Progress', color:'#b0895a', board:true },
   { id:'waiting',     label:'Waiting',     color:'#b07a5f', board:true },
   { id:'snoozed',     label:'Snoozed',     color:'#8a7fa8', board:true },
   { id:'backlog',     label:'Backlog',     color:'#5a8a86', board:false },
   { id:'done',        label:'Done',        color:'#6b8a6b', board:false, archive:true },
-  { id:'discarded',   label:'Verworfen',   color:'#a8aeb8', board:false, archive:true },
+  { id:'discarded',   label:'Verworfen',   color:'#a7aaac', board:false, archive:true },
 ];
 const STATUS_MAP = Object.fromEntries(STATUS.map(s => [s.id, s]));
 const PALETTE = ['#5f7d9c','#5a8a76','#b07a5f','#8a6a9c','#6f88a8','#b0895a','#a86a6a','#6b8a6b'];
@@ -1446,25 +1452,45 @@ function scopeWindow(){
   if(timeScope==='month'){ const s=new Date(ref.getFullYear(),ref.getMonth(),1); const e=new Date(ref.getFullYear(),ref.getMonth()+1,0); return { s:ymd(s), e:ymd(e) }; }
   return null;
 }
-// Menschlicher Titel des aktuellen Fensters (für die Blätter-Zeile in Board/Gantt).
-function scopeWindowLabel(){
-  if(timeScope==='all') return '';
+// In welcher Einheit wird geblättert? Kalender folgt seinem Modus, Board/Gantt dem Zeitraum-Filter.
+// null = kein Zeitbezug -> Datumswechsel wird ausgeblendet (z.B. 'Alle', Projekte, Auswerten, Backlog).
+function navUnit(){
+  if(purpose!=='planen') return null;
+  if(view==='calendar') return (calMode==='day'||calMode==='week') ? calMode : 'month';
+  if(view==='board' || view==='gantt') return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
+  return null;
+}
+// Menschlicher Titel des aktuellen Fensters.
+function navLabel(){
+  const u=navUnit(); if(!u) return '';
   const ref=calRef instanceof Date ? calRef : new Date();
-  if(timeScope==='today') return ref.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  if(timeScope==='week'){ const {mon,sun}=weekRange(ref); return `${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
-  if(timeScope==='month') return ref.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
-  return '';
+  if(u==='day') return ref.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  if(u==='week'){ const {mon,sun}=weekRange(ref); return `${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
+  return ref.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
 }
-// Cursor verschieben – Schrittweite nach aktivem timeScope. Wirkt auf Board/Kalender/Gantt gemeinsam.
+// Cursor verschieben – wirkt auf Board/Kalender/Gantt gemeinsam.
 function scopeNav(dir){
+  const u=navUnit(); if(!u) return;
   const d=new Date(calRef);
-  if(timeScope==='today') d.setDate(d.getDate()+dir);
-  else if(timeScope==='week') d.setDate(d.getDate()+7*dir);
-  else if(timeScope==='month') d.setMonth(d.getMonth()+dir);
-  else return; // 'all': nichts zu blättern
-  calRef=d; calMode=SCOPE_TO_CALMODE[timeScope]||'month'; renderCurrent();
+  if(u==='day') d.setDate(d.getDate()+dir);
+  else if(u==='week') d.setDate(d.getDate()+7*dir);
+  else d.setMonth(d.getMonth()+dir);
+  calRef=d; renderScopeNav(); renderCurrent();
 }
-function scopeToday(){ calRef=new Date(); renderCurrent(); }
+function scopeToday(){ calRef=new Date(); renderScopeNav(); renderCurrent(); }
+// Rendert den Datumswechsel auf Seitenebene (eigener Container, NIE in einer Ansicht).
+function renderScopeNav(){
+  const el=document.getElementById('scopeNav'); if(!el) return;
+  // Kein Zeitfenster (z.B. Zeitraum 'Alle', Projekte, andere Tabs) -> Zeile ganz weg, kein totes Bedienelement.
+  if(!navUnit()){ el.classList.add('hidden'); el.innerHTML=''; return; }
+  el.classList.remove('hidden');
+  el.innerHTML=`<div class="cal-controls scope-nav">
+    <button class="ghost sm" onclick="scopeNav(-1)" title="Zurück">◀</button>
+    <button class="ghost sm" onclick="scopeToday()">Heute</button>
+    <button class="ghost sm" onclick="scopeNav(1)" title="Vor">▶</button>
+    <span class="cal-title">${esc(navLabel())}</span>
+  </div>`;
+}
 // Überschneidet der Aufgaben-Zeitraum (Start–Ende, Fallback due) das Fenster?
 function inTimeScope(t){
   const w=scopeWindow(); if(!w) return true;
@@ -1483,6 +1509,7 @@ function setTimeScope(s){
 function setView(v){ view = v; renderViewSwitchRow(); renderCurrent(); }
 function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderBoard(); }
 function renderCurrent(){
+  renderScopeNav();   // Datumswechsel (Seitenebene) immer zuerst synchronisieren
   ['board','backlog','calendar','gantt','projekte','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
   const isBacklog = view==='bl_all' || view==='bl_tasks' || view==='bl_notes';
   const domId = isBacklog ? 'backlog' : view;
@@ -1808,7 +1835,7 @@ function renderStatistik(){
   const byStatus=STATUS.map(s=>({label:s.label,color:s.color,count:pool.filter(t=>t.status===s.id).length})).filter(r=>r.count>0);
   const byRole=ROLES.map(r=>({label:r.code+' – '+r.label,color:r.color,count:pool.filter(t=>taskRole(t)===r.id).length})).filter(r=>r.count>0);
   const byProject=[...projects.map(p=>({label:p.name,color:p.color,count:pool.filter(t=>t.projectId===p.id).length})),
-    {label:'Ohne Projekt',color:'#a8aeb8',count:pool.filter(t=>!t.projectId).length}].filter(r=>r.count>0);
+    {label:'Ohne Projekt',color:'#a7aaac',count:pool.filter(t=>!t.projectId).length}].filter(r=>r.count>0);
   const byPerson=people.map(p=>({label:p.name,color:'#6b727e',count:pool.filter(t=>active(t)&&(t.people||[]).some(pp=>pp.personId===p.id)).length})).filter(r=>r.count>0);
   const total=pool.length, open=pool.filter(active).length, done=pool.filter(t=>t.status==='done').length, overdue=pool.filter(isOverdue).length;
   const kpi=(n,l,c)=>`<div><div style="font-size:1.7rem;font-weight:700;${c?`color:${c}`:''}">${n}</div><div class="mt-lbl">${l}</div></div>`;
@@ -2286,16 +2313,16 @@ function boardGroups(){
     { key:'A', label:'A', color:'#b06a6a', match:t=>(t.prio||'D')==='A' },
     { key:'B', label:'B', color:'#5f7d9c', match:t=>(t.prio||'D')==='B' },
     { key:'C', label:'C', color:'#b0895a', match:t=>(t.prio||'D')==='C' },
-    { key:'D', label:'D', color:'#9aa0ac', match:t=>(t.prio||'D')==='D' },
+    { key:'D', label:'D', color:'#999c9e', match:t=>(t.prio||'D')==='D' },
   ];
   if(boardGroup==='person'){
     const g=people.map(p=>({ key:p.id, label:p.name, color:'#6b727e', match:t=>(t.people||[]).some(pp=>pp.personId===p.id) }));
-    g.push({ key:'__none', label:'Ohne Person', color:'#a8aeb8', match:t=>!(t.people||[]).length });
+    g.push({ key:'__none', label:'Ohne Person', color:'#a7aaac', match:t=>!(t.people||[]).length });
     return g;
   }
   if(boardGroup==='project'){
     const g=projects.map(p=>({ key:p.id, label:p.name, color:p.color, match:t=>t.projectId===p.id }));
-    g.push({ key:'__none', label:'Ohne Projekt', color:'#a8aeb8', match:t=>!t.projectId });
+    g.push({ key:'__none', label:'Ohne Projekt', color:'#a7aaac', match:t=>!t.projectId });
     return g;
   }
   if(boardGroup==='role'){
@@ -2329,9 +2356,11 @@ function plannedSections(visible){
   return sections;
 }
 function renderPlanned(){
+  const el=document.getElementById('board');
+  el.classList.add('planned');   // tagesweise Sektionen untereinander, kein Kanban-Raster
   const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const sections=plannedSections(visible);
-  document.getElementById('board').innerHTML = sections.length
+  el.innerHTML = sections.length
     ? sections.map((s,i)=>`${i>0?'<div class="rule soft"></div>':''}<div class="today-sec"><div class="today-sechead" style="cursor:default"><span class="title"${s.over?' style="color:var(--red)"':''}>${esc(s.label)}</span><span class="count">${s.items.length}</span></div><div class="today-grid">${s.items.map(boardCardHTML).join('')}</div></div>`).join('')
     : '<div class="today-empty">Keine terminierten Aufgaben. Aufgaben mit Fälligkeitsdatum erscheinen hier chronologisch – Überfällig, Heute, Morgen, dann nach Tag.</div>';
 }
@@ -2351,22 +2380,13 @@ function boardCardHTML(t){
     <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
   </div>`;
 }
-// Wiederverwendbare Zeitraum-Blätter-Zeile (◀ Heute ▶ + Fenster-Titel).
-// Erscheint nur bei aktivem Fenster (Tag/Woche/Monat); bei 'Alle' leer. Genutzt von Board und Gantt.
-function scopeNavBar(){
-  if(timeScope==='all') return '';
-  return `<div class="cal-controls scope-nav">
-    <button class="ghost sm" onclick="scopeNav(-1)" title="Zurück">◀</button>
-    <button class="ghost sm" onclick="scopeToday()">Heute</button>
-    <button class="ghost sm" onclick="scopeNav(1)" title="Vor">▶</button>
-    <span class="cal-title">${esc(scopeWindowLabel())}</span>
-  </div>`;
-}
 function renderBoard(){
   if(boardGroup==='termin'){ renderPlanned(); return; }
+  const el=document.getElementById('board');
+  el.classList.remove('planned');   // Kanban-Raster aktiv
   const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const groups = boardGroups();
-  document.getElementById('board').innerHTML = scopeNavBar() + `<div class="board-a">` + groups.map(col => {
+  el.innerHTML = `<div class="board-a">` + groups.map(col => {
     const items = visible.filter(col.match).sort((a,b)=>{
       const e = ehRank(a)-ehRank(b); if(e!==0) return e;
       return (a.due||'9999') < (b.due||'9999') ? -1 : 1;
@@ -2415,15 +2435,8 @@ function cardHTML(t){
 // calMode & calRef sind oben im STATE-Block definiert (gemeinsamer Zeit-Cursor).
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function calTasks(){ return tasks.filter(matchesFilter).filter(t=>t.due); }
-function evColor(t){ const r=roleById(taskRole(t)); return r?r.color:'#8a909c'; }
-function calToday(){ calRef=new Date(); renderCalendar(); }
-function calNav(dir){
-  const d=new Date(calRef);
-  if(calMode==='day') d.setDate(d.getDate()+dir);
-  else if(calMode==='week') d.setDate(d.getDate()+7*dir);
-  else d.setMonth(d.getMonth()+dir);
-  calRef=d; renderCalendar();
-}
+function evColor(t){ const r=roleById(taskRole(t)); return r?r.color:'#8a8d8f'; }
+// calToday/calNav entfallen – Navigation läuft zentral über scopeToday/scopeNav (#scopeNav).
 function weekRange(ref){
   const mon=new Date(ref); const wd=(mon.getDay()+6)%7; mon.setDate(mon.getDate()-wd);
   const sun=new Date(mon); sun.setDate(mon.getDate()+6);
@@ -2436,7 +2449,7 @@ function taskSpan(t){
   return { s: s<e?s:e, e: s<e?e:s };
 }
 function spanTasks(){ return tasks.filter(matchesFilter).filter(t=>t.status!=='done' && t.status!=='discarded').map(t=>({t, sp:taskSpan(t)})).filter(x=>x.sp); }
-function openDay(ds){ calRef=new Date(ds+'T00:00:00'); calMode='day'; renderCalendar(); }
+function openDay(ds){ calRef=new Date(ds+'T00:00:00'); calMode='day'; renderScopeNav(); renderCalendar(); }
 function dayTip(evs){ return evs.length ? `${evs.length} Aufgabe(n):\n`+evs.map(x=>'• '+x.t.title).join('\n') : 'Keine Aufgaben – klicken für Tagesansicht'; }
 function coversDay(sp, ds){ return sp.s<=ds && ds<=sp.e; }
 function evChip(t, ds){
@@ -2456,17 +2469,12 @@ function renderCalendar(){
   if(calMode==='day') title=calRef.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   else if(calMode==='week'){ const {mon,sun}=weekRange(calRef); title=`${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
   else title=calRef.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
-  const controls=`<div class="cal-controls">
-    <button class="ghost sm" onclick="calNav(-1)">◀</button>
-    <button class="ghost sm" onclick="calToday()">Heute</button>
-    <button class="ghost sm" onclick="calNav(1)">▶</button>
-    <span class="cal-title">${title}</span>
-  </div>`;
+  // Navigation sitzt auf Seitenebene (#scopeNav) – hier bewusst KEINE eigenen Controls mehr.
   let body;
   if(calMode==='week') body=calWeek();
   else if(calMode==='day') body=calDay();
   else body=calMonth();
-  document.getElementById('calendar').innerHTML=controls+body;
+  document.getElementById('calendar').innerHTML=body;
 }
 function calMonth(){
   const spans=spanTasks();
@@ -2637,7 +2645,7 @@ function renderGantt(){
   const todayLine=(ti>=0&&ti<totalDays)?`<div class="g-today-line" style="left:${GLABEL_W+ti*GDAY()+GDAY()/2}px"></div>`:'';
   const note=undatedCount?`<div class="cal-more" style="padding:8px 2px">${undatedCount} Aufgabe(n) ohne Datum werden hier nicht angezeigt.</div>`:'';
   // Zoom-Steuerung sitzt jetzt als Kachel in der Planen-Kachelzeile (openZoomModal), nicht mehr am Gantt selbst.
-  el.innerHTML=scopeNavBar()+`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
+  el.innerHTML=`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
     <div class="g-head"><div class="g-label">Aufgabe</div><div class="g-time"><div class="g-months">${monthRow}</div><div class="g-days">${dayRow}</div></div></div>
     ${rows}${todayLine}
   </div></div>${note}`;
@@ -2661,7 +2669,7 @@ function drawGanttDeps(el){
     });
   });
   if(!segs.length) return;
-  const W=inner.scrollWidth, H=inner.scrollHeight, gap=10, col='#9aa0ac';
+  const W=inner.scrollWidth, H=inner.scrollHeight, gap=10, col='#999c9e';
   let paths='';
   segs.forEach(({x1,y1,x2,y2})=>{
     let d;
@@ -3117,8 +3125,8 @@ function deleteProject(){
 const githubOverlay = document.getElementById('githubOverlay');
 function ghSetStatus(state, msg){
   const dot=document.getElementById('ghDot'); if(!dot) return;
-  const colors={ connected:'#5f9e6f', saving:'#b0895a', error:'#b06a6a', local:'#9aa0ac' };
-  dot.style.background=colors[state]||'#a8aeb8';
+  const colors={ connected:'#5f9e6f', saving:'#b0895a', error:'#b06a6a', local:'#999c9e' };
+  dot.style.background=colors[state]||'#a7aaac';
   const btn=document.getElementById('btnGithub'); if(btn) btn.title='GitHub: '+(msg||state);
 }
 function openGithub(){
