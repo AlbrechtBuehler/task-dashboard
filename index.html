@@ -1916,14 +1916,23 @@ function renderFocus(){
   document.getElementById('focus').innerHTML = html;
 }
 // noDot: ohne Farbpunkt (dort, wo die Farbe keine Bedeutung trägt, z. B. „Erledigt je Woche“)
-function barChart(title, rows, noDot){
+// note:  kleine Fußzeile im Block (z. B. was in der Kurve fehlt) – nur zeigen, wenn es etwas zu sagen gibt.
+function barChart(title, rows, noDot, note){
   const max=Math.max(1, ...rows.map(r=>r.count));
   const body=rows.length ? rows.map(r=>`<div class="bar-row">
       <span class="bar-label">${noDot?'':`<span class="col-dot" style="background:${r.color}"></span>`}${esc(r.label)}</span>
       <span class="bar-track"><span class="bar-fill" style="width:${Math.round(r.count/max*100)}%;background:${r.color}"></span></span>
       <span class="bar-val">${r.count}</span>
     </div>`).join('') : '<div class="cal-more">Keine Daten.</div>';
-  return `<div class="chart-block"><h3>${title}</h3>${body}</div>`;
+  const noteHTML = note ? `<div class="cal-more" style="padding:8px 2px 0">${esc(note)}</div>` : '';
+  return `<div class="chart-block"><h3>${title}</h3>${body}${noteHTML}</div>`;
+}
+// Zeitraum-Beschriftung „16. Nov – 10. Dez 2026“ bzw. über den Jahreswechsel „16. Nov 2026 – 10. Jan 2027“.
+// Folgt der Schreibweise, die navLabel()/weekTitle() schon benutzen: Jahr nur am Ende, wenn es dasselbe ist.
+function rangeLabel(a, b){
+  const same = a.getFullYear()===b.getFullYear();
+  const f = (d,withYear)=>d.toLocaleDateString('de-DE', withYear?{day:'2-digit',month:'short',year:'numeric'}:{day:'2-digit',month:'short'});
+  return `${f(a,!same)} – ${f(b,true)}`;
 }
 function renderStatistik(){
   const pool=tasks.filter(inRole);
@@ -2563,14 +2572,24 @@ function openProgressDetail(pid){
   const openPool = pool.filter(isOpen);
   const PRIO_COL = { A:'#b06a6a', B:'#5f7d9c', C:'#b0895a', D:'#999c9e' };
   const byPrio = ['A','B','C','D'].map(k=>({label:k,color:PRIO_COL[k],count:openPool.filter(t=>(t.prio||'D')===k).length})).filter(r=>r.count>0);
-  // Tempo: erledigte Aufgaben je Kalenderwoche, letzte 8 Wochen (Datenquelle archivedAt)
-  const weeks=[];
+  // Tempo: erledigte Aufgaben je Kalenderwoche, letzte 8 Wochen (Datenquelle archivedAt).
+  // Fenster ist immer relativ zu heute – läuft über Jahresgrenzen (KW 52 · KW 53 · KW 1) korrekt weiter.
+  const weeks=[]; let firstMon=null, lastSun=null;
   for(let i=7;i>=0;i--){
     const d=new Date(); d.setDate(d.getDate()-7*i);
     const {mon,sun}=weekRange(d); const s=ymd(mon), e=ymd(sun);
+    if(i===7) firstMon=mon;
+    if(i===0) lastSun=sun;
     weeks.push({ label:'KW '+isoWeek(mon), color:'#5f8a70',
                  count: pool.filter(t=>t.status==='done' && t.archivedAt && t.archivedAt>=s && t.archivedAt<=e).length });
   }
+  // Kalenderwochen allein sind über den Jahreswechsel nicht eindeutig -> Zeitraum in den Titel.
+  const weekTitleStr = `Erledigt je Woche · ${rangeLabel(firstMon, lastSun)}`;
+  // Erledigte ohne Archivdatum (Altdaten) zählen im Kopf, können aber in keiner Woche stehen. Offenlegen.
+  const noStamp = pool.filter(t=>t.status==='done' && !t.archivedAt).length;
+  const weekNote = noStamp
+    ? `${noStamp} erledigte ${noStamp===1?'Aufgabe':'Aufgaben'} ohne Archivdatum ${noStamp===1?'ist':'sind'} hier nicht enthalten.`
+    : '';
   const nextOver = openPool.filter(isOverdue).sort(kpiSort);
   const nextDue  = openPool.filter(t=>t.due && !isOverdue(t)).sort(kpiSort).slice(0,5);
   const nextList = (nextOver.concat(nextDue));
@@ -2581,7 +2600,7 @@ function openProgressDetail(pid){
     : `Fortschritt · alle Aufgaben${filters.role?' · Rolle '+roleCode(filters.role):''}`;
   document.getElementById('listBody').innerHTML = head
     + `<div class="stat-grid">${barChart('Wo die Arbeit steht', byStatus)}${barChart('Offen nach Priorität', byPrio)}</div>`
-    + barChart('Erledigt je Woche', weeks, true)
+    + barChart(weekTitleStr, weeks, true, weekNote)
     + nextBlock;
   listOverlay.classList.add('open');
 }
