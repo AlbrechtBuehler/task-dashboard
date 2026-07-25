@@ -656,9 +656,7 @@
   #projChrome .scope-nav { margin:10px 0 4px; }
   .proj-switch2 { gap:8px; }
   .proj-switch2 .sr-funcs { margin-left:auto; display:flex; gap:8px; align-items:stretch; }
-  .proj-switch2 .sr-funcs .ctrl-tile { margin-left:0; width:150px; }   /* Funktionskacheln knapper, damit die Zeile mit Zurück-Kachel nicht umbricht */
-  .proj-switch2 .ret { margin-left:auto; width:142px; }
-  .proj-switch2 .sr-funcs ~ .ret { margin-left:14px; }
+  .proj-switch2 .sr-funcs .ctrl-tile { margin-left:0; width:150px; }   /* Funktionskacheln knapper halten, damit die Zeile nicht umbricht */
   .proj-taskgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
   .proj-empty { color:var(--text-muted); font-size:.88rem; padding:8px 2px; }
   .proj-taskgrid .colnew.proj-add { align-self:start; min-height:70px; display:flex; align-items:center; justify-content:center; border-radius:var(--r); font-size:.9rem; }
@@ -687,6 +685,7 @@
         <button class="ptab active" data-tab="start">Start</button>
         <button class="ptab" data-tab="heute">Heute</button>
         <button class="ptab" data-tab="planen">Planen</button>
+        <button class="ptab" data-tab="projekte">Projekte</button>
         <button class="ptab" data-tab="auswerten">Auswerten</button>
         <button class="ptab" data-tab="backlog">Backlog</button>
       </div>
@@ -1367,6 +1366,7 @@ function render(){
   if(purpose==='start') renderStart();
   else if(purpose==='heute') renderToday();
   else if(['planen','auswerten','backlog'].includes(purpose)){ renderViewSwitchRow(); renderCurrent(); }
+  else if(purpose==='projekte'){ renderCurrent(); }   // eigener Bereich, kachellos (Grid führt direkt ins Projekt-Chrome)
 }
 
 /* ---------- Zweck-Tabs (Purpose) ---------- */
@@ -1376,7 +1376,6 @@ const PURPOSE_VIEWS = {
     { id:'board',    t:'Board',    s:'Kanban',        icon:'board' },
     { id:'calendar', t:'Kalender', s:'Monat · Woche', icon:'calendar' },
     { id:'gantt',    t:'Gantt',    s:'Zeitachse',     icon:'gantt' },
-    { id:'projekte', t:'Projekte', s:'Übersicht',     icon:'folder' },
   ],
   auswerten: [
     { id:'statistik', t:'Statistik', s:'Auslastung', icon:'stats' },
@@ -1392,9 +1391,11 @@ function renderPurpose(){
   document.querySelectorAll('#ptabs .ptab').forEach(b=>b.classList.toggle('active', b.dataset.tab===purpose));
   document.getElementById('startArea').classList.toggle('hidden', purpose!=='start');
   document.getElementById('todayArea').classList.toggle('hidden', purpose!=='heute');
-  const legacy = ['planen','auswerten','backlog'].includes(purpose);
+  const legacy = ['planen','auswerten','backlog','projekte'].includes(purpose);
   document.getElementById('legacyArea').classList.toggle('hidden', !legacy);
-  if(legacy){
+  if(purpose==='projekte'){
+    view = 'projekte';   // Projekte-Bereich kennt nur die Übersicht (bzw. das geöffnete Projekt)
+  } else if(legacy){
     const allowed = PURPOSE_VIEWS[purpose].map(v=>v.id);
     if(!allowed.includes(view)) view = allowed[0];
   }
@@ -1551,6 +1552,13 @@ function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard
 function renderCurrent(){
   renderScopeNav();   // Datumswechsel (Seitenebene) immer zuerst synchronisieren
   ['board','backlog','calendar','gantt','projekte','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
+  // Projekt-Chrome zuruecksetzen: NUR die echte Projekt-Detailseite (renderProjektDetail) zeigt es wieder.
+  // Sonst haengt es beim Wechsel auf Auswerten/Backlog/Planen nach (Bug 25.07.2026).
+  document.getElementById('projChrome').classList.add('hidden');
+  // Globale Kachelzeile: sichtbar bei planen/auswerten/backlog, versteckt im Projekte-Bereich (kachellos, wie Start/Heute).
+  const showGlobalRow = ['planen','auswerten','backlog'].includes(purpose);
+  document.getElementById('viewSwitchRow').classList.toggle('hidden', !showGlobalRow);
+  document.getElementById('viewSwitchRule').classList.toggle('hidden', !showGlobalRow);
   const isBacklog = view==='bl_all' || view==='bl_tasks' || view==='bl_notes';
   const domId = isBacklog ? 'backlog' : view;
   const cur=document.getElementById(domId); if(cur) cur.classList.remove('hidden');
@@ -2008,7 +2016,7 @@ function projNavUnit(){
   return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
 }
 function setProjView(v){ projView=v; renderCurrent(); }
-function backToProjects(){ openProjectId=null; renderViewSwitchRow(); renderCurrent(); }
+function backToProjects(){ openProjectId=null; purpose='projekte'; render(); }
 function projKpiHTML(p){
   const st=projectStats(p.id);
   const pct=st.total?Math.round(st.done/st.total*100):0;
@@ -2047,8 +2055,8 @@ function projSwitchRowHTML(){
   else if(projView==='gantt') funcs=`<button class="ctrl-tile zoom-tile ${ganttZoom!=='normal'?'is-active':''}" onclick="openZoomModal()"><span class="ic-wrap">${ic('zoom')}</span><span class="body"><span class="lbl">Zoom</span><span class="val">${GANTT_ZOOM[ganttZoomIdx()].label}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
   else funcs=scope; // aufgaben + calendar: Zeitraum (Filter überall konsistent)
   const funcsWrap=funcs?`<div class="sr-funcs">${funcs}</div>`:'';
-  const back=`<button class="ctrl-tile ret" onclick="backToProjects()" title="Zurück zu allen Projekten"><span class="ic-wrap">${ic('folder')}</span><span class="body"><span class="lbl">Projekte</span><span class="val">Übersicht</span></span></button>`;
-  return `<div class="switch-row proj-switch2">${views}${funcsWrap}${back}</div>`;
+  // Rückkehr zur Übersicht läuft jetzt über den Zweck-Tab „Projekte" oben – keine eigene Kachel mehr (weniger Rauschen).
+  return `<div class="switch-row proj-switch2">${views}${funcsWrap}</div>`;
 }
 function projScopeNavHTML(){
   const u=projNavUnit(); if(!u) return '';
@@ -2106,9 +2114,10 @@ function renderProjektDetail(){
 
 function renderProjekte(){
   if(openProjectId){ renderProjektDetail(); return; }
+  // Projekte-Übersicht ist kachellos (eigener Bereich); Chrome + globale Kachelzeile bleiben aus.
   document.getElementById('projChrome').classList.add('hidden');
-  document.getElementById('viewSwitchRow').classList.remove('hidden');
-  document.getElementById('viewSwitchRule').classList.remove('hidden');
+  document.getElementById('viewSwitchRow').classList.add('hidden');
+  document.getElementById('viewSwitchRule').classList.add('hidden');
   const el=document.getElementById('projekte');
   // Rollenfilter aus dem Kopf respektieren; Projekt-Status nach Toggle
   let pool = projects.filter(p=>!filters.role || p.role===filters.role);
@@ -3222,7 +3231,7 @@ function openNewProject(){
 function openProject(id){
   const p=projById(id); if(!p) return;
   openProjectId=id; projView='aufgaben';
-  purpose='planen'; view='projekte';
+  purpose='projekte'; view='projekte';
   render();
 }
 // Bestehendes Projekt bearbeiten (Feld-Modal) – vom „Bearbeiten"-Knopf auf der Unterseite
