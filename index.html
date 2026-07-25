@@ -2449,6 +2449,32 @@ function projScopeNavHTML(){
     <span class="cal-title">${esc(navLabel(u))}</span>
   </div>`;
 }
+/* Spaltengruppen fuer die LISTE. Re-Use von boardGroups(), aber mit einem Unterschied, der am
+   Zweck haengt: Das Board zeigt ARBEITSSTATIONEN - dort darf "Backlog" fehlen, das ist keine
+   Station (bewusste Altentscheidung, bleibt). Die Liste ist eine AUFZAEHLUNG: was der Filter
+   durchlaesst, muss sichtbar sein, sonst verschwindet eine Aufgabe still, sobald man gruppiert.
+   Zwei Ergaenzungen, beide im bestehenden Vokabular - kein neues Muster:
+     - Status: die echte Gruppe "Backlog" mit ihrem echten Namen und ihrer echten Farbe aus STATUS
+       (kein Auffangeimer - diese Aufgaben HABEN einen Status). Ablegen darauf legt zurueck ins
+       Backlog; 'status' kennen dropCheck() und applyDrop() bereits, kein neuer Zonen-Typ.
+     - Auffang "Ohne Zuordnung" ganz am Ende fuer alles, was in KEINER Gruppe landet - dieselbe
+       graue Farbe wie "Ohne Person"/"Ohne Projekt"/"Ohne Ziel". Er erscheint nur, wenn er etwas
+       enthaelt, und ist heute leer: er ist das Netz fuer kuenftige Gruppierungen. */
+function listGroups(grp, pool){
+  let gs = boardGroups(pool);
+  if(grp==='status'){
+    const bl = STATUS_MAP['backlog'];
+    gs = gs.concat([{ key:bl.id, label:bl.label, color:bl.color,
+                      match:t=>t.status===bl.id, drop:{type:'status', value:bl.id} }]);
+  }
+  // Deckung messen statt raten: was keine Gruppe matcht, kommt in den Auffang.
+  const covered = new Set();
+  gs.forEach(g=>pool.filter(g.match).forEach(t=>covered.add(t.id)));
+  const restIds = new Set(pool.filter(t=>!covered.has(t.id)).map(t=>t.id));
+  if(restIds.size) gs = gs.concat([{ key:'__rest', label:'Ohne Zuordnung', color:'#a7aaac',
+                     match:t=>restIds.has(t.id), no:'Sammelplatz – hier lässt sich nichts ablegen' }]);
+  return gs;
+}
 // Die Aufgaben-LISTE. Nicht projektspezifisch: die Eingrenzung aufs Projekt macht matchesFilter
 // ueber openProjectId. Genau deshalb ist dieselbe Funktion in Planen und im Projekt verwendbar.
 function taskListHTML(){
@@ -2459,16 +2485,26 @@ function taskListHTML(){
   const sortP=(a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
   const head=(dot,title,count)=>`<div class="today-sechead" style="cursor:default"><span class="dot" style="width:9px;height:9px;border-radius:50%;background:${dot};flex:none"></span><span class="title">${title}</span><span class="count">${count}</span></div>`;
   // Default 'none' = flache "Offen"-Liste (ruhig); sonst nach gewählter Gruppierung — Re-Use boardGroups()
+  // WICHTIG: curBoardGroup() statt projTaskGroup. Der rohe Wert gilt nur im Projekt; in Planen liegt die
+  // Listen-Gruppierung in listGroup. Vorher las diese Funktion immer projTaskGroup ('none' ausserhalb eines
+  // Projekts) - die Gruppieren-Kachel schaltete sichtbar um und die Liste blieb flach.
+  const grp = curBoardGroup();
   let openBlock;
-  if(projTaskGroup==='none'){
+  if(grp==='none'){
     const cards=openAll.sort(sortP).map(t=>todayCardHTML(t)).join('');
     openBlock=`<div class="today-sec"${dropStatus('todo')}>${head('var(--text-muted)','Offen',openAll.length)}${openAll.length?`<div class="proj-taskgrid">${cards}</div>`:'<div class="proj-empty">Keine offenen Aufgaben.</div>'}</div>`;
-  } else if(projTaskGroup==='termin'){
+  } else if(grp==='termin'){
     // Termin = nach Datum (plannedSections). Ohne pool kennt boardGroups() hier keine Tagesspalten.
-    const openSecs=plannedSections(openAll).map(s=>`<div class="today-sec"${dropAttr(s.date?{drop:{type:'due',value:s.date}}:{no:'„Überfällig“ ist kein Termin'})}>${head(s.over?'var(--red)':'var(--text-muted)', esc(s.label), s.items.length)}<div class="proj-taskgrid">${s.items.map(t=>todayCardHTML(t)).join('')}</div></div>`).join('<div class="rule soft"></div>');
-    openBlock = openSecs || '<div class="proj-empty">Keine offenen Aufgaben mit Datum.</div>';
+    const secs=plannedSections(openAll).map(s=>`<div class="today-sec"${dropAttr(s.date?{drop:{type:'due',value:s.date}}:{no:'„Überfällig“ ist kein Termin'})}>${head(s.over?'var(--red)':'var(--text-muted)', esc(s.label), s.items.length)}<div class="proj-taskgrid">${s.items.map(t=>todayCardHTML(t)).join('')}</div></div>`);
+    // plannedSections() kennt nur datierte Aufgaben. Die undatierten sind keine Randmenge, sondern
+    // genau die, die man beim Planen sucht - sie bekommen die "Ohne …"-Gruppe wie ueberall sonst.
+    // Sie nimmt nichts an: ein leeres Datum ginge als type 'due' durch applyDrop() und wuerde dort
+    // mit shiftDays('') rechnen. Wortlaut wie bei "Ohne Person".
+    const undated=openAll.filter(t=>!t.due).sort(sortP);
+    if(undated.length) secs.push(`<div class="today-sec"${dropAttr({no:'Termine werden in der Aufgabe entfernt'})}>${head('#a7aaac','Ohne Termin',undated.length)}<div class="proj-taskgrid">${undated.map(t=>todayCardHTML(t)).join('')}</div></div>`);
+    openBlock = secs.join('<div class="rule soft"></div>') || '<div class="proj-empty">Keine offenen Aufgaben.</div>';
   } else {
-    const openSecs=boardGroups(openAll).map(g=>{
+    const openSecs=listGroups(grp, openAll).map(g=>{
       const items=openAll.filter(g.match).sort(sortP);
       if(!items.length) return '';
       return `<div class="today-sec"${dropAttr(g)}>${head(g.color||'var(--text-muted)', esc(g.label), items.length)}<div class="proj-taskgrid">${items.map(t=>todayCardHTML(t)).join('')}</div></div>`;
