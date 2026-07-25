@@ -793,6 +793,32 @@
   .gcard-add:hover { border-color: var(--accent); color: var(--text); }
   .gcard-add .ic { width: 15px; height: 15px; }
   .goal-rest .colnew { max-width: 240px; margin-top: 12px; }
+
+  /* ---- Fokus-Block im Reiter „Heute" (Wochenziele ueber der Tagesarbeit) ----
+     Es ist dieselbe .gcard wie im Ziele-Reiter. Nur Raster und Masse folgen der .tcard
+     darunter: zwei Rastermasse auf EINEM Screen lesen sich als Bruch. */
+  .focus-sec .goal-grid { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: var(--gap); align-items: stretch; }
+  .focus-sec .gcard { padding: 13px 14px; min-height: 0; gap: 10px; }
+  .focus-sec .gcard .gc-title { font-size: .88rem; font-weight: 550; line-height: 1.35; }
+  .focus-sec .gcard .gc-chev { top: 13px; right: 12px; cursor: pointer; opacity: .38; }
+  .focus-sec .gcard .gc-chev:hover { opacity: 1; color: var(--accent); }
+  .focus-sec .gcard-add { min-height: 0; padding: 13px 14px; }
+  /* Gefiltert = dieselbe Sprache wie eine aktive Steuer-Kachel. Kein Label, kein Zurueck-Knopf:
+     nochmal auf dieselbe Card klicken loest den Filter. */
+  .focus-sec .gcard.is-filtered { border-color: var(--accent); }
+  .focus-sec .gcard.is-filtered .gc-num { color: var(--accent); }
+  /* Ablegen auf eine Wochenziel-Card braucht KEINE neue Regel: .gcard.drop-target gibt es
+     bereits fuer die Projektziel-Cards (zoneBody() kennt .goal-grid nicht, deshalb Outline
+     statt Platzhalter). Eine zweite Regel hier haette die vorhandene ueberschrieben. */
+  /* Der Arbeitsteil im Wochenziel-Modal IST eine .gcard - nur ohne Huelle, damit alle
+     Regeln (Balken, Zeilen, Aktionen) gelten, ohne eine einzige zu duplizieren. */
+  #gWork .gcard.wg-modal { border:none; background:none; padding:0; min-height:0;
+    box-shadow:none; transform:none; cursor:default; }
+  #gWork .gcard.wg-modal:hover { box-shadow:none; transform:none; }
+  #gWork .gcard.wg-modal .gc-barrow { margin:0 0 14px; }
+  #gWork:empty { display:none; }
+
 </style>
 </head>
 <body>
@@ -816,8 +842,7 @@
     </div>
     <div class="head-2">
       <div class="ptabs" id="ptabs">
-        <button class="ptab active" data-tab="start">Start</button>
-        <button class="ptab" data-tab="heute">Heute</button>
+        <button class="ptab active" data-tab="heute">Heute</button>
         <button class="ptab" data-tab="planen">Planen</button>
         <button class="ptab" data-tab="projekte">Projekte</button>
         <button class="ptab" data-tab="auswerten">Statistik</button>
@@ -849,15 +874,11 @@
     </div>
   </header>
 
-  <!-- ================= START-BEREICH (Wochenziele) ================= -->
-  <div id="startArea" class="hidden">
-    <div id="startSections"></div>
-  </div>
-
-  <!-- ================= HEUTE-BEREICH (neu) ================= -->
+  <!-- ================= HEUTE-BEREICH: Fokus der Woche + Arbeit des Tages =================
+       Der fruehere Zweck-Tab „Start" ist hier aufgegangen (25.07.2026). Die Wochenziele stehen
+       als Fokus-Block ueber dem Tagesgeruest; die Platzhalter-Zeile (Plaene/Termine/Mails) ist
+       ersatzlos entfallen - sie hatte keine Funktion und kostete eine ganze Zeile. -->
   <div id="todayArea">
-    <div class="context" id="ctxTiles"></div>
-    <div class="rule"></div>
     <div id="todaySections"></div>
   </div>
 
@@ -915,9 +936,11 @@
             <label for="mProj">Projekt</label>
             <select id="mProj"><option value="">— kein Projekt —</option></select>
           </div>
+          <!-- Wochenziel steht neben dem Projekt: beide beantworten „wozu gehoert das".
+               Keine eigene Zeile, immer sichtbar, Auswahl optional. -->
           <div class="field">
-            <label for="mStatus">Status</label>
-            <select id="mStatus"></select>
+            <label for="mWg">Wochenziel</label>
+            <select id="mWg"><option value="">— kein Wochenziel —</option></select>
           </div>
         </div>
         <div class="field hidden" id="mGoalField">
@@ -925,10 +948,17 @@
           <select id="mGoal"><option value="">— kein Ziel —</option></select>
           <div class="eh-hint">Eine Aufgabe gehört zu genau einem Ziel des gewählten Projekts.</div>
         </div>
-        <div class="field" id="mRoleField">
-          <label for="mRole">Rolle</label>
-          <select id="mRole"></select>
-          <div class="role-inherited hidden" id="mRoleInherited"></div>
+        <!-- Status ist zur Rolle gewandert; dadurch wird die Rolle schmaler. -->
+        <div class="row2">
+          <div class="field" id="mRoleField">
+            <label for="mRole">Rolle</label>
+            <select id="mRole"></select>
+            <div class="role-inherited hidden" id="mRoleInherited"></div>
+          </div>
+          <div class="field">
+            <label for="mStatus">Status</label>
+            <select id="mStatus"></select>
+          </div>
         </div>
         <div class="field">
           <label for="mPrio">Priorität</label>
@@ -1069,7 +1099,7 @@
     <div class="body">
       <input type="hidden" id="gId">
       <div class="field">
-        <label for="gTitle">Ziel *</label>
+        <label for="gTitle">Wochenziel *</label>
         <input id="gTitle" type="text" placeholder="Was willst du diese Woche erreichen?">
       </div>
       <div class="field">
@@ -1080,6 +1110,10 @@
         <label for="gNote">Notiz</label>
         <textarea id="gNote" placeholder="Kontext, Teilschritte, Gedanken …" style="min-height:100px"></textarea>
       </div>
+      <!-- Fortschritt und zugeordnete Arbeit. Beim ANLEGEN ebenfalls sichtbar: man setzt ein Ziel
+           und haengt sofort Arbeit dran (Albrecht, 25.07.). Bis zum Speichern werden die
+           Zuordnungen vorgemerkt - wie Checkliste/Unteraufgaben im Aufgaben-Modal. -->
+      <div id="gWork"></div>
     </div>
     <div class="foot">
       <button class="ghost" id="gDelete" style="color:var(--q1);display:none">Löschen</button>
@@ -1497,7 +1531,8 @@ let tasks = [], projects = [], people = [], notes = [], weekGoals = [];
 // Kalender, Heute und den Aufgaben-KPIs mitschwimmen. Ein Meilenstein ist ein Termin, keine Arbeit.
 let goals = [], milestones = [];
 let view = 'board';
-let purpose = 'start';   // start | heute | planen | projekte | auswerten | backlog | archiv
+let purpose = 'heute';   // heute | planen | projekte | auswerten | backlog | archiv
+// „start" gibt es seit 25.07.2026 nicht mehr - die Wochenziele stehen als Fokus-Block in „heute".
 // 'archiv' ist bewusst KEIN Zweck-Tab: es ist ein Nachschlage-Ort, erreichbar ueber das
 // Aktenschrank-Icon oben rechts. Kein Tab ist dann aktiv - dafuer leuchtet das Icon.
 // Projekt-Unterseite (Laufzeit, NICHT persistiert): offenes Projekt + seine Unteransicht
@@ -1621,6 +1656,16 @@ function goalStats(goalId, pool){
            pct: ts.length?Math.round(done/ts.length*100):0,
            reached: ts.length>0 && done===ts.length };
 }
+// wgId = Wochenziel der Aufgabe (neues Feld, 25.07.2026). Neue FELDER an bestehenden Arrays
+// reisen im Speicher mit; sie gehoeren aber in die Normalisierung, damit Altdaten sauber sind.
+function normalizeTaskWg(){
+  if(!Array.isArray(tasks)) return;
+  tasks.forEach(t=>{
+    if(!t.wgId){ t.wgId = null; return; }
+    // Zeigt die Zuordnung ins Leere (Ziel geloescht), wird sie geloest statt mitgeschleppt.
+    if(!weekGoals.some(g=>g.id===t.wgId)) t.wgId = null;
+  });
+}
 function migrateTasks(arr){
   const smap = { todo:'todo', doing:'in_progress', done:'done' };
   const pmap = { hoch:'A', mittel:'B', niedrig:'D' };
@@ -1635,8 +1680,7 @@ function migrateTasks(arr){
 function render(){
   renderHead();
   renderPurpose();
-  if(purpose==='start') renderStart();
-  else if(purpose==='heute') renderToday();
+  if(purpose==='heute') renderToday();
   // Statistik und Archiv haben nur EINE Ansicht -> renderViewSwitchRow() gar nicht erst rufen.
   // (Die Funktion blendet die Zeile zu Beginn immer ein; renderCurrent() muesste sie danach
   //  wieder verstecken - ein sichtbares Flackern und eine unnoetige Abhaengigkeit.)
@@ -1667,7 +1711,6 @@ const PURPOSE_VIEWS = {
 function renderPurpose(){
   document.querySelectorAll('#ptabs .ptab').forEach(b=>b.classList.toggle('active', b.dataset.tab===purpose));
   document.getElementById('btnArchiv').classList.toggle('is-on', purpose==='archiv');
-  document.getElementById('startArea').classList.toggle('hidden', purpose!=='start');
   document.getElementById('todayArea').classList.toggle('hidden', purpose!=='heute');
   const legacy = ['planen','auswerten','backlog','projekte','archiv'].includes(purpose);
   document.getElementById('legacyArea').classList.toggle('hidden', !legacy);
@@ -1979,14 +2022,6 @@ function pickZoom(key){
 }
 /* ============================== HEUTE-ANSICHT ============================== */
 // Kontext-Kacheln (Platzhalter mit Beispieldaten – echte MS-Anbindung folgt separat)
-const CTX_DEMO = {
-  plaene:  { icon:'clipboard', title:'Pläne',          sub:'4 Pläne · 27 Aufgaben', n:4,
-             items:[['Redesign PEPAPP','8 Aufgaben'],['Spenderbetreuung Q3','6 Aufgaben'],['SEPP-Migration','9 Aufgaben'],['ICT-Wartung','4 Aufgaben']] },
-  termine: { icon:'calendar',  title:'Termine',        sub:'Diese & nächste Woche', n:6,
-             items:[['Teammeeting','Mo 09:00'],['Spender-Call','Di 14:00'],['SEPP-Review','Mi 10:30'],['Wartungsfenster','Do 07:00'],['Freigabe Layout','Fr 11:00'],['Planung KW31','Mo 09:00']] },
-  mails:   { icon:'mail',      title:'Markierte Mails', sub:'Zur Bearbeitung geflaggt', n:3,
-             items:[['Rückfrage Spender 4821','geflaggt'],['Angebot Dienstleister','geflaggt'],['Freigabe QM-Doku','geflaggt']] },
-};
 // Erscheint die Aufgabe bereits in den oberen Heute-Sektionen (nach Fälligkeit)?
 // Wenn ja, gehört sie NICHT nochmal in die Agenda-Vorausschau (keine Doppelung).
 function appearsInToday(t){
@@ -2003,7 +2038,7 @@ function appearsInToday(t){
 // Doppelungen mit der Heute-Ansicht (nach Fälligkeit) werden ausgeschlossen.
 function agendaData(){
   const today=ymd(new Date());
-  const base=tasks.filter(matchesFilter)
+  const base=tasks.filter(matchesFilter).filter(inFocusFilter)
     .filter(t=>t.status!=='done' && t.status!=='discarded')
     .filter(t=>t.start && t.start>=today)   // nur ab heute startende, datierte Aufgaben
     .filter(t=>!appearsInToday(t));          // nicht doppeln, was oben schon steht
@@ -2020,34 +2055,11 @@ function agendaData(){
   }));
   return { cols, total: base.length };
 }
-function renderCtxTiles(){
-  const el = document.getElementById('ctxTiles');
-  const demo = Object.entries(CTX_DEMO).map(([key,c])=>`
-    <div class="ctx" onclick="openCtxList('${key}')">
-      <span class="ic-wrap"><span class="ic">${ICON[c.icon]||''}</span></span>
-      <div class="body"><div class="t">${c.title}</div><div class="s">${c.sub}</div></div>
-      <span class="n">${c.n}</span>
-      <span class="ic chev">${ICON.chevronRight}</span>
-    </div>`).join('');
-  el.innerHTML = demo;
-}
-function openCtxList(key){
-  const c = CTX_DEMO[key]; if(!c) return;
-  document.getElementById('listTitle').textContent = c.title;
-  const rows = c.items.map(([a,b])=>`
-    <div class="link-row" style="cursor:default">
-      <span style="flex:1">${esc(a)}</span>
-      <span style="font-size:.76rem;color:var(--text-muted)">${esc(b)}</span>
-    </div>`).join('');
-  document.getElementById('listBody').innerHTML =
-    `<div class="eh-hint" style="margin-bottom:12px">Beispieldaten · noch nicht mit Microsoft verbunden. Die echte Anbindung (Planner, Outlook, geflaggte Mails) folgt separat.</div>
-     <div class="tag-list">${rows}</div>`;
-  listOverlay.classList.add('open');
-}
-
-// Tagesweise Gruppen: Heute -> Überfällig -> Morgen -> Folgetage dieser Woche -> Wartet noch
 function todaySections(){
-  const base = tasks.filter(matchesFilter)
+  // Blaettert man aus der laufenden Woche heraus, zeigt der Screen die Arbeit JENER Woche
+  // nach Tagen - Ziele und Aufgaben gehoeren zusammen (Freitagsritual).
+  if(!isThisWeek(focusMon())) return focusWeekSections();
+  const base = tasks.filter(matchesFilter).filter(inFocusFilter)
     .filter(t=>t.status!=='done' && t.status!=='discarded');
   const today = ymd(new Date());
   const t1=new Date(); t1.setDate(t1.getDate()+1); const tomorrow=ymd(t1);
@@ -2081,6 +2093,20 @@ function todaySections(){
   if(blocked.length) secs.push({ key:'wartet', title:'Wartet noch', day:'', items:blocked.sort(prioSort), blocked:true, no:'Ergibt sich aus den Abhängigkeiten' });
   return secs;
 }
+// Tagesgruppen einer beliebigen (nicht laufenden) Woche - fuer den Blick nach vorn und zurueck.
+function focusWeekSections(){
+  const mon=focusMon(), sun=focusSun();
+  const pool = tasks.filter(matchesFilter).filter(inFocusFilter)
+    .filter(t=>t.status!=='done' && t.status!=='discarded')
+    .filter(t=>t.due && t.due>=mon && t.due<=sun);
+  const by={}; pool.forEach(t=>{ (by[t.due]=by[t.due]||[]).push(t); });
+  return Object.keys(by).sort().map(d=>({
+    key:'fw'+d,
+    title:new Date(d+'T00:00:00').toLocaleDateString('de-DE',{weekday:'long'}),
+    day:dayLabel(d),
+    items:by[d].sort((a,b)=>{ const e=ehRank(a)-ehRank(b); return e || ((a.due||'')<(b.due||'')?-1:1); }),
+    drop:{type:'due',value:d} }));
+}
 function dayLabel(ds){
   const dt=new Date(ds+'T00:00:00');
   return dt.toLocaleDateString('de-DE',{weekday:'short', day:'numeric', month:'long'});
@@ -2108,11 +2134,12 @@ function todayCardHTML(t, blocked){
   </div>`;
 }
 function renderToday(){
-  renderCtxTiles();
   const allSecs = todaySections();
   const host = document.getElementById('todaySections');
   if(!allSecs.length){
-    host.innerHTML = '<div class="today-empty">Für diese Woche sind keine Aufgaben terminiert. Aufgaben mit Fälligkeitsdatum erscheinen hier – Heute zuerst, dann Überfällig, Morgen und die Folgetage.</div>';
+    host.innerHTML = focusBlockHTML()
+      + `<div class="today-empty">${focusFilterWg ? 'Für dieses Wochenziel steht in dieser Woche nichts an.'
+        : 'Für diese Woche sind keine Aufgaben terminiert. Aufgaben mit Fälligkeitsdatum erscheinen hier – Heute zuerst, dann Überfällig, Morgen und die Folgetage.'}</div>`;
     return;
   }
   // „Wartet noch" wird bewusst ganz ans Ende gezogen – auch unter die Agenda (Wunsch 24.07.2026).
@@ -2136,7 +2163,9 @@ function renderToday(){
   }).join('');
   const hasAnyAbove = secs.length>0;
   // Reihenfolge: normale Tagesgruppen -> Agenda -> Wartet noch (ganz unten)
-  host.innerHTML = secHTML(secs, 0)
+  // Der Fokus der Woche steht ueber der Arbeit des Tages - ein Einstieg statt zwei.
+  host.innerHTML = focusBlockHTML()
+    + secHTML(secs, 0)
     + agendaSectionHTML(hasAnyAbove)
     + secHTML(waiting, 1);   // startIdx=1 -> immer Trennstrich davor
 }
@@ -3001,14 +3030,29 @@ function deleteNote(){
 // startRef = Referenzdatum der OBEN gezeigten Woche. Standard = aktuelle Woche.
 // Darunter immer die Folgewoche. Wochen-Switch blättert startRef um ±7 Tage (Kalender-Pattern).
 let startRef = new Date();
-function startNav(dir){ const d=new Date(startRef); d.setDate(d.getDate()+7*dir); startRef=d; renderStart(); }
-function startThisWeek(){ startRef=new Date(); renderStart(); }
+function startNav(dir){ const d=new Date(startRef); d.setDate(d.getDate()+7*dir); startRef=d; focusFilterWg=null; render(); }
+function startThisWeek(){ startRef=new Date(); focusFilterWg=null; render(); }
 function isThisWeek(monKey){ return monKey===mondayStr(new Date()); }
-// Wochenziele einer Woche (per Montags-Key), Rollen-Reihenfolge, offen vor erledigt
+function focusMon(){ return mondayStr(startRef); }
+function focusSun(){ const d=new Date(focusMon()+'T00:00:00'); d.setDate(d.getDate()+6); return ymd(d); }
+function wgById(id){ return weekGoals.find(g=>g.id===id) || null; }
+/* Fortschritt eines Wochenziels - Spiegelbild von goalStats(). „erreicht" wird GERECHNET,
+   nicht angehakt: alle zugeordneten Aufgaben erledigt. Die Altfelder g.done/g.doneAt bleiben
+   im Datensatz stehen, werden aber NIRGENDS mehr ausgewertet (wie bei den Projektzielen). */
+function wgStats(wgId){
+  const ts = tasks.filter(t=>t.wgId===wgId && t.status!=='discarded');
+  const done = ts.filter(t=>t.status==='done').length;
+  return { total:ts.length, done, open:ts.length-done,
+           pct: ts.length?Math.round(done/ts.length*100):0,
+           reached: ts.length>0 && done===ts.length, items:ts };
+}
+// Wochenziele einer Woche (per Montags-Key): offen vor erreicht, dann Rollen-Reihenfolge.
 function goalsForWeek(monKey){
   const order = Object.fromEntries(ROLES.map((r,i)=>[r.id,i]));
-  return weekGoals.filter(g=>g.week===monKey)
-    .slice().sort((a,b)=> (a.done-b.done) || ((order[a.role]??9)-(order[b.role]??9)) || a.title.localeCompare(b.title,'de'));
+  return weekGoals.filter(g=>g.week===monKey).slice().sort((a,b)=>
+      (wgStats(a.id).reached - wgStats(b.id).reached)
+   || ((order[a.role]??9)-(order[b.role]??9))
+   || a.title.localeCompare(b.title,'de'));
 }
 function weekTitle(monKey){
   const mon=new Date(monKey+'T00:00:00'); const {sun}=weekRange(mon);
@@ -3024,48 +3068,103 @@ function isoWeek(d){
   const fday=(firstThu.getUTCDay()+6)%7; firstThu.setUTCDate(firstThu.getUTCDate()-fday+3);
   return 1+Math.round((dt-firstThu)/(7*864e5));
 }
-function goalCardHTML(g){
-  const r = roleById(g.role) || roleById('meta');
-  const color = r ? r.color : 'var(--meta)';
-  const badge = r ? `<span class="tbadge" style="background:${color}">${r.code}</span>` : '';
-  const noteHTML = (g.note||'').trim() ? `<span class="g-note">${esc(g.note.trim())}</span>` : '';
-  return `<div class="tcard goal-card ${g.done?'done':''}" style="--role:${color}" onclick="openGoal('${g.id}')">
-    <span class="g-reached">Erreicht</span>
-    <button class="g-check" title="${g.done?'Als offen markieren':'Als erreicht markieren'}"
-      onclick="event.stopPropagation();toggleGoalDone('${g.id}')">${ICON.check}</button>
-    <div class="tt">${esc(g.title)}</div>
-    <div class="meta" style="display:flex">${badge}</div>
-    ${noteHTML}
-  </div>`;
+/* Die Wochenziel-Card IST die .gcard des Ziele-Reiters: Titel, Fortschrittsbalken, x/y, Chevron.
+   Kein eigenes Vokabular, keine Checkbox. Zwei Wege, zwei Fragen:
+     Klick auf die Card    -> „was von diesem Ziel ist JETZT dran" (filtert das Tagesgeruest)
+     Klick auf den Chevron -> „was gehoert zu diesem Ziel"        (oeffnet das Wochenziel-Modal)
+   Der Chevron ist dauerhaft sichtbar - ein unsichtbares Bedienelement gilt als nicht vorhanden. */
+function wgCardHTML(g){
+  const stx = wgStats(g.id);
+  const st  = stx.reached ? GOAL_GREEN : 'var(--text-muted)';
+  const sel = (focusFilterWg===g.id) ? ' is-filtered' : '';
+  return `<div class="gcard${sel} ${stx.total===0?'is-empty':''}" style="--st:${st}"`
+    + dropAttr({drop:{type:'wg', value:g.id}}) + ` onclick="focusFilter('${g.id}')">`
+    + `<div class="gc-head"><div class="gc-title">${esc(g.title)}</div></div>`
+    + `<div class="gc-barrow"><div class="gc-bar"><i style="width:${stx.total?stx.pct:0}%"></i></div>`
+    + `<span class="gc-num">${stx.done}/${stx.total}</span></div>`
+    + `<span class="ic gc-chev" title="Wochenziel öffnen" onclick="event.stopPropagation();openGoal('${g.id}')">${ICON.chevronRight}</span></div>`;
 }
-function weekBlockHTML(monKey, isNext){
+// Filter auf ein Wochenziel. Nochmal auf dieselbe Card klicken loest ihn - deshalb braucht es
+// keinen „alle zeigen"-Knopf; der Zustand steht sichtbar an der Card (Akzentrand).
+let focusFilterWg = null;
+function focusFilter(id){ focusFilterWg = (focusFilterWg===id) ? null : id; render(); }
+function inFocusFilter(t){ return !focusFilterWg || t.wgId===focusFilterWg; }
+/* Der Fokus-Block: Wochenziele ueber dem Tagesgeruest, im selben Raster wie die Aufgaben.
+   Die Blaetter-Zeile sitzt im Sektionskopf (kein eigener Zeitregler, keine Kachel) und
+   blaettert beliebig weit vor und zurueck - fuers Freitagsritual. */
+function focusBlockHTML(){
+  const monKey = focusMon();
   const { kw, range } = weekTitle(monKey);
-  const label = isNext ? 'Nächste Woche' : (isThisWeek(monKey) ? 'Diese Woche' : 'Woche');
   const goals = goalsForWeek(monKey);
-  const cards = goals.map(goalCardHTML).join('');
-  const addBtn = `<button class="goal-add" onclick="openGoal(null,'${monKey}')">${ic('plus')} Wochenziel</button>`;
-  const grid = `<div class="today-grid">${cards}${addBtn}</div>`;
-  const empty = goals.length ? '' : `<div class="goal-empty">Noch kein Wochenziel für diese Woche.</div>`;
-  return `<div class="today-sec">
-    <div class="today-sechead" style="cursor:default">
-      <span class="title">${label}</span>
-      <span class="day">${kw} · ${range}</span>
-      <span class="spacer"></span>
-      <span class="count">${goals.length}</span>
-    </div>
-    ${empty}${grid}
-  </div>`;
+  const cards = goals.map(wgCardHTML).join('');
+  const empty = goals.length ? '' : `<div class="goal-empty">Noch kein Fokus für diese Woche.</div>`;
+  const nav = `<button class="ghost sm" onclick="startNav(-1)" title="Woche zurück">◀</button>`
+    + `<button class="ghost sm" onclick="startThisWeek()">Diese Woche</button>`
+    + `<button class="ghost sm" onclick="startNav(1)" title="Woche vor">▶</button>`;
+  return `<div class="today-sec focus-sec">`
+    + `<div class="today-sechead" style="cursor:default"><span class="title">Fokus</span>`
+    + `<span class="day">${kw} · ${range}</span><span class="count">${goals.length}</span>`
+    + `<span class="spacer"></span>${nav}</div>`
+    + `${empty}<div class="goal-grid">${cards}`
+    + `<button class="gcard-add" onclick="openGoal(null,'${monKey}')">${ic('plus')} Wochenziel</button></div></div>`
+    + `<div class="rule"></div>`;
 }
-function renderStart(){
-  const monTop = mondayStr(startRef);
-  const nextMon = (()=>{ const d=new Date(monTop+'T00:00:00'); d.setDate(d.getDate()+7); return ymd(d); })();
-  const nav = `<div class="week-nav">
-    <button class="ghost sm" onclick="startNav(-1)" title="Woche zurück">◀</button>
-    <button class="ghost sm" onclick="startThisWeek()">Diese Woche</button>
-    <button class="ghost sm" onclick="startNav(1)" title="Woche vor">▶</button>
-  </div>`;
-  document.getElementById('startSections').innerHTML =
-    nav + weekBlockHTML(monTop, false) + `<div class="rule soft"></div>` + weekBlockHTML(nextMon, true);
+
+
+/* --- Arbeitsteil im Wochenziel-Modal --------------------------------------
+   Aufbau und Klassen wie in der aufgeklappten Projektziel-Card (gc-barrow/gc-tasks/gc-acts),
+   damit es kein zweites Vokabular gibt. Beim Anlegen existiert das Ziel noch nicht: die
+   Zuordnungen werden in wgPending vorgemerkt und erst beim Speichern gesetzt - dasselbe
+   Verfahren wie modalChecklist/modalSubtasks im Aufgaben-Modal. */
+let wgModalId = null, wgAssignMode = false, wgPending = [];
+function wgUnpend(tid){ wgPending = wgPending.filter(x=>x!==tid); renderGoalWork(); }
+function wgAssign(tid){
+  const t = tasks.find(x=>x.id===tid); if(!t) return;
+  if(wgModalId){ t.wgId = wgModalId; persist(); refreshActive(); }
+  else if(!wgPending.includes(tid)) wgPending.push(tid);
+  renderGoalWork();
+}
+function wgNewTask(){ const g=wgModalId; closeGoal(); openNew(); if(g) document.getElementById('mWg').value=g; }
+function renderGoalWork(){
+  const box = document.getElementById('gWork'); if(!box) return;
+  const g = wgModalId ? wgById(wgModalId) : null;
+  const stx = g ? wgStats(g.id) : (()=>{
+    const items = wgPending.map(id=>tasks.find(t=>t.id===id)).filter(Boolean);
+    const done = items.filter(t=>t.status==='done').length;
+    return { total:items.length, done, pct: items.length?Math.round(done/items.length*100):0, items };
+  })();
+  if(wgAssignMode){
+    // Zuordnen-Liste nach dem Muster von renderAssign(): Klick ordnet zu, das Fenster bleibt offen.
+    const cur = g ? g.id : null;
+    const free  = tasks.filter(t=>!t.wgId && !wgPending.includes(t.id) && t.status!=='discarded').sort(assignSort);
+    const other = tasks.filter(t=>t.wgId && t.wgId!==cur && t.status!=='discarded').sort(assignSort);
+    const row = t=>`<div class="arch-row goal-row${t.status==='done'?' is-reached':''}" onclick="wgAssign('${t.id}')">`
+      + `<span class="a-title">${esc(t.title)}</span>`
+      + (t.wgId?`<span class="badge">${esc((wgById(t.wgId)||{}).title||'')}</span>`:'')
+      + (t.due?`<span class="a-date ${isOverdue(t)?'over':''}">${fmtDate(t.due)}</span>`:'')+`</div>`;
+    const sec = (title,hint,rows)=>rows?`<div class="today-sechead" style="cursor:default;margin-top:6px"><span class="title">${title}</span><span class="day">${hint}</span></div><div class="tag-list">${rows}</div>`:'';
+    box.innerHTML = `<div class="eh-hint" style="margin-bottom:4px">Klick ordnet die Aufgabe diesem Wochenziel zu. Das Fenster bleibt offen.</div>`
+      + sec('Ohne Wochenziel','Aufgaben, die auf keinen Fokus einzahlen', free.map(row).join(''))
+      + sec('Aus einem anderen Wochenziel','Eine Aufgabe gehört zu genau einem Wochenziel', other.map(row).join(''))
+      + `<div class="gc-foot" style="margin-top:12px"><button type="button" class="ghost sm" onclick="wgAssignMode=false;renderGoalWork()">Zurück</button></div>`;
+    return;
+  }
+  const rows = stx.items.length
+    ? `<div class="gc-tasks">` + stx.items.slice().sort(assignSort).map(t=>
+        `<div class="gc-row ${t.status==='done'?'is-done':''}" title="${g?'Aufgabe öffnen':'Vormerkung entfernen'}"`
+        + ` onclick="${g?`closeGoal();openEdit('${t.id}')`:`wgUnpend('${t.id}')`}">`
+        + `<span class="gr-t">${esc(t.title)}</span>`
+        + (t.due?`<span class="gr-d ${isOverdue(t)?'over':''}">${fmtDate(t.due)}</span>`:'')
+        + `</div>`).join('') + `</div>`
+    : `<div class="proj-empty" style="padding:4px 2px">Noch keine Aufgabe. Ordne eine zu oder leg eine an.</div>`;
+  box.innerHTML = `<div class="gcard wg-modal is-open">`
+    + `<div class="gc-barrow"><div class="gc-bar"><i style="width:${stx.total?stx.pct:0}%"></i></div>`
+    +   `<span class="gc-num">${stx.done}/${stx.total}</span></div>`
+    + rows
+    + `<div class="gc-acts">`
+    +   `<button type="button" class="colnew" onclick="wgNewTask()">+ Aufgabe</button>`
+    +   `<button type="button" class="colnew" onclick="wgAssignMode=true;renderGoalWork()">Aufgabe zuordnen</button>`
+    + `</div></div>`;
 }
 
 /* ---------- Wochenziel-Modal ---------- */
@@ -3084,6 +3183,8 @@ function openGoal(id, week){
   document.getElementById('gNote').value  = editing ? (g.note||'')  : '';
   fillGoalRoleSelect(editing ? (roleById(g.role)?g.role:'meta') : (filters.role || 'meta'));
   document.getElementById('gDelete').style.display = editing ? '' : 'none';
+  wgModalId = editing ? g.id : null; wgAssignMode = false; wgPending = [];
+  renderGoalWork();
   goalOverlay.classList.add('open');
   setTimeout(()=>document.getElementById('gTitle').focus(), 30);
 }
@@ -3098,22 +3199,25 @@ function saveGoal(){
     const g = weekGoals.find(x=>x.id===id);
     if(g){ g.title=title; g.note=note; g.role=role; }
   } else {
-    weekGoals.push({ id:uid('wg'), title, note, role, week:(goalTargetWeek||mondayStr(new Date())), done:false, doneAt:'' });
+    const neu = { id:uid('wg'), title, note, role, week:(goalTargetWeek||mondayStr(new Date())), done:false, doneAt:'' };
+    weekGoals.push(neu);
+    // Beim Anlegen vorgemerkte Aufgaben jetzt zuordnen - vorher gab es keine Id.
+    wgPending.forEach(tid=>{ const t=tasks.find(x=>x.id===tid); if(t) t.wgId=neu.id; });
+    // Die neue Woche sichtbar machen, falls man in einer anderen blaettert.
+    if(neu.week!==mondayStr(startRef)) startRef = new Date(neu.week+'T00:00:00');
   }
-  persist(); closeGoal();
-  // Neues Ziel sichtbar machen: in den Start-Tab wechseln, falls man woanders war
-  if(!id && purpose!=='start'){ purpose='start'; render(); }
+  wgPending=[]; persist(); closeGoal();
+  // Frueher wechselte diese Stelle in den Zweck-Tab „start". Den gibt es nicht mehr -
+  // der Fokus steht in „heute" und ist nach dem Speichern ohnehin sichtbar.
+  if(purpose!=='heute' && purpose!=='projekte'){ purpose='heute'; render(); }
   else refreshActive();
-}
-function toggleGoalDone(id){
-  const g = weekGoals.find(x=>x.id===id); if(!g) return;
-  g.done = !g.done; g.doneAt = g.done ? todayStr() : '';
-  persist(); refreshActive();
 }
 function deleteGoal(){
   const id = document.getElementById('gId').value;
   if(id && confirm('Dieses Wochenziel wirklich löschen?')){
-    weekGoals = weekGoals.filter(x=>x.id!==id); persist(); closeGoal(); refreshActive();
+    weekGoals = weekGoals.filter(x=>x.id!==id);
+    tasks.forEach(t=>{ if(t.wgId===id) t.wgId=null; });   // keine Zuordnung ins Leere
+    persist(); closeGoal(); refreshActive();
   }
 }
 
@@ -3807,6 +3911,7 @@ function dropCheck(it, type, value, reason){
     if(t.projectId!==g.projectId){ const p=projById(g.projectId); return { ok:false, reason:`Ziel gehört zu „${p?p.name:'—'}"` }; }
     return { ok:true };
   }
+  if(type==='wg') return { ok:true };   // Wochenziel-Card nimmt jede Aufgabe an
   if(['status','prio','project','due','start'].includes(type)) return { ok:true };
   return { ok:false, reason:'Hier nicht ablegbar' };
 }
@@ -3823,6 +3928,7 @@ function applyDrop(it, type, value){
     const old=t.status; t.status=value; setArchivedAt(t,old,value); maybeRecur(t,old,value); return true;
   }
   if(type==='prio'){ if((t.prio||'D')===value) return false; t.prio=value; return true; }
+  if(type==='wg'){ const w=value||null; if((t.wgId||null)===w) return false; t.wgId=w; return true; }
   if(type==='role'){
     if(t.projectId) return false;          // Rolle hängt am Projekt – dropCheck() verweigert das bereits
     if((t.role||'meta')===value) return false;
@@ -4229,6 +4335,19 @@ function updateGoalField(keep){
     gs.map(g=>`<option value="${g.id}">${esc(g.title)}${goalStats(g.id).reached?' (erreicht)':''}</option>`).join('');
   sel.value = (keep && gs.some(g=>g.id===keep)) ? keep : '';
 }
+/* Wochenziel im Aufgaben-Modal. Angeboten werden die Ziele ab der laufenden Woche; haengt die
+   Aufgabe an einem aelteren, steht dieses trotzdem drin, damit Speichern die Zuordnung nicht
+   stillschweigend loescht. Das Feld ist immer da und immer optional. */
+function updateWgField(keep){
+  const sel = document.getElementById('mWg'); if(!sel) return;
+  const thisMon = mondayStr(new Date());
+  let gs = weekGoals.filter(g=>g.week>=thisMon);
+  if(keep && !gs.some(g=>g.id===keep)){ const k=wgById(keep); if(k) gs=[k].concat(gs); }
+  gs = gs.slice().sort((a,b)=> a.week<b.week?-1 : a.week>b.week?1 : (a.title||'').localeCompare(b.title||'','de'));
+  sel.innerHTML = '<option value="">— kein Wochenziel —</option>'
+    + gs.map(g=>`<option value="${g.id}">${g.week===thisMon?'Diese Woche':'KW '+weekTitle(g.week).kw} · ${esc(g.title)}</option>`).join('');
+  sel.value = (keep && gs.some(g=>g.id===keep)) ? keep : '';
+}
 function updateRoleField(){
   const pid = document.getElementById('mProj').value;
   const sel = document.getElementById('mRole');
@@ -4261,6 +4380,8 @@ function openNew(presetStatus){
   document.getElementById('mStatus').value = presetStatus || (view === 'backlog' ? 'backlog' : 'inbox');
   // Im Ziele-Reiter direkt das offene Ziel vorbelegen, wenn es genau eines gibt
   updateGoalField(null);
+  // Im Fokus gefiltert? Dann ist das gemeinte Wochenziel eindeutig - vorbelegen.
+  updateWgField(focusFilterWg || null);
   document.getElementById('mRole').value = filters.role || 'meta';
   document.getElementById('mPrio').value='B';
   document.getElementById('mStart').value='';
@@ -4299,6 +4420,7 @@ function openEdit(id){
   modalPeople=(t.people||[]).map(x=>({...x})); modalDeps=[...(t.dependsOn||[])];
   renderModalPeople(); renderModalDeps();
   updateGoalField(t.goalId||null);
+  updateWgField(t.wgId||null);
   updateRoleField();
   document.getElementById('mDelete').classList.remove('hidden');
   overlay.classList.add('open');
@@ -4316,6 +4438,7 @@ function saveModal(){
     title, desc:document.getElementById('mDesc').value.trim(),
     projectId:pid,
     goalId:gOk,
+    wgId: document.getElementById('mWg').value || null,
     role: pid ? null : document.getElementById('mRole').value,
     status:document.getElementById('mStatus').value,
     prio:document.getElementById('mPrio').value,
@@ -4505,7 +4628,7 @@ async function ghConnect(){
     } else {
       tasks=res.data.tasks||[]; projects=res.data.projects||[]; people=res.data.people||[]; notes=res.data.notes||[]; weekGoals=res.data.weekGoals||[];
       goals=res.data.goals||[]; milestones=res.data.milestones||[];
-      normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
+      normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio(); normalizeTaskWg();
       state.textContent='Verbunden. Daten aus dem Repo geladen ('+tasks.length+' Aufgaben).';
       render();
     }
@@ -4536,7 +4659,7 @@ function importJSON(file){
     const d=JSON.parse(r.result);
     if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; notes=[]; weekGoals=[]; goals=[]; milestones=[]; }
     else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; notes=(d.notes||[]).map(n=>({role:'meta',done:false,...n})); weekGoals=d.weekGoals||[]; goals=d.goals||[]; milestones=d.milestones||[]; }
-    normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
+    normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio(); normalizeTaskWg();
     persist(); render(); alert('Import erfolgreich: '+tasks.length+' Aufgaben, '+projects.length+' Projekte, '+people.length+' Personen.');
   }catch(e){ alert('Import fehlgeschlagen: '+e.message); } };
   r.readAsText(file);
@@ -4546,7 +4669,7 @@ function importJSON(file){
 // Zweck-Tabs
 document.querySelectorAll('#ptabs .ptab').forEach(b => b.onclick = () => setPurpose(b.dataset.tab));
 // Archiv: kein Tab, sondern ein Ort. Zweiter Klick fuehrt zurueck auf die Startseite.
-document.getElementById('btnArchiv').onclick = () => setPurpose(purpose==='archiv' ? 'start' : 'archiv');
+document.getElementById('btnArchiv').onclick = () => setPurpose(purpose==='archiv' ? 'heute' : 'archiv');
 // Rolle-/Filter-Kacheln
 document.getElementById('tileRole').onclick = openRoleModal;
 document.getElementById('tileFilter').onclick = openFilterModal;
@@ -4587,7 +4710,7 @@ document.getElementById('newProject').onclick=()=>{ closeNewMenu(); openNewProje
 document.getElementById('newGoal').onclick=()=>{ closeNewMenu(); openGoal(); };
 document.addEventListener('click',(e)=>{ if(!e.target.closest('.new-wrap')) closeNewMenu(); });
 // Aktive Ansicht neu zeichnen (Heute oder Legacy-View)
-function refreshActive(){ if(purpose==='start') renderStart(); else if(purpose==='heute') renderToday(); else renderCurrent(); renderHead(); }
+function refreshActive(){ if(purpose==='heute') renderToday(); else renderCurrent(); renderHead(); }
 document.getElementById('mSave').onclick=saveModal;
 document.getElementById('mCancel').onclick=closeModal;
 document.getElementById('mDelete').onclick=deleteModal;
@@ -4665,7 +4788,7 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
   if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; notes=data.notes||[]; weekGoals=data.weekGoals||[];
             goals=data.goals||[]; milestones=data.milestones||[]; }
   // Normalisierung: Projekte aufs erweiterte Modell bringen (Rolle, status, members, goal, desc)
-  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones();
+  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizeTaskWg();
   if(!data || (tasks.length===0 && projects.length===0)){
     const rel=n=>{ const d=new Date(); d.setDate(d.getDate()+n); return ymd(d); };
     people=[{ id:uid('pe'), name:'AlbBue', self:true }];
@@ -4688,7 +4811,7 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
     milestones=[ { id:uid('ms'), projectId:projects[0].id, title:'Erste Woche im Einsatz', date:rel(7),
                    note:'Fünf Arbeitstage in Folge genutzt, ohne auf Planner zurückzufallen.', done:false, doneAt:'' } ];
   }
-  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
+  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio(); normalizeTaskWg();
   await persist();
   render();
 })();
