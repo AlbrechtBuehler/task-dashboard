@@ -633,6 +633,35 @@
   #board .today-sec + .today-sec { margin-top: 0; }
 
   .hidden { display: none !important; }
+
+  /* ===== Projekt-Unterseite ===== */
+  .pd-head { border:1px solid var(--border); border-left:3px solid var(--role,var(--border)); border-radius:var(--r);
+    background:var(--surface); box-shadow:var(--shadow); padding:16px 18px; margin:0 0 16px; }
+  .pd-top { display:flex; align-items:center; gap:12px; }
+  .pd-name { font-size:1.3rem; font-weight:680; line-height:1.2; margin:0; word-break:break-word; }
+  .pd-badges { display:flex; align-items:center; gap:6px; flex:none; }
+  .pd-goal { color:var(--text-muted); font-size:.9rem; line-height:1.45; margin-top:7px; }
+  .pd-meta { display:flex; align-items:center; gap:20px; flex-wrap:wrap; margin-top:13px; font-size:.82rem; color:var(--text-muted); }
+  .pd-mi { display:flex; align-items:center; gap:7px; }
+  .pd-mi .ic { width:14px; height:14px; flex:none; }
+  .pd-mi b { color:var(--text); font-weight:650; }
+  .pd-members { flex-wrap:wrap; }
+  .pd-members .ghost.sm, .today-sec .ghost.sm { display:inline-flex; align-items:center; gap:5px; }
+  .pd-members .ghost.sm .ic, .today-sec .ghost.sm .ic { width:13px; height:13px; }
+  #projChrome { border-bottom:1px solid var(--border); padding-bottom:16px; margin-bottom:18px; }  /* Strich + Luft zwischen Umschalter und Inhalt (wie Planen) */
+  #projChrome .stats { margin:2px 0 16px; }
+  .kpi-strip { display:flex; align-items:center; gap:22px; flex-wrap:wrap; padding:2px 2px 10px; margin:0 0 12px; font-size:.86rem; color:var(--text-muted); }
+  .kpi-strip b { color:var(--text); font-weight:680; }
+  .kpi-strip .over, .kpi-strip .over b { color:var(--red); }
+  #projChrome .scope-nav { margin:10px 0 4px; }
+  .proj-switch2 { gap:8px; }
+  .proj-switch2 .sr-funcs { margin-left:auto; display:flex; gap:8px; align-items:stretch; }
+  .proj-switch2 .sr-funcs .ctrl-tile { margin-left:0; width:150px; }   /* Funktionskacheln knapper, damit die Zeile mit Zurück-Kachel nicht umbricht */
+  .proj-switch2 .ret { margin-left:auto; width:142px; }
+  .proj-switch2 .sr-funcs ~ .ret { margin-left:14px; }
+  .proj-taskgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
+  .proj-empty { color:var(--text-muted); font-size:.88rem; padding:8px 2px; }
+  .proj-taskgrid .colnew.proj-add { align-self:start; min-height:70px; display:flex; align-items:center; justify-content:center; border-radius:var(--r); font-size:.9rem; }
 </style>
 </head>
 <body>
@@ -702,12 +731,15 @@
   <!-- ================= PLANEN / AUSWERTEN / BACKLOG (Kachel-System) ================= -->
   <div id="legacyArea" class="hidden">
     <div class="switch-row" id="viewSwitchRow"></div>
-    <div class="rule"></div>
+    <div class="rule" id="viewSwitchRule"></div>
     <span id="backlogCount" class="hidden">0</span>
 
     <!-- Datumswechsel: oben im Inhalt – exakt die Stelle, an der er im Kalender sass (1:1).
          Bewusst NEBEN den Ansichts-Containern, nie darin (#board ist ein Grid). -->
     <div id="scopeNav" class="hidden"></div>
+
+    <!-- Projekt-Unterseite: Kopf + KPIs + projekt-eigener Umschalter. NEBEN #board (nie darin, #board ist ein Grid). -->
+    <div id="projChrome" class="hidden"></div>
 
     <div class="board" id="board"></div>
     <div id="backlog" class="hidden"></div>
@@ -1254,6 +1286,11 @@ function taskRole(t){
 let tasks = [], projects = [], people = [], notes = [], weekGoals = [];
 let view = 'board';
 let purpose = 'start';   // Zweck-Tab: start | heute | planen | auswerten | backlog — App startet auf Start (Wochenziele)
+// Projekt-Unterseite (Laufzeit, NICHT persistiert): offenes Projekt + seine Unteransicht
+let openProjectId = null;
+let projView = 'aufgaben'; // aufgaben | board | calendar | gantt
+let projBoardGroup = 'status'; // Board im Projekt gruppiert per Default nach Status (Rolle = nur eine Spalte)
+let projTaskGroup = 'none';    // Aufgaben-Liste im Projekt: Default flach ("Offen/Erledigt"); Gruppieren optional
 let boardGroup = (()=>{ try { return localStorage.getItem('taskDashboard.boardGroup') || 'role'; } catch(e){ return 'role'; } })();
 let timeScope = (()=>{ try { return localStorage.getItem('taskDashboard.timeScope') || 'all'; } catch(e){ return 'all'; } })(); // all | today | week | month
 // Gemeinsamer, verschiebbarer Zeit-Cursor für Board/Kalender/Gantt (Re-Use für alle drei Planen-Ansichten).
@@ -1364,6 +1401,8 @@ function renderPurpose(){
 }
 // Kachel-Zeile: Ansichts-Kacheln + (bei Planen/Board) Gruppieren-Kachel
 function renderViewSwitchRow(){
+  document.getElementById('viewSwitchRow').classList.remove('hidden');
+  document.getElementById('viewSwitchRule').classList.remove('hidden');
   const views = PURPOSE_VIEWS[purpose] || [];
   const tiles = views.map(v=>`
     <button class="vtile ${v.id===view?'active':''}" onclick="setView('${v.id}')">
@@ -1403,7 +1442,7 @@ function renderViewSwitchRow(){
   // Reihenfolge rechts: Zoom … Zeitraum (Zeitraum außen). Zoom trägt die auto-Marge, wenn kein Zeitraum da ist.
   document.getElementById('viewSwitchRow').innerHTML = tiles + zoomTile + scopeTile + groupTile;
 }
-function setPurpose(p){ purpose = p; render(); }
+function setPurpose(p){ openProjectId=null; purpose = p; render(); }
 
 /* ---------- Kopf: Datum, Rolle-/Filter-Kachel-Werte ---------- */
 function renderHead(){
@@ -1434,7 +1473,7 @@ function renderHead(){
 
 function inRole(t){ return !filters.role || taskRole(t) === filters.role; }
 
-const BOARD_GROUP_LABEL = { status:'Status', role:'Rolle', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
+const BOARD_GROUP_LABEL = { none:'Keine', status:'Status', role:'Rolle', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
 const TIME_SCOPE_LABEL = { all:'Alle', today:'Tag', week:'Woche', month:'Monat' };
 const TIME_SCOPE_OPTS = [
   { id:'all',   label:'Alle',   sub:'Kein Zeitfilter',       icon:'backlog' },
@@ -1461,8 +1500,8 @@ function navUnit(){
   return null;
 }
 // Menschlicher Titel des aktuellen Fensters.
-function navLabel(){
-  const u=navUnit(); if(!u) return '';
+function navLabel(u){
+  u=u||navUnit(); if(!u) return '';
   const ref=calRef instanceof Date ? calRef : new Date();
   if(u==='day') return ref.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   if(u==='week'){ const {mon,sun}=weekRange(ref); return `${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
@@ -1470,14 +1509,15 @@ function navLabel(){
 }
 // Cursor verschieben – wirkt auf Board/Kalender/Gantt gemeinsam.
 function scopeNav(dir){
-  const u=navUnit(); if(!u) return;
+  const u = openProjectId ? projNavUnit() : navUnit(); if(!u) return;
   const d=new Date(calRef);
   if(u==='day') d.setDate(d.getDate()+dir);
   else if(u==='week') d.setDate(d.getDate()+7*dir);
   else d.setMonth(d.getMonth()+dir);
-  calRef=d; renderScopeNav(); renderCurrent();
+  calRef=d;
+  if(openProjectId) renderProjektDetail(); else { renderScopeNav(); renderCurrent(); }
 }
-function scopeToday(){ calRef=new Date(); renderScopeNav(); renderCurrent(); }
+function scopeToday(){ calRef=new Date(); if(openProjectId) renderProjektDetail(); else { renderScopeNav(); renderCurrent(); } }
 // Rendert den Datumswechsel auf Seitenebene (eigener Container, NIE in einer Ansicht).
 function renderScopeNav(){
   const el=document.getElementById('scopeNav'); if(!el) return;
@@ -1506,7 +1546,7 @@ function setTimeScope(s){
   calRef = new Date(); // beim Zeitraum-Wechsel immer auf "jetzt" zurücksetzen (gemeinsamer Cursor)
   closeScopeModal(); renderViewSwitchRow(); renderCurrent();
 }
-function setView(v){ view = v; renderViewSwitchRow(); renderCurrent(); }
+function setView(v){ openProjectId=null; view = v; renderViewSwitchRow(); renderCurrent(); }
 function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderBoard(); }
 function renderCurrent(){
   renderScopeNav();   // Datumswechsel (Seitenebene) immer zuerst synchronisieren
@@ -1534,15 +1574,20 @@ const GROUP_OPTS = [
 ];
 const groupOverlay = document.getElementById('groupOverlay');
 function openGroupModal(){
-  document.getElementById('groupOptList').innerHTML = GROUP_OPTS.map(o=>`
-    <button class="opt-row ${boardGroup===o.id?'sel':''}" onclick="pickGroup('${o.id}')">
+  const opts = (openProjectId && projView==='aufgaben') ? [{id:'none',label:'Keine',icon:'backlog'}].concat(GROUP_OPTS) : GROUP_OPTS;
+  document.getElementById('groupOptList').innerHTML = opts.map(o=>`
+    <button class="opt-row ${curBoardGroup()===o.id?'sel':''}" onclick="pickGroup('${o.id}')">
       <span class="opt-dot" style="background:transparent;width:auto;height:auto"><span class="ic" style="width:16px;height:16px;color:var(--text-muted)">${ICON[o.icon]||''}</span></span>
       <span class="opt-name">${o.label}</span>
       <span class="ic opt-check">${ICON.check}</span>
     </button>`).join('');
   groupOverlay.classList.add('open');
 }
-function pickGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} groupOverlay.classList.remove('open'); renderViewSwitchRow(); renderBoard(); }
+function pickGroup(g){
+  if(openProjectId){ if(projView==='aufgaben') projTaskGroup=g; else projBoardGroup=g; groupOverlay.classList.remove('open'); renderProjektDetail(); return; }
+  boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){}
+  groupOverlay.classList.remove('open'); renderViewSwitchRow(); renderBoard();
+}
 const scopeOverlay = document.getElementById('scopeOverlay');
 function openScopeModal(){
   document.getElementById('scopeOptList').innerHTML = TIME_SCOPE_OPTS.map(o=>`
@@ -1570,7 +1615,7 @@ function pickZoom(key){
   ganttZoom=key;
   try{ localStorage.setItem('taskDashboard.ganttZoom', ganttZoom); }catch(e){}
   zoomOverlay.classList.remove('open');
-  renderViewSwitchRow(); renderGantt();
+  if(openProjectId){ renderProjektDetail(); } else { renderViewSwitchRow(); renderGantt(); }
 }
 /* ============================== HEUTE-ANSICHT ============================== */
 // Kontext-Kacheln (Platzhalter mit Beispieldaten – echte MS-Anbindung folgt separat)
@@ -1956,7 +2001,114 @@ function backlogCardHTML(t){
 // Sichtbarkeit abgeschlossener Projekte (Default: nur aktive zeigen)
 let showDoneProjects = false;
 function toggleDoneProjects(){ showDoneProjects=!showDoneProjects; renderProjekte(); }
+/* ===== Projekt-Unterseite (Detail) — Board/Kalender/Gantt via matchesFilter aufs Projekt gescopt ===== */
+function projNavUnit(){
+  if(projView==='calendar') return (calMode==='day'||calMode==='week') ? calMode : 'month';
+  // aufgaben/board/gantt folgen alle dem Zeitraum-Filter (konsistent überall)
+  return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
+}
+function setProjView(v){ projView=v; renderCurrent(); }
+function backToProjects(){ openProjectId=null; renderViewSwitchRow(); renderCurrent(); }
+function projKpiHTML(p){
+  const st=projectStats(p.id);
+  const pct=st.total?Math.round(st.done/st.total*100):0;
+  const cell=(n,l,over)=>`<div class="stat ${over?'overdue':''}"><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
+  // KPIs immer voll, auf JEDER Ansicht (Albrecht: „KPI sind immer überall") — keine schmale Variante
+  return `<div class="stats">${cell(st.total,'Aufgaben gesamt')}${cell(st.open,'Offen')}${cell(st.overdue,'Überfällig',st.overdue>0)}${cell(pct+'%','Fortschritt')}</div>`;
+}
+function projHeadHTML(p){
+  const r=roleById(p.role); const roleColor=r?r.color:'var(--border)';
+  const isDone=projStatus(p)==='done';
+  const statusHTML=isDone?`<span class="pcard-status done">${ic('check')} abgeschlossen</span>`:`<span class="pcard-status">aktiv</span>`;
+  const range=(p.start||p.end)?`${p.start?fmtDate(p.start):'…'} – ${p.end?fmtDate(p.end):'…'}`:'';
+  const rangeHTML=range?`<span class="pd-mi">${ic('calendar')} ${range}</span>`:'';
+  const roleHTML=r?`<span class="pd-mi">Rolle: <b>${r.code} – ${r.label}</b></span>`:'';
+  const members=(p.members||[]).map(id=>personById(id)).filter(Boolean);
+  const memChips=members.length?members.map(m=>personChip(m,false)).join(''):'<span style="color:var(--text-muted)">—</span>';
+  const memHTML=`<span class="pd-mi pd-members">Mitglieder: ${memChips}<button class="ghost sm" onclick="editProject('${p.id}')">${ic('plus')} Mitglied</button></span>`;
+  const goalHTML=p.goal?`<div class="pd-goal">${esc(p.goal)}</div>`:'';
+  return `<div class="pd-head" style="--role:${roleColor}">
+    <div class="pd-top">
+      <h2 class="pd-name">${esc(p.name)}</h2>
+      <span class="pd-badges">${statusHTML}</span>
+      <span class="spacer"></span>
+      <button class="ghost sm" onclick="editProject('${p.id}')">${ic('edit')} Bearbeiten</button>
+    </div>
+    ${goalHTML}
+    <div class="pd-meta">${rangeHTML}${roleHTML}${memHTML}</div>
+  </div>`;
+}
+function projSwitchRowHTML(){
+  const vt=(id,t,s,icon)=>`<button class="vtile ${projView===id?'active':''}" onclick="setProjView('${id}')"><span class="ic-wrap">${ic(icon)}</span><span class="vt-body"><span class="vt-t">${t}</span><span class="vt-s">${s}</span></span></button>`;
+  const views=vt('aufgaben','Aufgaben','Offen · Erledigt','backlog')+vt('board','Board','Kanban','board')+vt('calendar','Kalender','Monat · Woche','calendar')+vt('gantt','Gantt','Zeitachse','gantt');
+  const scope=`<button class="ctrl-tile scope-tile ${timeScope!=='all'?'is-active':''}" onclick="openScopeModal()"><span class="ic-wrap">${ic('calendar')}</span><span class="body"><span class="lbl">Zeitraum</span><span class="val">${TIME_SCOPE_LABEL[timeScope]||'Alle'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`;
+  let funcs='';
+  if(projView==='board'||projView==='aufgaben') funcs=`<button class="ctrl-tile group-tile" onclick="openGroupModal()"><span class="ic-wrap">${ic('grid')}</span><span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[curBoardGroup()]||'Status'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
+  else if(projView==='gantt') funcs=`<button class="ctrl-tile zoom-tile ${ganttZoom!=='normal'?'is-active':''}" onclick="openZoomModal()"><span class="ic-wrap">${ic('zoom')}</span><span class="body"><span class="lbl">Zoom</span><span class="val">${GANTT_ZOOM[ganttZoomIdx()].label}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
+  else funcs=scope; // aufgaben + calendar: Zeitraum (Filter überall konsistent)
+  const funcsWrap=funcs?`<div class="sr-funcs">${funcs}</div>`:'';
+  const back=`<button class="ctrl-tile ret" onclick="backToProjects()" title="Zurück zu allen Projekten"><span class="ic-wrap">${ic('folder')}</span><span class="body"><span class="lbl">Projekte</span><span class="val">Übersicht</span></span></button>`;
+  return `<div class="switch-row proj-switch2">${views}${funcsWrap}${back}</div>`;
+}
+function projScopeNavHTML(){
+  const u=projNavUnit(); if(!u) return '';
+  return `<div class="cal-controls scope-nav">
+    <button class="ghost sm" onclick="scopeNav(-1)" title="Zurück">◀</button>
+    <button class="ghost sm" onclick="scopeToday()">Heute</button>
+    <button class="ghost sm" onclick="scopeNav(1)" title="Vor">▶</button>
+    <span class="cal-title">${esc(navLabel(u))}</span>
+  </div>`;
+}
+function projAufgabenHTML(p){
+  // Kopf-Filter (matchesFilter, via openProjectId aufs Projekt) + Zeitraum (inTimeScope) wirken hier — konsistent
+  const ts=tasks.filter(matchesFilter).filter(inTimeScope);
+  const openAll=ts.filter(t=>t.status!=='done'&&t.status!=='discarded');
+  const done=ts.filter(t=>t.status==='done').sort((a,b)=>(b.archivedAt||b.doneAt||'').localeCompare(a.archivedAt||a.doneAt||''));
+  const sortP=(a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
+  const head=(dot,title,count)=>`<div class="today-sechead" style="cursor:default"><span class="dot" style="width:9px;height:9px;border-radius:50%;background:${dot};flex:none"></span><span class="title">${title}</span><span class="count">${count}</span></div>`;
+  // Default 'none' = flache "Offen"-Liste (ruhig); sonst nach gewählter Gruppierung — Re-Use boardGroups()
+  let openBlock;
+  if(projTaskGroup==='none'){
+    const cards=openAll.sort(sortP).map(t=>todayCardHTML(t)).join('');
+    openBlock=`<div class="today-sec">${head('var(--text-muted)','Offen',openAll.length)}${openAll.length?`<div class="proj-taskgrid">${cards}</div>`:'<div class="proj-empty">Keine offenen Aufgaben.</div>'}</div>`;
+  } else if(projTaskGroup==='termin'){
+    // Termin = nach Datum (wie die Termin-Gruppierung im Board -> plannedSections). boardGroups() kennt 'termin' NICHT.
+    const openSecs=plannedSections(openAll).map(s=>`<div class="today-sec">${head(s.over?'var(--red)':'var(--text-muted)', esc(s.label), s.items.length)}<div class="proj-taskgrid">${s.items.map(t=>todayCardHTML(t)).join('')}</div></div>`).join('<div class="rule soft"></div>');
+    openBlock = openSecs || '<div class="proj-empty">Keine offenen Aufgaben mit Datum.</div>';
+  } else {
+    const openSecs=boardGroups().map(g=>{
+      const items=openAll.filter(g.match).sort(sortP);
+      if(!items.length) return '';
+      return `<div class="today-sec">${head(g.color||'var(--text-muted)', esc(g.label), items.length)}<div class="proj-taskgrid">${items.map(t=>todayCardHTML(t)).join('')}</div></div>`;
+    }).filter(Boolean).join('<div class="rule soft"></div>');
+    openBlock = openSecs || '<div class="proj-empty">Keine offenen Aufgaben.</div>';
+  }
+  const addRow=`<div class="proj-taskgrid" style="margin-top:14px"><button class="colnew proj-add" onclick="openNew()">+ Aufgabe</button></div>`;
+  const doneGrid = done.length ? `<div class="proj-taskgrid">${done.map(t=>todayCardHTML(t)).join('')}</div>` : '<div class="proj-empty">Keine.</div>';
+  const doneSec = `<div class="today-sec">${head('var(--text-muted)','Erledigt',done.length)}${doneGrid}</div>`;
+  return openBlock + addRow + '<div class="rule"></div>' + doneSec;
+}
+function renderProjektDetail(){
+  const p=projById(openProjectId);
+  if(!p){ openProjectId=null; renderProjekte(); return; }
+  document.getElementById('viewSwitchRow').classList.add('hidden');
+  document.getElementById('viewSwitchRule').classList.add('hidden');
+  const chrome=document.getElementById('projChrome');
+  chrome.classList.remove('hidden');
+  chrome.innerHTML = projHeadHTML(p) + projKpiHTML(p) + projSwitchRowHTML() + projScopeNavHTML();
+  const host = projView==='aufgaben' ? 'projekte' : (projView==='board' ? 'board' : projView);
+  ['projekte','board','calendar','gantt'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.toggle('hidden', id!==host); });
+  if(projView==='aufgaben') document.getElementById('projekte').innerHTML = projAufgabenHTML(p);
+  else if(projView==='board') renderBoard();
+  else if(projView==='calendar') renderCalendar();
+  else if(projView==='gantt') renderGantt();
+}
+
 function renderProjekte(){
+  if(openProjectId){ renderProjektDetail(); return; }
+  document.getElementById('projChrome').classList.add('hidden');
+  document.getElementById('viewSwitchRow').classList.remove('hidden');
+  document.getElementById('viewSwitchRule').classList.remove('hidden');
   const el=document.getElementById('projekte');
   // Rollenfilter aus dem Kopf respektieren; Projekt-Status nach Toggle
   let pool = projects.filter(p=>!filters.role || p.role===filters.role);
@@ -2297,6 +2449,7 @@ function renderFilters(){ /* alte Filterleiste entfernt – Filter läuft über 
 
 function matchesFilter(t){
   if(!inRole(t)) return false;
+  if(openProjectId && t.projectId!==openProjectId) return false;   // Projekt-Unterseite: nur dieses Projekt
   if(filters.proj==='__none' && t.projectId) return false;
   if(filters.proj && filters.proj!=='__none' && t.projectId!==filters.proj) return false;
   if(filters.eh && (t.prio||'D')!==filters.eh) return false;
@@ -2308,7 +2461,9 @@ function matchesFilter(t){
   return true;
 }
 
+function curBoardGroup(){ return openProjectId ? (projView==='aufgaben' ? projTaskGroup : projBoardGroup) : boardGroup; }
 function boardGroups(){
+  const boardGroup = curBoardGroup();   // im Projekt: projBoardGroup (Default Status), global unberührt
   if(boardGroup==='prio') return [
     { key:'A', label:'A', color:'#b06a6a', match:t=>(t.prio||'D')==='A' },
     { key:'B', label:'B', color:'#5f7d9c', match:t=>(t.prio||'D')==='B' },
@@ -2381,6 +2536,7 @@ function boardCardHTML(t){
   </div>`;
 }
 function renderBoard(){
+  const boardGroup = curBoardGroup();
   if(boardGroup==='termin'){ renderPlanned(); return; }
   const el=document.getElementById('board');
   el.classList.remove('planned');   // Kanban-Raster aktiv
@@ -2925,7 +3081,7 @@ function openNew(presetStatus){
   document.getElementById('mId').value='';
   document.getElementById('mTitle').value='';
   document.getElementById('mDesc').value='';
-  document.getElementById('mProj').value='';
+  document.getElementById('mProj').value = openProjectId || '';
   document.getElementById('mStatus').value = presetStatus || (view === 'backlog' ? 'backlog' : 'inbox');
   document.getElementById('mRole').value = filters.role || 'meta';
   document.getElementById('mPrio').value='B';
@@ -3062,8 +3218,15 @@ function openNewProject(){
   projOverlay.classList.add('open');
   setTimeout(()=>document.getElementById('pName').focus(),40);
 }
-// Bestehendes Projekt bearbeiten
+// Projekt öffnen = auf die Projekt-Unterseite navigieren (alle drei „Projekt öffnen"-Stellen führen hierher)
 function openProject(id){
+  const p=projById(id); if(!p) return;
+  openProjectId=id; projView='aufgaben';
+  purpose='planen'; view='projekte';
+  render();
+}
+// Bestehendes Projekt bearbeiten (Feld-Modal) – vom „Bearbeiten"-Knopf auf der Unterseite
+function editProject(id){
   const p=projById(id); if(!p) return;
   fillProjRoleSelect();
   pEditId=id; pColor=p.color||PALETTE[0]; modalMembers=[...(p.members||[])];
@@ -3117,6 +3280,7 @@ function deleteProject(){
   if(confirm(`Projekt „${p.name}" löschen?` + (n?`\n${n} Aufgabe(n) bleiben erhalten, verlieren aber die Zuordnung.`:''))){
     tasks.forEach(t=>{ if(t.projectId===id){ t.role = p.role; t.projectId=null; } });
     projects=projects.filter(x=>x.id!==id);
+    if(openProjectId===id) openProjectId=null;
     persist(); closeProjModal(); render();
   }
 }
