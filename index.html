@@ -1118,6 +1118,9 @@
     <div class="foot">
       <button class="ghost" id="gDelete" style="color:var(--q1);display:none">Löschen</button>
       <div class="spacer"></div>
+      <!-- Nur fuer Ziele OHNE zugeordnete Aufgaben: dort gibt es nichts zu rechnen,
+           also wird gesetzt - wie beim Meilenstein (#msReach). -->
+      <button class="ghost" id="gReach" style="display:none">Erreicht</button>
       <button class="ghost" id="gCancel">Abbrechen</button>
       <button class="primary" id="gSave">Speichern</button>
     </div>
@@ -3042,9 +3045,16 @@ function wgById(id){ return weekGoals.find(g=>g.id===id) || null; }
 function wgStats(wgId){
   const ts = tasks.filter(t=>t.wgId===wgId && t.status!=='discarded');
   const done = ts.filter(t=>t.status==='done').length;
+  // Hat das Ziel Aufgaben, wird gerechnet. Hat es KEINE, gibt es nichts zu rechnen - dann gilt
+  // das gesetzte Feld (Knopf im Modal). Ein Wochenziel ist eine Absicht; nicht jede Absicht hat
+  // eine Aufgabenliste („weniger Kontextwechsel"). Sobald eine Aufgabe dranhaengt, entscheidet
+  // wieder die Rechnung und g.done wird ignoriert - genau eine Wahrheit je Zustand.
+  const g = ts.length ? null : wgById(wgId);
   return { total:ts.length, done, open:ts.length-done,
-           pct: ts.length?Math.round(done/ts.length*100):0,
-           reached: ts.length>0 && done===ts.length, items:ts };
+           pct: ts.length ? Math.round(done/ts.length*100) : 0,
+           manual: !ts.length,
+           reached: ts.length ? done===ts.length : !!(g && g.done),
+           items:ts };
 }
 // Wochenziele einer Woche (per Montags-Key): offen vor erreicht, dann Rollen-Reihenfolge.
 function goalsForWeek(monKey){
@@ -3077,11 +3087,14 @@ function wgCardHTML(g){
   const stx = wgStats(g.id);
   const st  = stx.reached ? GOAL_GREEN : 'var(--text-muted)';
   const sel = (focusFilterWg===g.id) ? ' is-filtered' : '';
-  return `<div class="gcard${sel} ${stx.total===0?'is-empty':''}" style="--st:${st}"`
+  // Ohne Aufgaben waere „0/0" eine Zahl, die nichts misst - dort steht der gesetzte Zustand.
+  const num  = stx.total ? `${stx.done}/${stx.total}` : (stx.reached ? 'erreicht' : '');
+  const fill = stx.total ? stx.pct : (stx.reached ? 100 : 0);
+  return `<div class="gcard${sel} ${stx.total===0 && !stx.reached?'is-empty':''}" style="--st:${st}"`
     + dropAttr({drop:{type:'wg', value:g.id}}) + ` onclick="focusFilter('${g.id}')">`
     + `<div class="gc-head"><div class="gc-title">${esc(g.title)}</div></div>`
-    + `<div class="gc-barrow"><div class="gc-bar"><i style="width:${stx.total?stx.pct:0}%"></i></div>`
-    + `<span class="gc-num">${stx.done}/${stx.total}</span></div>`
+    + `<div class="gc-barrow"><div class="gc-bar"><i style="width:${fill}%"></i></div>`
+    + `<span class="gc-num">${num}</span></div>`
     + `<span class="ic gc-chev" title="Wochenziel öffnen" onclick="event.stopPropagation();openGoal('${g.id}')">${ICON.chevronRight}</span></div>`;
 }
 // Filter auf ein Wochenziel. Nochmal auf dieselbe Card klicken loest ihn - deshalb braucht es
@@ -3122,7 +3135,7 @@ function wgAssign(tid){
   const t = tasks.find(x=>x.id===tid); if(!t) return;
   if(wgModalId){ t.wgId = wgModalId; persist(); refreshActive(); }
   else if(!wgPending.includes(tid)) wgPending.push(tid);
-  renderGoalWork();
+  renderGoalWork(); updateReachBtn();
 }
 function wgNewTask(){ const g=wgModalId; closeGoal(); openNew(); if(g) document.getElementById('mWg').value=g; }
 function renderGoalWork(){
@@ -3184,11 +3197,26 @@ function openGoal(id, week){
   fillGoalRoleSelect(editing ? (roleById(g.role)?g.role:'meta') : (filters.role || 'meta'));
   document.getElementById('gDelete').style.display = editing ? '' : 'none';
   wgModalId = editing ? g.id : null; wgAssignMode = false; wgPending = [];
-  renderGoalWork();
+  renderGoalWork(); updateReachBtn();
   goalOverlay.classList.add('open');
   setTimeout(()=>document.getElementById('gTitle').focus(), 30);
 }
 function closeGoal(){ goalOverlay.classList.remove('open'); }
+// Der Knopf erscheint NUR, solange dem Ziel keine Aufgabe zugeordnet ist. Sobald eine dranhaengt,
+// rechnet der Fortschritt und der Knopf verschwindet - es gibt dann nichts mehr zu setzen.
+function updateReachBtn(){
+  const btn = document.getElementById('gReach'); if(!btn) return;
+  const g = wgModalId ? wgById(wgModalId) : null;
+  const stx = g ? wgStats(g.id) : null;
+  const show = !!(g && stx.manual);
+  btn.style.display = show ? '' : 'none';
+  if(show) btn.textContent = g.done ? 'Wieder offen' : 'Erreicht';
+}
+function toggleWgDone(){
+  const g = wgModalId ? wgById(wgModalId) : null; if(!g) return;
+  g.done = !g.done; g.doneAt = g.done ? todayStr() : '';
+  persist(); closeGoal(); refreshActive();
+}
 function saveGoal(){
   const id = document.getElementById('gId').value;
   const title = document.getElementById('gTitle').value.trim();
@@ -4761,6 +4789,7 @@ document.getElementById('msReach').onclick=()=>{
   const id=document.getElementById('msReach').dataset.ms;
   if(id){ toggleMsDone(id); closeMs(); }
 };
+document.getElementById('gReach').onclick=toggleWgDone;
 document.getElementById('msSave').onclick=saveMs;
 document.getElementById('msCancel').onclick=closeMs;
 document.getElementById('msDelete').onclick=deleteMs;
