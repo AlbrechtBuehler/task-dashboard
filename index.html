@@ -238,6 +238,7 @@
   .cmode { border: none; background: transparent; padding: 6px 12px; border-radius: 7px; font-size: .82rem; font-weight: 600; color: var(--text-muted); }
   .cmode.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
   .cal-title { font-weight: 700; font-size: 1.05rem; margin: 0 6px; }
+  .scope-nav { margin-top: 2px; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
   .cal-dow { font-size: .74rem; font-weight: 600; color: var(--text-muted); text-align: center; padding: 4px 0; }
   .cal-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; min-height: 96px; padding: 6px; overflow: hidden; cursor: pointer; }
@@ -1249,6 +1250,9 @@ let view = 'board';
 let purpose = 'start';   // Zweck-Tab: start | heute | planen | auswerten | backlog — App startet auf Start (Wochenziele)
 let boardGroup = (()=>{ try { return localStorage.getItem('taskDashboard.boardGroup') || 'role'; } catch(e){ return 'role'; } })();
 let timeScope = (()=>{ try { return localStorage.getItem('taskDashboard.timeScope') || 'all'; } catch(e){ return 'all'; } })(); // all | today | week | month
+// Gemeinsamer, verschiebbarer Zeit-Cursor für Board/Kalender/Gantt (Re-Use für alle drei Planen-Ansichten).
+let calRef = new Date();
+let calMode = ({ all:'month', today:'day', week:'week', month:'month' })[timeScope] || 'month';
 let todayCollapsed = (()=>{ try { return new Set(JSON.parse(localStorage.getItem('taskDashboard.todayCollapsed')||'[]')); } catch(e){ return new Set(); } })();
 function saveTodayCollapsed(){ try { localStorage.setItem('taskDashboard.todayCollapsed', JSON.stringify([...todayCollapsed])); } catch(e){} }
 let boardOpen = (()=>{ try { return new Set(JSON.parse(localStorage.getItem('taskDashboard.boardOpen')||'[]')); } catch(e){ return new Set(); } })();
@@ -1425,22 +1429,42 @@ function renderHead(){
 function inRole(t){ return !filters.role || taskRole(t) === filters.role; }
 
 const BOARD_GROUP_LABEL = { status:'Status', role:'Rolle', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
-const TIME_SCOPE_LABEL = { all:'Alle', today:'Heute', week:'Diese Woche', month:'Dieser Monat' };
+const TIME_SCOPE_LABEL = { all:'Alle', today:'Tag', week:'Woche', month:'Monat' };
 const TIME_SCOPE_OPTS = [
-  { id:'all',   label:'Alle',        sub:'Kein Zeitfilter', icon:'backlog' },
-  { id:'today', label:'Heute',       sub:'Nur heute',       icon:'focus' },
-  { id:'week',  label:'Diese Woche', sub:'Mo–So',           icon:'calendar' },
-  { id:'month', label:'Dieser Monat',sub:'Aktueller Monat', icon:'calendar' },
+  { id:'all',   label:'Alle',   sub:'Kein Zeitfilter',       icon:'backlog' },
+  { id:'today', label:'Tag',    sub:'Ein Tag – blätterbar',  icon:'focus' },
+  { id:'week',  label:'Woche',  sub:'Mo–So – blätterbar',    icon:'calendar' },
+  { id:'month', label:'Monat',  sub:'Ganzer Monat – blätterbar', icon:'calendar' },
 ];
-// Fenstergrenzen für den aktuellen timeScope (oder null bei 'all')
+// Fenstergrenzen für den aktuellen timeScope (oder null bei 'all').
+// Verankert am verschiebbaren Cursor calRef (nicht mehr an "jetzt"), damit Board/Kalender/Gantt gemeinsam blättern.
 function scopeWindow(){
   if(timeScope==='all') return null;
-  const now=new Date();
-  if(timeScope==='today'){ const d=ymd(now); return { s:d, e:d }; }
-  if(timeScope==='week'){ const {mon,sun}=weekRange(now); return { s:ymd(mon), e:ymd(sun) }; }
-  if(timeScope==='month'){ const s=new Date(now.getFullYear(),now.getMonth(),1); const e=new Date(now.getFullYear(),now.getMonth()+1,0); return { s:ymd(s), e:ymd(e) }; }
+  const ref=calRef instanceof Date ? calRef : new Date();
+  if(timeScope==='today'){ const d=ymd(ref); return { s:d, e:d }; }
+  if(timeScope==='week'){ const {mon,sun}=weekRange(ref); return { s:ymd(mon), e:ymd(sun) }; }
+  if(timeScope==='month'){ const s=new Date(ref.getFullYear(),ref.getMonth(),1); const e=new Date(ref.getFullYear(),ref.getMonth()+1,0); return { s:ymd(s), e:ymd(e) }; }
   return null;
 }
+// Menschlicher Titel des aktuellen Fensters (für die Blätter-Zeile in Board/Gantt).
+function scopeWindowLabel(){
+  if(timeScope==='all') return '';
+  const ref=calRef instanceof Date ? calRef : new Date();
+  if(timeScope==='today') return ref.toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  if(timeScope==='week'){ const {mon,sun}=weekRange(ref); return `${mon.toLocaleDateString('de-DE',{day:'2-digit',month:'short'})} – ${sun.toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'})}`; }
+  if(timeScope==='month') return ref.toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+  return '';
+}
+// Cursor verschieben – Schrittweite nach aktivem timeScope. Wirkt auf Board/Kalender/Gantt gemeinsam.
+function scopeNav(dir){
+  const d=new Date(calRef);
+  if(timeScope==='today') d.setDate(d.getDate()+dir);
+  else if(timeScope==='week') d.setDate(d.getDate()+7*dir);
+  else if(timeScope==='month') d.setMonth(d.getMonth()+dir);
+  else return; // 'all': nichts zu blättern
+  calRef=d; calMode=SCOPE_TO_CALMODE[timeScope]||'month'; renderCurrent();
+}
+function scopeToday(){ calRef=new Date(); renderCurrent(); }
 // Überschneidet der Aufgaben-Zeitraum (Start–Ende, Fallback due) das Fenster?
 function inTimeScope(t){
   const w=scopeWindow(); if(!w) return true;
@@ -1453,7 +1477,7 @@ const SCOPE_TO_CALMODE = { all:'month', today:'day', week:'week', month:'month' 
 function setTimeScope(s){
   timeScope=s; try{localStorage.setItem('taskDashboard.timeScope',s);}catch(e){}
   calMode = SCOPE_TO_CALMODE[s] || 'month';
-  if(typeof calRef!=='undefined'){ calRef=new Date(); }
+  calRef = new Date(); // beim Zeitraum-Wechsel immer auf "jetzt" zurücksetzen (gemeinsamer Cursor)
   closeScopeModal(); renderViewSwitchRow(); renderCurrent();
 }
 function setView(v){ view = v; renderViewSwitchRow(); renderCurrent(); }
@@ -2327,11 +2351,22 @@ function boardCardHTML(t){
     <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
   </div>`;
 }
+// Wiederverwendbare Zeitraum-Blätter-Zeile (◀ Heute ▶ + Fenster-Titel).
+// Erscheint nur bei aktivem Fenster (Tag/Woche/Monat); bei 'Alle' leer. Genutzt von Board und Gantt.
+function scopeNavBar(){
+  if(timeScope==='all') return '';
+  return `<div class="cal-controls scope-nav">
+    <button class="ghost sm" onclick="scopeNav(-1)" title="Zurück">◀</button>
+    <button class="ghost sm" onclick="scopeToday()">Heute</button>
+    <button class="ghost sm" onclick="scopeNav(1)" title="Vor">▶</button>
+    <span class="cal-title">${esc(scopeWindowLabel())}</span>
+  </div>`;
+}
 function renderBoard(){
   if(boardGroup==='termin'){ renderPlanned(); return; }
   const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
   const groups = boardGroups();
-  document.getElementById('board').innerHTML = `<div class="board-a">` + groups.map(col => {
+  document.getElementById('board').innerHTML = scopeNavBar() + `<div class="board-a">` + groups.map(col => {
     const items = visible.filter(col.match).sort((a,b)=>{
       const e = ehRank(a)-ehRank(b); if(e!==0) return e;
       return (a.due||'9999') < (b.due||'9999') ? -1 : 1;
@@ -2377,8 +2412,7 @@ function cardHTML(t){
 }
 
 /* ============================== KALENDER ============================== */
-let calMode = ({ all:'month', today:'day', week:'week', month:'month' })[timeScope] || 'month';
-let calRef = new Date();
+// calMode & calRef sind oben im STATE-Block definiert (gemeinsamer Zeit-Cursor).
 function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function calTasks(){ return tasks.filter(matchesFilter).filter(t=>t.due); }
 function evColor(t){ const r=roleById(taskRole(t)); return r?r.color:'#8a909c'; }
@@ -2603,7 +2637,7 @@ function renderGantt(){
   const todayLine=(ti>=0&&ti<totalDays)?`<div class="g-today-line" style="left:${GLABEL_W+ti*GDAY()+GDAY()/2}px"></div>`:'';
   const note=undatedCount?`<div class="cal-more" style="padding:8px 2px">${undatedCount} Aufgabe(n) ohne Datum werden hier nicht angezeigt.</div>`:'';
   // Zoom-Steuerung sitzt jetzt als Kachel in der Planen-Kachelzeile (openZoomModal), nicht mehr am Gantt selbst.
-  el.innerHTML=`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
+  el.innerHTML=scopeNavBar()+`<div class="gantt-wrap"><div class="gantt-inner" style="min-width:${GLABEL_W+trackW}px">
     <div class="g-head"><div class="g-label">Aufgabe</div><div class="g-time"><div class="g-months">${monthRow}</div><div class="g-days">${dayRow}</div></div></div>
     ${rows}${todayLine}
   </div></div>${note}`;
