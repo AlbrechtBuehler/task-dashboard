@@ -371,6 +371,9 @@
     background: var(--surface); color: var(--text-muted); display: inline-flex; align-items: center;
     justify-content: center; cursor: pointer; padding: 0; transition: .15s; position: relative; }
   .iconbtn:hover { border-color: var(--accent); color: var(--text); }
+  /* Das Archiv ist kein Zweck-Tab, sondern ein Nachschlage-Ort. Steht man drin,
+     zeigt DAS ICON das an - sonst waere kein Element der Kopfzeile aktiv. */
+  .iconbtn.is-on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .iconbtn .ic { width: 15px; height: 15px; }
   .iconbtn .gh-dot { position: absolute; right: 5px; bottom: 5px; width: 7px; height: 7px;
     border-radius: 50%; background: #a7aaac; }
@@ -599,13 +602,15 @@
   .vtile.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .vtile.active .ic-wrap { background: var(--accent); color: #fff; }
   .vtile .ctrl-tile.group-tile { margin: 0; }
+  /* Funktionskacheln stehen als EIN Block rechts - identisch zur Projekt-Kachelzeile.
+     Vorher trug mal die Zoom-, mal die Zeitraum-Kachel eine auto-Marge; mit mehreren
+     Funktionskacheln nebeneinander klebte die Gruppe sonst an der Navigation. */
+  .sr-funcs { margin-left: auto; display: flex; gap: 8px; align-items: stretch; }
+  .sr-funcs .ctrl-tile { margin-left: 0; width: 150px; }
   .switch-row .group-tile { width: 170px; }
   .switch-row .zoom-tile { width: 150px; }
-  .switch-row .scope-tile { margin-left: auto; width: 165px; }
-  /* Wenn eine Zoom-Kachel da ist, trägt SIE die auto-Marge (rechte Gruppe beginnt bei Zoom); Zeitraum dann bündig dahinter */
-  .switch-row .zoom-tile { margin-left: auto; }
-  .switch-row .zoom-tile ~ .scope-tile { margin-left: 0; }
-  .switch-row .scope-tile ~ .group-tile { margin-left: 0; }
+  .switch-row .scope-tile { width: 165px; }
+  .sr-funcs .group-tile, .sr-funcs .zoom-tile, .sr-funcs .scope-tile { width: 150px; }
   .ctrl-tile.zoom-tile.is-active { border-color: var(--accent); }
   .ctrl-tile.zoom-tile.is-active .val { color: var(--accent); }
   .ctrl-tile.scope-tile.is-active { border-color: var(--accent); }
@@ -652,8 +657,6 @@
   .kpi-strip .over, .kpi-strip .over b { color:var(--red); }
   #projChrome .scope-nav { margin:10px 0 4px; }
   .proj-switch2 { gap:8px; }
-  .proj-switch2 .sr-funcs { margin-left:auto; display:flex; gap:8px; align-items:stretch; }
-  .proj-switch2 .sr-funcs .ctrl-tile { margin-left:0; width:150px; }   /* Funktionskacheln knapper halten, damit die Zeile nicht umbricht */
   .proj-taskgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
   .proj-empty { color:var(--text-muted); font-size:.88rem; padding:8px 2px; }
   .proj-taskgrid .colnew.proj-add { align-self:start; min-height:70px; display:flex; align-items:center; justify-content:center; border-radius:var(--r); font-size:.9rem; }
@@ -759,11 +762,16 @@
     opacity: .55; transition: width .2s; }
   .gcard .gc-num { font-size: .72rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;
     flex: none; font-variant-numeric: tabular-nums; }
-  /* Chevron nur beim Hover – ein Icon, kein Text */
-  .gcard .gc-chev { position: absolute; right: 14px; bottom: 13px; width: 13px; height: 13px;
-    color: var(--text-muted); opacity: 0; transition: opacity .12s, transform .15s; }
-  .gcard:hover .gc-chev { opacity: .65; }
-  .gcard.is-open .gc-chev { opacity: .65; transform: rotate(90deg); }
+  /* Chevron IMMER sichtbar (dezent) – zugeklappt war sonst nicht erkennbar, dass die Card
+     Aufgaben enthaelt und sich oeffnen laesst. Oben rechts, damit er nicht mit der Zahl kollidiert. */
+  .gcard .gc-chev { position: absolute; right: 14px; top: 17px; width: 13px; height: 13px;
+    color: var(--text-muted); opacity: .38; transition: opacity .12s, transform .15s; }
+  .gcard:hover .gc-chev { opacity: .75; }
+  .gcard.is-open .gc-chev { opacity: .75; transform: rotate(90deg); }
+  .gcard .gc-head { padding-right: 16px; }   /* Platz fuer den Chevron, auch beim Meilenstein */
+  /* Zwei Wege in ein Ziel: neue Aufgabe anlegen ODER bestehende zuordnen. Gleicher Knopf-Stil. */
+  .gcard .gc-acts { display: flex; gap: 8px; }
+  .gcard .gc-acts .colnew { flex: 1; margin-top: 2px; }
   .gcard.is-open { cursor: default; }
   .gcard .gc-note { font-size: .82rem; color: var(--text-muted); line-height: 1.45; }
   .gcard .gc-tasks { display: flex; flex-direction: column; gap: 6px; }
@@ -799,6 +807,7 @@
       </div>
       <div class="sys">
         <button class="iconbtn" id="btnSearch" title="Suchen"><span class="ic" data-ic="search"></span></button>
+        <button class="iconbtn" id="btnArchiv" title="Archiv – Erledigtes zum Nachschlagen"><span class="ic" data-ic="archive"></span></button>
         <button class="iconbtn" id="btnPeople" title="Personen verwalten"><span class="ic" data-ic="user"></span></button>
         <button class="iconbtn" id="btnGithub" title="GitHub-Sync"><span class="ic" data-ic="cloud"></span><span class="gh-dot" id="ghDot"></span></button>
         <button class="iconbtn" id="btnImport" title="JSON importieren"><span class="ic" data-ic="upload"></span></button>
@@ -811,7 +820,7 @@
         <button class="ptab" data-tab="heute">Heute</button>
         <button class="ptab" data-tab="planen">Planen</button>
         <button class="ptab" data-tab="projekte">Projekte</button>
-        <button class="ptab" data-tab="auswerten">Auswerten</button>
+        <button class="ptab" data-tab="auswerten">Statistik</button>
         <button class="ptab" data-tab="backlog">Backlog</button>
       </div>
       <button class="ctrl-tile" id="tileRole">
@@ -866,6 +875,9 @@
     <div id="projChrome" class="hidden"></div>
 
     <div class="board" id="board"></div>
+    <!-- Listen-Ansicht der Aufgaben. BEWUSST ein eigener Container: #board ist ein Grid,
+         eine Liste darin wuerde zur Grid-Zelle und auf Spaltenbreite gequetscht. -->
+    <div id="tasklist" class="hidden"></div>
     <div id="backlog" class="hidden"></div>
     <div id="calendar" class="hidden"></div>
     <div id="gantt" class="hidden"></div>
@@ -1284,6 +1296,18 @@
   </div>
 </div>
 
+<!-- Ansicht-Modal (Liste / Board) -->
+<div class="overlay" id="modeOverlay">
+  <div class="modal">
+    <h2>Ansicht</h2>
+    <div class="body">
+      <div class="eh-hint" style="margin-bottom:10px" id="modeHint"></div>
+      <div class="opt-list" id="modeOptList"></div>
+    </div>
+    <div class="foot"><div class="spacer"></div><button class="ghost" id="modeModalClose">Schließen</button></div>
+  </div>
+</div>
+
 <!-- Zeitraum-Modal -->
 <div class="overlay" id="scopeOverlay">
   <div class="modal">
@@ -1473,12 +1497,17 @@ let tasks = [], projects = [], people = [], notes = [], weekGoals = [];
 // Kalender, Heute und den Aufgaben-KPIs mitschwimmen. Ein Meilenstein ist ein Termin, keine Arbeit.
 let goals = [], milestones = [];
 let view = 'board';
-let purpose = 'start';   // Zweck-Tab: start | heute | planen | auswerten | backlog — App startet auf Start (Wochenziele)
+let purpose = 'start';   // start | heute | planen | projekte | auswerten | backlog | archiv
+// 'archiv' ist bewusst KEIN Zweck-Tab: es ist ein Nachschlage-Ort, erreichbar ueber das
+// Aktenschrank-Icon oben rechts. Kein Tab ist dann aktiv - dafuer leuchtet das Icon.
 // Projekt-Unterseite (Laufzeit, NICHT persistiert): offenes Projekt + seine Unteransicht
 let openProjectId = null;
-let projView = 'aufgaben'; // aufgaben | board | calendar | gantt
+let projView = 'aufgaben'; // aufgaben | ziele | calendar | gantt  (Liste/Board steckt in taskMode)
 let projBoardGroup = 'status'; // Board im Projekt gruppiert per Default nach Status (Rolle = nur eine Spalte)
-let projTaskGroup = 'none';    // Aufgaben-Liste im Projekt: Default flach ("Offen/Erledigt"); Gruppieren optional
+let projTaskGroup = 'none';    // Gruppierung der LISTE im Projekt: Default flach; Gruppieren optional
+// Aufgaben-Reiter: Liste oder Board - EIN Wert fuer Planen und Projekt (bewusst kein Sonderfall je Ort).
+let taskMode = (()=>{ try { return localStorage.getItem('taskDashboard.taskMode') || 'list'; } catch(e){ return 'list'; } })(); // list | board
+let listGroup = 'none';        // Gruppierung der LISTE in Planen (Laufzeit, wie projTaskGroup)
 let boardGroup = (()=>{ try { return localStorage.getItem('taskDashboard.boardGroup') || 'role'; } catch(e){ return 'role'; } })();
 let timeScope = (()=>{ try { return localStorage.getItem('taskDashboard.timeScope') || 'all'; } catch(e){ return 'all'; } })(); // all | today | week | month
 // Gemeinsamer, verschiebbarer Zeit-Cursor für Board/Kalender/Gantt (Re-Use für alle drei Planen-Ansichten).
@@ -1608,7 +1637,11 @@ function render(){
   renderPurpose();
   if(purpose==='start') renderStart();
   else if(purpose==='heute') renderToday();
-  else if(['planen','auswerten','backlog'].includes(purpose)){ renderViewSwitchRow(); renderCurrent(); }
+  // Statistik und Archiv haben nur EINE Ansicht -> renderViewSwitchRow() gar nicht erst rufen.
+  // (Die Funktion blendet die Zeile zu Beginn immer ein; renderCurrent() muesste sie danach
+  //  wieder verstecken - ein sichtbares Flackern und eine unnoetige Abhaengigkeit.)
+  else if(purpose==='auswerten' || purpose==='archiv'){ renderCurrent(); }
+  else if(['planen','backlog'].includes(purpose)){ renderViewSwitchRow(); renderCurrent(); }
   else if(purpose==='projekte'){ renderCurrent(); }   // eigener Bereich, kachellos (Grid führt direkt ins Projekt-Chrome)
 }
 
@@ -1616,13 +1649,14 @@ function render(){
 // Ansichten je Zweck-Tab, als Kacheln (Titel + Untertitel + Icon)
 const PURPOSE_VIEWS = {
   planen:    [
-    { id:'board',    t:'Board',    s:'Kanban',        icon:'board' },
-    { id:'calendar', t:'Kalender', s:'Monat · Woche', icon:'calendar' },
+    { id:'board',    t:'Aufgaben', s:'Liste · Board', icon:'board' },
+    { id:'calendar', t:'Kalender', s:'Monat · Woche · Tag', icon:'calendar' },
     { id:'gantt',    t:'Gantt',    s:'Zeitachse',     icon:'gantt' },
   ],
+  // Nur noch eine Ansicht -> die Kachelzeile entfaellt (eine einzelne Kachel waere ein totes
+  // Bedienelement). Das Archiv sitzt seit 25.07. spaet als Aktenschrank in der System-Zeile.
   auswerten: [
     { id:'statistik', t:'Statistik', s:'Auslastung', icon:'stats' },
-    { id:'archiv',    t:'Archiv',    s:'Erledigt',   icon:'archive' },
   ],
   backlog:   [
     { id:'bl_all',   t:'Alle',     s:'Aufgaben & Notizen', icon:'backlog' },
@@ -1632,12 +1666,15 @@ const PURPOSE_VIEWS = {
 };
 function renderPurpose(){
   document.querySelectorAll('#ptabs .ptab').forEach(b=>b.classList.toggle('active', b.dataset.tab===purpose));
+  document.getElementById('btnArchiv').classList.toggle('is-on', purpose==='archiv');
   document.getElementById('startArea').classList.toggle('hidden', purpose!=='start');
   document.getElementById('todayArea').classList.toggle('hidden', purpose!=='heute');
-  const legacy = ['planen','auswerten','backlog','projekte'].includes(purpose);
+  const legacy = ['planen','auswerten','backlog','projekte','archiv'].includes(purpose);
   document.getElementById('legacyArea').classList.toggle('hidden', !legacy);
   if(purpose==='projekte'){
     view = 'projekte';   // Projekte-Bereich kennt nur die Übersicht (bzw. das geöffnete Projekt)
+  } else if(purpose==='archiv'){
+    view = 'archiv';
   } else if(legacy){
     const allowed = PURPOSE_VIEWS[purpose].map(v=>v.id);
     if(!allowed.includes(view)) view = allowed[0];
@@ -1674,17 +1711,20 @@ function renderViewSwitchRow(){
       <span class="ic chev">${ICON.chevronDown}</span>
     </button>`;
   }
-  // Gruppieren-Kachel nur bei Planen + Board
-  let groupTile = '';
+  // Ansicht- und Gruppieren-Kachel nur beim Aufgaben-Reiter (view-Id bleibt 'board')
+  let modeTile = '', groupTile = '';
+  if(purpose==='planen' && (view==='board' || view==='calendar')) modeTile = modeTileHTML();
   if(purpose==='planen' && view==='board'){
     groupTile = `<button class="ctrl-tile group-tile" onclick="openGroupModal()">
       <span class="ic-wrap"><span class="ic">${ICON.grid||''}</span></span>
-      <span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[boardGroup]||'Status'}</span></span>
+      <span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[curBoardGroup()]||'Status'}</span></span>
       <span class="ic chev">${ICON.chevronDown}</span>
     </button>`;
   }
-  // Reihenfolge rechts: Zoom … Zeitraum (Zeitraum außen). Zoom trägt die auto-Marge, wenn kein Zeitraum da ist.
-  document.getElementById('viewSwitchRow').innerHTML = tiles + zoomTile + scopeTile + groupTile;
+  // Reihenfolge rechts: Ansicht · Gruppieren · Zoom · Zeitraum — Zeitraum immer außen.
+  // Alle Funktionskacheln in EINEN .sr-funcs-Block, genau wie in der Projekt-Kachelzeile.
+  const funcs = modeTile + groupTile + zoomTile + scopeTile;
+  document.getElementById('viewSwitchRow').innerHTML = tiles + (funcs?`<div class="sr-funcs">${funcs}</div>`:'');
 }
 function setPurpose(p){ openProjectId=null; purpose = p; render(); }
 
@@ -1742,7 +1782,7 @@ function navUnit(){
   if(view==='calendar') return (calMode==='day'||calMode==='week') ? calMode : 'month';
   // Termin-Board zeigt immer die sieben Tage EINER Woche -> es blättert wochenweise,
   // auch bei Zeitraum „Alle". Die Zeile ist damit nie tot: sie verschiebt das Wochenraster.
-  if(view==='board' && curBoardGroup()==='termin') return 'week';
+  if(view==='board' && taskMode==='board' && curBoardGroup()==='termin') return 'week';
   if(view==='board' || view==='gantt') return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
   return null;
 }
@@ -1797,18 +1837,20 @@ function setView(v){ openProjectId=null; view = v; renderViewSwitchRow(); render
 function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderScopeNav(); renderBoard(); }
 function renderCurrent(){
   renderScopeNav();   // Datumswechsel (Seitenebene) immer zuerst synchronisieren
-  ['board','backlog','calendar','gantt','projekte','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
+  ['board','tasklist','backlog','calendar','gantt','projekte','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
   // Projekt-Chrome zuruecksetzen: NUR die echte Projekt-Detailseite (renderProjektDetail) zeigt es wieder.
   // Sonst haengt es beim Wechsel auf Auswerten/Backlog/Planen nach (Bug 25.07.2026).
   document.getElementById('projChrome').classList.add('hidden');
   // Globale Kachelzeile: sichtbar bei planen/auswerten/backlog, versteckt im Projekte-Bereich (kachellos, wie Start/Heute).
-  const showGlobalRow = ['planen','auswerten','backlog'].includes(purpose);
+  // Statistik und Archiv haben nur eine Ansicht -> keine Kachelzeile (wie Start/Heute/Projekte).
+  const showGlobalRow = ['planen','backlog'].includes(purpose);
   document.getElementById('viewSwitchRow').classList.toggle('hidden', !showGlobalRow);
   document.getElementById('viewSwitchRule').classList.toggle('hidden', !showGlobalRow);
   const isBacklog = view==='bl_all' || view==='bl_tasks' || view==='bl_notes';
-  const domId = isBacklog ? 'backlog' : view;
+  // Der Aufgaben-Reiter heißt intern weiter 'board'; welcher Container gezeigt wird, entscheidet taskMode.
+  const domId = isBacklog ? 'backlog' : (view==='board' && taskMode==='list' ? 'tasklist' : view);
   const cur=document.getElementById(domId); if(cur) cur.classList.remove('hidden');
-  if(view==='board') renderBoard();
+  if(view==='board'){ if(taskMode==='list') renderTaskList(); else renderBoard(); }
   else if(isBacklog) renderBacklog();
   else if(view==='calendar') renderCalendar();
   else if(view==='gantt') renderGantt();
@@ -1829,9 +1871,15 @@ const GROUP_OPTS = [
 const groupOverlay = document.getElementById('groupOverlay');
 function openGroupModal(){
   let opts = GROUP_OPTS;
-  // Im Projekt: „Ziel" als Gruppierung (global wäre sie sinnlos, Ziele hängen an einem Projekt).
-  if(openProjectId) opts = opts.concat([{ id:'goal', label:'Ziel', icon:'target' }]);
-  if(openProjectId && projView==='aufgaben') opts = [{id:'none',label:'Keine',icon:'backlog'}].concat(opts);
+  if(openProjectId){
+    // Im Projekt sind „Rolle" und „Projekt" konstant: die Rolle erbt vom Projekt, das Projekt
+    // ist dieses eine. Gemessen ergaben sie 5 bzw. 3 Spalten, davon 4 bzw. 2 leer - bei „Projekt"
+    // sogar leere Spalten FREMDER Projekte. Tote Bedienelemente, deshalb hier nicht angeboten.
+    opts = opts.filter(o=>o.id!=='role' && o.id!=='project');
+    opts = opts.concat([{ id:'goal', label:'Ziel', icon:'target' }]);   // Ziel gibt es nur hier
+  }
+  // "Keine" nur in der Listen-Ansicht - ein Board ohne Spalten waere keins.
+  if(taskMode==='list') opts = [{id:'none',label:'Keine',icon:'backlog'}].concat(opts);
   document.getElementById('groupOptList').innerHTML = opts.map(o=>`
     <button class="opt-row ${curBoardGroup()===o.id?'sel':''}" onclick="pickGroup('${o.id}')">
       <span class="opt-dot" style="background:transparent;width:auto;height:auto"><span class="ic" style="width:16px;height:16px;color:var(--text-muted)">${ICON[o.icon]||''}</span></span>
@@ -1841,12 +1889,64 @@ function openGroupModal(){
   groupOverlay.classList.add('open');
 }
 function pickGroup(g){
-  if(openProjectId){ if(projView==='aufgaben') projTaskGroup=g; else projBoardGroup=g; groupOverlay.classList.remove('open'); renderProjektDetail(); return; }
-  boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){}
+  if(openProjectId){ if(taskMode==='list') projTaskGroup=g; else projBoardGroup=g; groupOverlay.classList.remove('open'); renderProjektDetail(); return; }
+  if(taskMode==='list') listGroup=g;
+  else { boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} }
   groupOverlay.classList.remove('open'); renderViewSwitchRow();
   // Die Gruppierung entscheidet mit, ob geblättert wird (Termin = Wochenraster).
   // Ohne renderScopeNav() bliebe sonst eine sichtbare, tote Blätter-Zeile stehen.
-  renderScopeNav(); renderBoard();
+  renderScopeNav(); renderCurrent();
+}
+/* Ansicht Liste/Board - kein neues Muster: dieselbe Kachel + dasselbe Modal
+   wie Gruppieren und Zeitraum. Der Wert gilt in Planen UND im Projekt gleich. */
+const TASK_MODE_LABEL = { list:'Liste', board:'Board' };
+const MODE_OPTS = [
+  { id:'list',  label:'Liste', icon:'backlog' },
+  { id:'board', label:'Board', icon:'board' },
+];
+// Der Kalender hatte NIE einen eigenen Umschalter - er folgte still der Zeitraum-Kachel.
+// Er bekommt jetzt dieselbe "Ansicht"-Kachel wie die Aufgaben. Ein Muster, zwei Reiter.
+const CAL_MODE_LABEL = { month:'Monat', week:'Woche', day:'Tag' };
+const CAL_MODE_OPTS = [
+  { id:'month', label:'Monat', icon:'calendar' },
+  { id:'week',  label:'Woche', icon:'calendar' },
+  { id:'day',   label:'Tag',   icon:'calendar' },
+];
+// Steht gerade der Kalender im Vordergrund? Entscheidet, was die Ansicht-Kachel schaltet.
+function isCalView(){ return openProjectId ? projView==='calendar' : (purpose==='planen' && view==='calendar'); }
+const modeOverlay = document.getElementById('modeOverlay');
+function openModeModal(){
+  const cal = isCalView();
+  const opts = cal ? CAL_MODE_OPTS : MODE_OPTS;
+  const cur  = cal ? calMode : taskMode;
+  document.getElementById('modeHint').textContent = cal
+    ? 'Monat, Woche oder Tag. Der Zeitraum-Filter bleibt davon unberührt.'
+    : 'Dieselben Aufgaben, zwei Darstellungen. Die Liste zeigt zusätzlich die erledigten.';
+  document.getElementById('modeOptList').innerHTML = opts.map(o=>`
+    <button class="opt-row ${cur===o.id?'sel':''}" onclick="pickMode('${o.id}')">
+      <span class="opt-dot" style="background:transparent;width:auto;height:auto"><span class="ic" style="width:16px;height:16px;color:var(--text-muted)">${ICON[o.icon]||''}</span></span>
+      <span class="opt-name">${o.label}</span>
+      <span class="ic opt-check">${ICON.check}</span>
+    </button>`).join('');
+  modeOverlay.classList.add('open');
+}
+function pickMode(m){
+  if(isCalView()) calMode = m;   // Zeitraum bleibt, wie er ist - der Filter ist eine andere Frage
+  else { taskMode=m; try{localStorage.setItem('taskDashboard.taskMode',m);}catch(e){} }
+  modeOverlay.classList.remove('open');
+  if(openProjectId){ renderProjektDetail(); return; }
+  renderViewSwitchRow(); renderScopeNav(); renderCurrent();
+}
+// Beschriftung der Ansicht-Kachel - eine Stelle fuer beide Faelle.
+function modeTileHTML(){
+  const cal = isCalView();
+  const val = cal ? (CAL_MODE_LABEL[calMode]||'Monat') : (TASK_MODE_LABEL[taskMode]||'Liste');
+  const icon = cal ? ICON.calendar : (taskMode==='list'?ICON.backlog:ICON.board);
+  return `<button class="ctrl-tile" onclick="openModeModal()">
+    <span class="ic-wrap"><span class="ic">${icon||''}</span></span>
+    <span class="body"><span class="lbl">Ansicht</span><span class="val">${val}</span></span>
+    <span class="ic chev">${ICON.chevronDown}</span>
+  </button>`;
 }
 const scopeOverlay = document.getElementById('scopeOverlay');
 function openScopeModal(){
@@ -2170,6 +2270,7 @@ let archMode='done';
 function setArchMode(m){ archMode=m; renderArchiv(); }
 function renderArchiv(){
   if(archMode==='notes'){ renderArchivNotes(); return; }
+  if(archMode==='projects'){ renderArchivProjects(); return; }
   const items = tasks.filter(t=>t.status===archMode).filter(matchesFilter);
   const groups={};
   items.forEach(t=>{ const d=t.archivedAt||t.created||''; const key=d?d.slice(0,7):'unbekannt'; (groups[key]=groups[key]||[]).push(t); });
@@ -2187,14 +2288,29 @@ function renderArchiv(){
 }
 function archControls(count){
   const doneNotes = notes.filter(n=>n.done).length;
+  const doneProj = projects.filter(p=>projStatus(p)==='done').length;
   return `<div class="arch-controls">
     <div class="cal-modes">
       <button class="cmode ${archMode==='done'?'active':''}" onclick="setArchMode('done')">Erledigt</button>
       <button class="cmode ${archMode==='discarded'?'active':''}" onclick="setArchMode('discarded')">Verworfen</button>
       <button class="cmode ${archMode==='notes'?'active':''}" onclick="setArchMode('notes')">Notizen${doneNotes?` (${doneNotes})`:''}</button>
+      <button class="cmode ${archMode==='projects'?'active':''}" onclick="setArchMode('projects')">Projekte${doneProj?` (${doneProj})`:''}</button>
     </div>
     <span class="flabel">${count} Einträge</span>
   </div>`;
+}
+/* Abgeschlossene Projekte. Bewusst die BESTEHENDE Projekt-Card (pcard) statt einer eigenen
+   Archivzeile: ein Projekt bleibt ein Projekt, auch wenn es vorbei ist. Klick oeffnet es
+   wie ueberall - so kommt man an seine Ziele, Meilensteine und erledigten Aufgaben heran. */
+function renderArchivProjects(){
+  const pool = projects.filter(p=>projStatus(p)==='done')
+                       .filter(p=>!filters.role || p.role===filters.role)
+                       .sort((a,b)=>(a.name||'').localeCompare(b.name||'','de'));
+  const body = pool.length
+    ? `<div class="proj-grid">${pool.map(p=>projectCardHTML(p)).join('')}</div>`
+    : `<div class="cal-empty">Keine abgeschlossenen Projekte.<br>`
+      + `Ein Projekt wird im Projekt unter „Bearbeiten“ auf „Abgeschlossen“ gesetzt – das geht erst, wenn keine Aufgabe mehr offen ist.</div>`;
+  document.getElementById('archiv').innerHTML = archControls(pool.length) + body;
 }
 function renderArchivNotes(){
   const done = notes.filter(n=>n.done);
@@ -2275,7 +2391,7 @@ function toggleDoneProjects(){ showDoneProjects=!showDoneProjects; renderProjekt
 /* ===== Projekt-Unterseite (Detail) — Board/Kalender/Gantt via matchesFilter aufs Projekt gescopt ===== */
 function projNavUnit(){
   if(projView==='calendar') return (calMode==='day'||calMode==='week') ? calMode : 'month';
-  // aufgaben/ziele/board/gantt folgen alle dem Zeitraum-Filter (konsistent überall)
+  // aufgaben (Liste wie Board), ziele und gantt folgen alle dem Zeitraum-Filter (konsistent überall)
   return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
 }
 function setProjView(v){ projView=v; renderCurrent(); }
@@ -2311,12 +2427,15 @@ function projHeadHTML(p){
 }
 function projSwitchRowHTML(){
   const vt=(id,t,s,icon)=>`<button class="vtile ${projView===id?'active':''}" onclick="setProjView('${id}')"><span class="ic-wrap">${ic(icon)}</span><span class="vt-body"><span class="vt-t">${t}</span><span class="vt-s">${s}</span></span></button>`;
-  const views=vt('aufgaben','Aufgaben','Offen · Erledigt','backlog')+vt('ziele','Ziele','&amp; Meilensteine','target')+vt('board','Board','Kanban','board')+vt('calendar','Kalender','Monat · Woche','calendar')+vt('gantt','Gantt','Zeitachse','gantt');
+  // Ziele zuerst: sie sind den Aufgaben uebergeordnet, also stehen sie zuvorderst (Albrecht, 25.07. spaet).
+  const views=vt('ziele','Ziele','&amp; Meilensteine','target')+vt('aufgaben','Aufgaben','Liste · Board','board')+vt('calendar','Kalender','Monat · Woche · Tag','calendar')+vt('gantt','Gantt','Zeitachse','gantt');
   const scope=`<button class="ctrl-tile scope-tile ${timeScope!=='all'?'is-active':''}" onclick="openScopeModal()"><span class="ic-wrap">${ic('calendar')}</span><span class="body"><span class="lbl">Zeitraum</span><span class="val">${TIME_SCOPE_LABEL[timeScope]||'Alle'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`;
   let funcs='';
-  if(projView==='board'||projView==='aufgaben') funcs=`<button class="ctrl-tile group-tile" onclick="openGroupModal()"><span class="ic-wrap">${ic('grid')}</span><span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[curBoardGroup()]||'Status'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
+  if(projView==='aufgaben') funcs=modeTileHTML()
+    +`<button class="ctrl-tile group-tile" onclick="openGroupModal()"><span class="ic-wrap">${ic('grid')}</span><span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[curBoardGroup()]||'Status'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
+  else if(projView==='calendar') funcs=modeTileHTML()+scope;
   else if(projView==='gantt') funcs=`<button class="ctrl-tile zoom-tile ${ganttZoom!=='normal'?'is-active':''}" onclick="openZoomModal()"><span class="ic-wrap">${ic('zoom')}</span><span class="body"><span class="lbl">Zoom</span><span class="val">${GANTT_ZOOM[ganttZoomIdx()].label}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
-  else funcs=scope; // aufgaben + calendar: Zeitraum (Filter überall konsistent)
+  else funcs=scope; // ziele: nur Zeitraum (Filter überall konsistent)
   const funcsWrap=funcs?`<div class="sr-funcs">${funcs}</div>`:'';
   // Rückkehr zur Übersicht läuft jetzt über den Zweck-Tab „Projekte" oben – keine eigene Kachel mehr (weniger Rauschen).
   return `<div class="switch-row proj-switch2">${views}${funcsWrap}</div>`;
@@ -2330,7 +2449,9 @@ function projScopeNavHTML(){
     <span class="cal-title">${esc(navLabel(u))}</span>
   </div>`;
 }
-function projAufgabenHTML(p){
+// Die Aufgaben-LISTE. Nicht projektspezifisch: die Eingrenzung aufs Projekt macht matchesFilter
+// ueber openProjectId. Genau deshalb ist dieselbe Funktion in Planen und im Projekt verwendbar.
+function taskListHTML(){
   // Kopf-Filter (matchesFilter, via openProjectId aufs Projekt) + Zeitraum (inTimeScope) wirken hier — konsistent
   const ts=tasks.filter(matchesFilter).filter(inTimeScope);
   const openAll=ts.filter(t=>t.status!=='done'&&t.status!=='discarded');
@@ -2389,7 +2510,10 @@ function msProgress(m, p){
   return Math.max(0, Math.min(100, Math.round(daysBetween(from, todayStr())/span*100)));
 }
 function projZieleHTML(p){
-  const ts=tasks.filter(matchesFilter).filter(inTimeScope);
+  // KEIN inTimeScope: Der Fortschritt eines Ziels ist zeitlos. Mit Zeitfilter verschwanden Aufgaben
+  // OHNE Datum vollstaendig – weder in der Ziel-Card noch unter „Ohne Ziel“ – und der Balken log.
+  // Der Zeitraum wirkt hier nur noch auf die Meilensteine (das sind Termine).
+  const ts=tasks.filter(matchesFilter);
   const sortP=(a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
 
   /* --- Meilensteine: Titel + Zeitbalken + Datum --- */
@@ -2428,7 +2552,10 @@ function projZieleHTML(p){
       : `<div class="proj-empty" style="padding:4px 2px">Noch keine Aufgabe. Zieh eine hierher oder leg eine an.</div>`;
     const note=(g.note||'').trim()?`<div class="gc-note">${esc(g.note.trim())}</div>`:'';
     const body = open ? note + rows
-      + `<button class="colnew" onclick="event.stopPropagation();openNewInGoal('${g.id}')">+ Aufgabe</button>`
+      + `<div class="gc-acts">`
+      +   `<button class="colnew" onclick="event.stopPropagation();openNewInGoal('${g.id}')">+ Aufgabe</button>`
+      +   `<button class="colnew" onclick="event.stopPropagation();openAssign('${g.id}')">Aufgabe zuordnen</button>`
+      + `</div>`
       + `<div class="gc-foot"><button class="ghost sm" onclick="event.stopPropagation();openPGoal('${g.id}')">${ic('edit')} Ziel bearbeiten</button></div>` : '';
     return `<div class="gcard ${open?'is-open':''} ${stx.total===0?'is-empty':''}" style="--st:${st}"`
       + dropAttr({drop:{type:'goal',value:g.id}}) + ` onclick="toggleGoalCard('${g.id}')">`
@@ -2456,6 +2583,55 @@ function projZieleHTML(p){
 
   return msBlock + '<div class="rule"></div>' + goalBlock + '<div class="rule"></div>' + restBlock;
 }
+/* Bestehende Aufgabe einem Ziel zuordnen – Gegenstueck zu „+ Aufgabe“.
+   Bewusst OHNE Rollen-, Prio- und Zeitfilter: hier soll gerade das gefunden werden, was in der
+   gefilterten Ansicht nicht sichtbar ist. Das Fenster bleibt offen, damit mehrere Aufgaben
+   nacheinander zugeordnet werden koennen; zugeordnete Zeilen verschwinden aus der Liste. */
+let assignGoalId = null;
+function openAssign(goalId){
+  const g = goalById(goalId); if(!g) return;
+  assignGoalId = goalId; renderAssign(); listOverlay.classList.add('open');
+}
+function assignSort(a,b){ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; }
+function assignRowHTML(t, showGoal){
+  const g = showGoal ? goalById(t.goalId) : null;
+  const gh = g ? `<span class="badge">${esc(g.title)}</span>` : '';
+  const dh = t.due ? `<span class="a-date ${isOverdue(t)?'over':''}">${fmtDate(t.due)}</span>` : '';
+  const done = t.status==='done' ? ' is-reached' : '';
+  return `<div class="arch-row goal-row${done}" onclick="assignToGoal('${t.id}')">`
+    + `<span class="a-title">${esc(t.title)}</span>${gh}${dh}</div>`;
+}
+function renderAssign(){
+  const g = goalById(assignGoalId);
+  if(!g){ listOverlay.classList.remove('open'); return; }
+  const pool = projectTasks(g.projectId).filter(t=>t.status!=='discarded' && t.goalId!==g.id);
+  const free = pool.filter(t=>!t.goalId).sort(assignSort);
+  const other = pool.filter(t=>t.goalId).sort(assignSort);
+  document.getElementById('listTitle').textContent = `Aufgabe zuordnen · ${g.title}`;
+  if(!pool.length){
+    document.getElementById('listBody').innerHTML =
+      `<div class="cal-empty">Alle Aufgaben dieses Projekts sind bereits diesem Ziel zugeordnet.<br>`
+      + `Mit „+ Aufgabe“ legst du eine neue an.</div>`;
+    return;
+  }
+  const sec = (title, hint, rows) => rows
+    ? `<div class="today-sechead" style="cursor:default;margin-top:6px"><span class="title">${title}</span>`
+      + `<span class="day">${hint}</span></div><div class="tag-list">${rows}</div>` : '';
+  document.getElementById('listBody').innerHTML =
+    `<div class="eh-hint" style="margin-bottom:4px">Klick ordnet die Aufgabe diesem Ziel zu. `
+    + `Das Fenster bleibt offen – du kannst mehrere hintereinander zuordnen.</div>`
+    + sec('Ohne Ziel', 'Aufgaben dieses Projekts, die noch keinem Ziel gehören',
+          free.map(t=>assignRowHTML(t,false)).join(''))
+    + sec('Aus einem anderen Ziel', 'Eine Aufgabe gehört zu genau einem Ziel – Zuordnen hängt sie um',
+          other.map(t=>assignRowHTML(t,true)).join(''));
+}
+function assignToGoal(tid){
+  const t = tasks.find(x=>x.id===tid); const g = goalById(assignGoalId);
+  if(!t || !g || t.projectId!==g.projectId) return;
+  t.goalId = g.id;
+  goalCardOpen.add(g.id);          // damit die Zuordnung im Hintergrund sofort sichtbar ist
+  persist(); render(); renderAssign();
+}
 // Neue Aufgabe direkt in einem Ziel anlegen (Knopf in der aufgeklappten Ziel-Card).
 // Das Ziel-Feld im Modal erscheint erst, wenn ein Projekt gewaehlt ist – deshalb Projekt zuerst.
 function openNewInGoal(goalId){
@@ -2472,11 +2648,12 @@ function renderProjektDetail(){
   const chrome=document.getElementById('projChrome');
   chrome.classList.remove('hidden');
   chrome.innerHTML = projHeadHTML(p) + projKpiHTML(p) + projSwitchRowHTML() + projScopeNavHTML();
-  const host = (projView==='aufgaben'||projView==='ziele') ? 'projekte' : (projView==='board' ? 'board' : projView);
-  ['projekte','board','calendar','gantt'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.toggle('hidden', id!==host); });
-  if(projView==='aufgaben') document.getElementById('projekte').innerHTML = projAufgabenHTML(p);
+  const host = projView==='aufgaben' ? (taskMode==='list' ? 'projekte' : 'board')
+             : projView==='ziele'    ? 'projekte' : projView;
+  ['projekte','tasklist','board','calendar','gantt'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.toggle('hidden', id!==host); });
+  if(projView==='aufgaben' && taskMode==='list') document.getElementById('projekte').innerHTML = taskListHTML();
   else if(projView==='ziele') document.getElementById('projekte').innerHTML = projZieleHTML(p);
-  else if(projView==='board') renderBoard();
+  else if(projView==='aufgaben') renderBoard();
   else if(projView==='calendar') renderCalendar();
   else if(projView==='gantt') renderGantt();
 }
@@ -3096,7 +3273,16 @@ function matchesFilter(t){
   return true;
 }
 
-function curBoardGroup(){ return openProjectId ? (projView==='aufgaben' ? projTaskGroup : projBoardGroup) : boardGroup; }
+// Vier Gruppierungen, je Kontext (Planen/Projekt) und Modus (Liste/Board) eine eigene -
+// so bleibt beim Hin- und Herschalten die zuletzt gewaehlte Gruppierung erhalten.
+function curBoardGroup(){
+  if(openProjectId){
+    const g = taskMode==='list' ? projTaskGroup : projBoardGroup;
+    // Aus Altzustaenden koennte hier noch 'role'/'project' stehen - beide sind im Projekt tot.
+    return (g==='role'||g==='project') ? (taskMode==='list' ? 'none' : 'status') : g;
+  }
+  return taskMode==='list' ? listGroup : boardGroup;
+}
 // Spaltengruppen der aktuellen Gruppierung. `pool` wird nur für 'termin' gebraucht (Tagesspalten aus den Daten).
 // Jede Gruppe trägt zusätzlich ihr Drop-Ziel: drop = {type,value} oder no = 'Grund' (Zone nimmt nichts an).
 function boardGroups(pool){
@@ -3236,6 +3422,7 @@ function renderWeekBoard(visible){
     + sec('undated','Ohne Datum', undated, 'Zieh die Aufgabe auf einen Tag, um sie zu terminieren')
     + `</div>`;
 }
+function renderTaskList(){ document.getElementById('tasklist').innerHTML = taskListHTML(); }
 function renderBoard(){
   const el=document.getElementById('board');
   const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
@@ -4322,6 +4509,8 @@ function importJSON(file){
 /* ============================== EVENTS ============================== */
 // Zweck-Tabs
 document.querySelectorAll('#ptabs .ptab').forEach(b => b.onclick = () => setPurpose(b.dataset.tab));
+// Archiv: kein Tab, sondern ein Ort. Zweiter Klick fuehrt zurueck auf die Startseite.
+document.getElementById('btnArchiv').onclick = () => setPurpose(purpose==='archiv' ? 'start' : 'archiv');
 // Rolle-/Filter-Kacheln
 document.getElementById('tileRole').onclick = openRoleModal;
 document.getElementById('tileFilter').onclick = openFilterModal;
@@ -4336,6 +4525,7 @@ filterOverlay.addEventListener('click',e=>{ if(e.target===filterOverlay) filterO
 // Gruppieren-Modal
 document.getElementById('groupModalClose').onclick = ()=>groupOverlay.classList.remove('open');
 groupOverlay.addEventListener('click',e=>{ if(e.target===groupOverlay) groupOverlay.classList.remove('open'); });
+document.getElementById('modeModalClose').onclick = ()=>modeOverlay.classList.remove('open');
 document.getElementById('scopeModalClose').onclick = ()=>scopeOverlay.classList.remove('open');
 scopeOverlay.addEventListener('click',e=>{ if(e.target===scopeOverlay) closeScopeModal(); });
 document.getElementById('zoomModalClose').onclick = ()=>zoomOverlay.classList.remove('open');
