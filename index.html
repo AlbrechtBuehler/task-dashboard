@@ -701,6 +701,69 @@
   .pd-prog .pcard-prog-top { font-size: .86rem; margin-bottom: 8px; }
   .pd-prog .pcard-prog-top b { color: var(--text); }
   .pd-prog-sub { font-size: .78rem; color: var(--text-muted); margin-top: 8px; }
+
+  /* ===== Board · Termin: festes Wochenraster (alle sieben Tage, auch leere) =====
+     Genau EIN Kind in #board (Grid-Falle!): der Wrapper .board-week. */
+  .board-week { display: block; min-width: 0; }
+  .board-a.week { grid-template-columns: repeat(var(--wcols, 7), minmax(0, 1fr)); gap: 14px; }
+  .board-a.week .col-body { min-height: 74px; }          /* leere Tage müssen ein Ablege-Ziel haben */
+  .board-a.week .cola.is-today .cola-name { color: var(--accent); font-weight: 700; }
+  .board-week .wk-rest { margin-top: 4px; }
+  @media (max-width: 1200px) { .board-a.week { grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); } }
+  @media (max-width: 640px)  { .board-a.week { grid-template-columns: 1fr; } }
+
+  /* ===== Ziele im Projekt: Sektion mit Fortschrittsbalken (kein Kasten – Striche trennen) ===== */
+  .goal-head { position: relative; padding-right: 96px; }
+  .goal-prog { display: flex; flex-direction: column; gap: 5px; max-width: 420px; margin: -4px 0 14px; }
+  .goal-prog .pcard-prog-top { font-size: .78rem; color: var(--text-muted); }
+  .goal-prog .pcard-prog-top b { color: var(--text); font-weight: 650; }
+  .goal-check { position: absolute; top: -2px; right: 0; width: 22px; height: 22px; padding: 0;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer;
+    color: transparent; display: inline-flex; align-items: center; justify-content: center; transition: all .12s; }
+  .goal-check .ic { width: 14px; height: 14px; }
+  .goal-check:hover { border-color: var(--text-muted); color: var(--text-muted); }
+  .goal-reached { position: absolute; top: 1px; right: 2px; font-size: .72rem; font-weight: 600; color: #5f8a70; }
+  .today-sechead.is-reached .title { color: var(--text-muted); }
+  .goal-note { font-size: .8rem; color: var(--text-muted); line-height: 1.45; margin: -6px 0 12px; max-width: 720px; }
+  .goal-edit { position: absolute; top: 0; right: 30px; }
+
+  /* ===== Meilensteine: Liste im Projekt ===== */
+  .ms-dia { width: 9px; height: 9px; background: var(--text-muted); transform: rotate(45deg);
+    flex: none; margin: 0 3px; border-radius: 1px; }
+  .ms-dia.is-done { background: #5f8a70; }
+  .ms-dia.is-over { background: var(--red); }
+  .ms-row { gap: 12px; }
+  .ms-row.is-done .a-title { color: var(--text-muted); text-decoration: line-through; }
+  .ms-row .a-title { flex: 1; }
+  .ms-row .goal-check { position: static; flex: none; }
+  .ms-row .goal-reached { position: static; }
+  .ms-add { margin-top: 8px; max-width: 240px; }
+
+  /* ===== Meilensteine im Gantt: eigene Zeile mit Rauten ===== */
+  .g-msrow { background: var(--surface-2); }
+  .g-mslabel { background: var(--surface-2) !important; font-weight: 650; gap: 7px; }
+  .g-mslabel .ic { width: 13px; height: 13px; color: var(--text-muted); }
+  .g-ms { position: absolute; top: 9px; display: flex; align-items: center; gap: 7px;
+    white-space: nowrap; cursor: pointer; }
+  .g-ms-dia { width: 12px; height: 12px; background: var(--accent); transform: rotate(45deg);
+    border-radius: 2px; flex: none; }
+  .g-ms.is-done .g-ms-dia { background: #5f8a70; }
+  .g-ms.is-over .g-ms-dia { background: var(--red); }
+  .g-ms-lbl { font-size: .68rem; color: var(--text-muted); }
+  .g-ms.is-over .g-ms-lbl { color: var(--red); }
+
+  /* ===== KPI-Zeile: fünf Cards passen ohne festes Vierer-Raster ===== */
+  .stats { grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ===== Ziele-Liste im KPI-Modal: eine Zeile je Ziel mit Balken ===== */
+  .goal-row { gap: 12px; }
+  .goal-row .a-title { flex: 1; }
+  .goal-row .gr-bar { width: 130px; flex: none; }
+  .goal-row .gr-bar .pcard-bar { height: 6px; }
+  .goal-row .gr-cnt { font-size: .74rem; color: var(--text-muted); white-space: nowrap; flex: none; }
+  .goal-row.is-reached .a-title { color: var(--text-muted); }
+  .goal-row .gr-ok { font-size: .7rem; font-weight: 600; color: #5f8a70; white-space: nowrap; flex: none; }
 </style>
 </head>
 <body>
@@ -823,6 +886,11 @@
             <label for="mStatus">Status</label>
             <select id="mStatus"></select>
           </div>
+        </div>
+        <div class="field hidden" id="mGoalField">
+          <label for="mGoal">Ziel</label>
+          <select id="mGoal"><option value="">— kein Ziel —</option></select>
+          <div class="eh-hint">Eine Aufgabe gehört zu genau einem Ziel des gewählten Projekts.</div>
         </div>
         <div class="field" id="mRoleField">
           <label for="mRole">Rolle</label>
@@ -989,6 +1057,56 @@
   </div>
 </div>
 
+<!-- Projektziel-Modal (Ziel innerhalb eines Projekts: Titel + Notiz, KEIN Datum, KEIN Prozentfeld) -->
+<div class="overlay" id="pgOverlay">
+  <div class="modal">
+    <h2 id="pgModalTitle">Neues Ziel</h2>
+    <div class="body">
+      <input type="hidden" id="pgId">
+      <div class="field">
+        <label for="pgTitle">Ziel *</label>
+        <input id="pgTitle" type="text" placeholder="Was soll erreicht sein? z. B. „Dashboard ist fertig“">
+      </div>
+      <div class="field">
+        <label for="pgNote">Notiz</label>
+        <textarea id="pgNote" placeholder="Kontext, Bedingungen, Gedanken …" style="min-height:90px"></textarea>
+      </div>
+      <div class="eh-hint">Der Fortschritt rechnet sich aus den Aufgaben, die diesem Ziel zugeordnet sind – es gibt kein Prozentfeld.</div>
+    </div>
+    <div class="foot">
+      <button class="ghost" id="pgDelete" style="color:var(--q1);display:none">Löschen</button>
+      <div class="spacer"></div>
+      <button class="ghost" id="pgCancel">Abbrechen</button>
+      <button class="primary" id="pgSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Meilenstein-Modal (Termin im Projekt: Titel + Datum) -->
+<div class="overlay" id="msOverlay">
+  <div class="modal">
+    <h2 id="msModalTitle">Neuer Meilenstein</h2>
+    <div class="body">
+      <input type="hidden" id="msId">
+      <div class="field">
+        <label for="msTitle">Meilenstein *</label>
+        <input id="msTitle" type="text" placeholder="Welcher Punkt ist erreicht? z. B. „Konzept freigegeben“">
+      </div>
+      <div class="field">
+        <label for="msDate">Datum *</label>
+        <input id="msDate" type="date">
+      </div>
+      <div class="eh-hint">Meilensteine erscheinen im Gantt als Raute. Sie zählen nicht als Aufgabe.</div>
+    </div>
+    <div class="foot">
+      <button class="ghost" id="msDelete" style="color:var(--q1);display:none">Löschen</button>
+      <div class="spacer"></div>
+      <button class="ghost" id="msCancel">Abbrechen</button>
+      <button class="primary" id="msSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
 <!-- Projekt-Modal (Einzel-Projekt: anlegen / bearbeiten) -->
 <div class="overlay" id="projOverlay">
   <div class="modal">
@@ -1000,8 +1118,9 @@
         <input id="pName" type="text" placeholder="Projektname">
       </div>
       <div class="field">
-        <label for="pGoal">Projektziel (optional)</label>
-        <input id="pGoal" type="text" placeholder="Was soll am Ende erreicht sein?">
+        <label for="pGoal">Projektzweck (optional)</label>
+        <input id="pGoal" type="text" placeholder="Wozu gibt es dieses Projekt? Ein Satz.">
+        <div class="eh-hint">Ein Satz zur Absicht. Die einzelnen <b>Ziele</b> mit ihren Aufgaben pflegst du im Projekt unter „Ziele“.</div>
       </div>
       <div class="field">
         <label for="pDesc">Beschreibung (optional)</label>
@@ -1324,6 +1443,9 @@ function taskRole(t){
 
 /* ============================== STATE ============================== */
 let tasks = [], projects = [], people = [], notes = [], weekGoals = [];
+// Projektziele und Meilensteine: eigene Arrays (wie notes/weekGoals), damit sie nicht in Board,
+// Kalender, Heute und den Aufgaben-KPIs mitschwimmen. Ein Meilenstein ist ein Termin, keine Arbeit.
+let goals = [], milestones = [];
 let view = 'board';
 let purpose = 'start';   // Zweck-Tab: start | heute | planen | auswerten | backlog — App startet auf Start (Wochenziele)
 // Projekt-Unterseite (Laufzeit, NICHT persistiert): offenes Projekt + seine Unteransicht
@@ -1388,8 +1510,56 @@ function normalizeWeekGoals(){
     if(typeof g.doneAt!=='string') g.doneAt = '';
   });
 }
+// Projektziel robust aufs Modell {id,projectId,title,note,done,doneAt} bringen.
+// KEIN eigenes Datum und KEIN Prozentfeld: der Fortschritt rechnet sich aus den verknüpften Aufgaben,
+// damit es keine zweite Wahrheit gibt. Ziele ohne existierendes Projekt werden verworfen.
+function normalizeGoals(){
+  if(!Array.isArray(goals)) goals = [];
+  goals.forEach(g=>{
+    if(!g.id) g.id = uid('g');
+    if(typeof g.title!=='string') g.title = '';
+    if(typeof g.note!=='string') g.note = '';
+    g.done = !!g.done;
+    if(typeof g.doneAt!=='string') g.doneAt = '';
+  });
+  goals = goals.filter(g=>g.projectId && projById(g.projectId));
+  // Aufgaben-Zuordnung säubern: Ziel muss existieren UND zum Projekt der Aufgabe gehören.
+  const byId = Object.fromEntries(goals.map(g=>[g.id,g]));
+  tasks.forEach(t=>{
+    if(!t.goalId) { t.goalId = null; return; }
+    const g = byId[t.goalId];
+    if(!g || g.projectId!==t.projectId) t.goalId = null;
+  });
+}
+// Meilenstein robust aufs Modell {id,projectId,title,date,done,doneAt} bringen.
+function normalizeMilestones(){
+  if(!Array.isArray(milestones)) milestones = [];
+  milestones.forEach(m=>{
+    if(!m.id) m.id = uid('ms');
+    if(typeof m.title!=='string') m.title = '';
+    if(typeof m.date!=='string') m.date = '';
+    m.done = !!m.done;
+    if(typeof m.doneAt!=='string') m.doneAt = '';
+  });
+  milestones = milestones.filter(m=>m.projectId && projById(m.projectId) && m.date);
+}
 function ehRank(t){ const q=quadrant(t).key; return {q1:0,q2:1,q3:2,q4:3}[q]; }
 function projById(id){ return projects.find(p=>p.id===id) || null; }
+function goalById(id){ return goals.find(g=>g.id===id) || null; }
+// Ziele eines Projekts: offene zuerst, danach erreichte; innerhalb stabil in Anlage-Reihenfolge.
+function goalsOf(pid){ return goals.filter(g=>g.projectId===pid).slice().sort((a,b)=>(a.done?1:0)-(b.done?1:0)); }
+function milestonesOf(pid){ return milestones.filter(m=>m.projectId===pid).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0); }
+function msOverdue(m){ return !m.done && m.date && m.date < todayStr(); }
+// Fortschritt eines Ziels – ausschliesslich aus den übergebenen Aufgaben gerechnet.
+function goalStats(goalId, pool){
+  const ts = (pool||tasks).filter(t=>t.goalId===goalId);
+  const done = ts.filter(t=>t.status==='done').length;
+  const open = ts.filter(t=>t.status!=='done' && t.status!=='discarded').length;
+  const overdue = ts.filter(isOverdue).length;
+  const next = ts.filter(t=>t.status!=='done'&&t.status!=='discarded'&&t.due)
+                 .sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:ehRank(a)-ehRank(b))[0] || null;
+  return { total:ts.length, done, open, overdue, next, pct: ts.length?Math.round(done/ts.length*100):0 };
+}
 function migrateTasks(arr){
   const smap = { todo:'todo', doing:'in_progress', done:'done' };
   const pmap = { hoch:'A', mittel:'B', niedrig:'D' };
@@ -1515,7 +1685,7 @@ function renderHead(){
 
 function inRole(t){ return !filters.role || taskRole(t) === filters.role; }
 
-const BOARD_GROUP_LABEL = { none:'Keine', status:'Status', role:'Rolle', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin' };
+const BOARD_GROUP_LABEL = { none:'Keine', status:'Status', role:'Rolle', prio:'Priorität', person:'Person', project:'Projekt', termin:'Termin', goal:'Ziel' };
 const TIME_SCOPE_LABEL = { all:'Alle', today:'Tag', week:'Woche', month:'Monat' };
 const TIME_SCOPE_OPTS = [
   { id:'all',   label:'Alle',   sub:'Kein Zeitfilter',       icon:'backlog' },
@@ -1538,6 +1708,9 @@ function scopeWindow(){
 function navUnit(){
   if(purpose!=='planen') return null;
   if(view==='calendar') return (calMode==='day'||calMode==='week') ? calMode : 'month';
+  // Termin-Board zeigt immer die sieben Tage EINER Woche -> es blättert wochenweise,
+  // auch bei Zeitraum „Alle". Die Zeile ist damit nie tot: sie verschiebt das Wochenraster.
+  if(view==='board' && curBoardGroup()==='termin') return 'week';
   if(view==='board' || view==='gantt') return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
   return null;
 }
@@ -1589,7 +1762,7 @@ function setTimeScope(s){
   closeScopeModal(); renderViewSwitchRow(); renderCurrent();
 }
 function setView(v){ openProjectId=null; view = v; renderViewSwitchRow(); renderCurrent(); }
-function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderBoard(); }
+function setBoardGroup(g){ boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){} renderViewSwitchRow(); renderScopeNav(); renderBoard(); }
 function renderCurrent(){
   renderScopeNav();   // Datumswechsel (Seitenebene) immer zuerst synchronisieren
   ['board','backlog','calendar','gantt','projekte','statistik','archiv'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.add('hidden'); });
@@ -1623,7 +1796,10 @@ const GROUP_OPTS = [
 ];
 const groupOverlay = document.getElementById('groupOverlay');
 function openGroupModal(){
-  const opts = (openProjectId && projView==='aufgaben') ? [{id:'none',label:'Keine',icon:'backlog'}].concat(GROUP_OPTS) : GROUP_OPTS;
+  let opts = GROUP_OPTS;
+  // Im Projekt: „Ziel" als Gruppierung (global wäre sie sinnlos, Ziele hängen an einem Projekt).
+  if(openProjectId) opts = opts.concat([{ id:'goal', label:'Ziel', icon:'target' }]);
+  if(openProjectId && projView==='aufgaben') opts = [{id:'none',label:'Keine',icon:'backlog'}].concat(opts);
   document.getElementById('groupOptList').innerHTML = opts.map(o=>`
     <button class="opt-row ${curBoardGroup()===o.id?'sel':''}" onclick="pickGroup('${o.id}')">
       <span class="opt-dot" style="background:transparent;width:auto;height:auto"><span class="ic" style="width:16px;height:16px;color:var(--text-muted)">${ICON[o.icon]||''}</span></span>
@@ -1635,7 +1811,10 @@ function openGroupModal(){
 function pickGroup(g){
   if(openProjectId){ if(projView==='aufgaben') projTaskGroup=g; else projBoardGroup=g; groupOverlay.classList.remove('open'); renderProjektDetail(); return; }
   boardGroup=g; try{localStorage.setItem('taskDashboard.boardGroup',g);}catch(e){}
-  groupOverlay.classList.remove('open'); renderViewSwitchRow(); renderBoard();
+  groupOverlay.classList.remove('open'); renderViewSwitchRow();
+  // Die Gruppierung entscheidet mit, ob geblättert wird (Termin = Wochenraster).
+  // Ohne renderScopeNav() bliebe sonst eine sichtbare, tote Blätter-Zeile stehen.
+  renderScopeNav(); renderBoard();
 }
 const scopeOverlay = document.getElementById('scopeOverlay');
 function openScopeModal(){
@@ -2064,7 +2243,7 @@ function toggleDoneProjects(){ showDoneProjects=!showDoneProjects; renderProjekt
 /* ===== Projekt-Unterseite (Detail) — Board/Kalender/Gantt via matchesFilter aufs Projekt gescopt ===== */
 function projNavUnit(){
   if(projView==='calendar') return (calMode==='day'||calMode==='week') ? calMode : 'month';
-  // aufgaben/board/gantt folgen alle dem Zeitraum-Filter (konsistent überall)
+  // aufgaben/ziele/board/gantt folgen alle dem Zeitraum-Filter (konsistent überall)
   return timeScope==='all' ? null : (SCOPE_TO_CALMODE[timeScope]||null);
 }
 function setProjView(v){ projView=v; renderCurrent(); }
@@ -2100,7 +2279,7 @@ function projHeadHTML(p){
 }
 function projSwitchRowHTML(){
   const vt=(id,t,s,icon)=>`<button class="vtile ${projView===id?'active':''}" onclick="setProjView('${id}')"><span class="ic-wrap">${ic(icon)}</span><span class="vt-body"><span class="vt-t">${t}</span><span class="vt-s">${s}</span></span></button>`;
-  const views=vt('aufgaben','Aufgaben','Offen · Erledigt','backlog')+vt('board','Board','Kanban','board')+vt('calendar','Kalender','Monat · Woche','calendar')+vt('gantt','Gantt','Zeitachse','gantt');
+  const views=vt('aufgaben','Aufgaben','Offen · Erledigt','backlog')+vt('ziele','Ziele','&amp; Meilensteine','target')+vt('board','Board','Kanban','board')+vt('calendar','Kalender','Monat · Woche','calendar')+vt('gantt','Gantt','Zeitachse','gantt');
   const scope=`<button class="ctrl-tile scope-tile ${timeScope!=='all'?'is-active':''}" onclick="openScopeModal()"><span class="ic-wrap">${ic('calendar')}</span><span class="body"><span class="lbl">Zeitraum</span><span class="val">${TIME_SCOPE_LABEL[timeScope]||'Alle'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`;
   let funcs='';
   if(projView==='board'||projView==='aufgaben') funcs=`<button class="ctrl-tile group-tile" onclick="openGroupModal()"><span class="ic-wrap">${ic('grid')}</span><span class="body"><span class="lbl">Gruppieren</span><span class="val">${BOARD_GROUP_LABEL[curBoardGroup()]||'Status'}</span></span><span class="ic chev">${ICON.chevronDown}</span></button>`+scope;
@@ -2148,6 +2327,68 @@ function projAufgabenHTML(p){
   const doneSec = `<div class="today-sec"${dropStatus('done')}>${head('var(--text-muted)','Erledigt',done.length)}${doneGrid}</div>`;
   return openBlock + addRow + '<div class="rule"></div>' + doneSec;
 }
+/* ===== Reiter „Ziele": oben Meilensteine, darunter die Ziele, zuletzt „Ohne Ziel" =====
+   Zwei Blöcke, getrennt durch feine Striche – dasselbe Muster wie Heute und Backlog, kein neuer Kasten.
+   Filter und Zeitraum wirken hier wie im Aufgaben-Reiter; die Zähler rechnen über dieselbe gefilterte Menge,
+   damit Balken und Karten nie auseinanderlaufen. */
+function projZieleHTML(p){
+  const ts=tasks.filter(matchesFilter).filter(inTimeScope);
+  const sortP=(a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
+  // Ein Kopf-Muster für den ganzen Reiter: kein Farbpunkt (die Ziel-Köpfe hätten keine Farbe zu tragen).
+  const head=(title,count,extra,sub)=>`<div class="today-sechead goal-head" style="cursor:default">`
+    + `<span class="title">${title}</span>${sub?`<span class="day">${sub}</span>`:''}`
+    + `<span class="count">${count}</span><span class="spacer"></span>${extra||''}</div>`;
+
+  /* --- Meilensteine --- */
+  const ms=milestonesOf(p.id).filter(m=>!scopeWindow() || (m.date>=scopeWindow().s && m.date<=scopeWindow().e));
+  const msRows = ms.map(m=>{
+    const over=msOverdue(m);
+    const cls=[m.done?'is-done':'', over?'is-over':''].join(' ').trim();
+    const right = m.done
+      ? `<span class="goal-reached">Erreicht</span><button class="ghost sm" title="Wieder offen" onclick="event.stopPropagation();toggleMsDone('${m.id}')">↺</button>`
+      : `<button class="goal-check" title="Als erreicht markieren" onclick="event.stopPropagation();toggleMsDone('${m.id}')">${ic('check')}</button>`;
+    return `<div class="arch-row ms-row ${cls}" onclick="openMs('${m.id}')">
+      <span class="ms-dia ${cls}"></span><span class="a-title">${esc(m.title)}</span>
+      <span class="a-date ${over?'over':''}">${fmtDate(m.date)}</span>${right}</div>`;
+  }).join('');
+  const msBlock = `<div class="today-sec">`
+    + head('Meilensteine', ms.length)
+    + (ms.length?`<div class="tag-list">${msRows}</div>`:'<div class="proj-empty">Noch kein Meilenstein.</div>')
+    + `<button class="colnew ms-add" onclick="openMs(null)">+ Meilenstein</button></div>`;
+
+  /* --- Ziele --- */
+  const gs=goalsOf(p.id);
+  const goalSecs = gs.map(g=>{
+    const st=goalStats(g.id, ts);
+    const right = g.done
+      ? `<span class="goal-reached">Erreicht</span><button class="ghost sm goal-edit" title="Wieder offen" onclick="event.stopPropagation();togglePGoalDone('${g.id}')">↺</button>`
+      : `<button class="goal-check" title="Als erreicht markieren" onclick="event.stopPropagation();togglePGoalDone('${g.id}')">${ic('check')}</button>`;
+    const bar = `<div class="goal-prog"><div class="pcard-prog-top">`
+      + (st.total?`<span><b>${st.done}</b> von ${st.total} erledigt</span><span>${st.pct}%</span>`
+                :`<span>Noch keine Aufgabe zugeordnet</span><span></span>`)
+      + `</div><div class="pcard-bar ${st.total&&st.done===st.total?'full':''}"><i style="width:${st.total?st.pct:0}%"></i></div></div>`;
+    const noteHTML = (g.note||'').trim() ? `<div class="goal-note">${esc(g.note.trim())}</div>` : '';
+    const items = ts.filter(t=>t.goalId===g.id).sort(sortP);
+    const grid = items.length ? `<div class="proj-taskgrid">${items.map(t=>todayCardHTML(t)).join('')}</div>`
+                              : '<div class="proj-empty">Zieh eine Aufgabe hierher oder wähle das Ziel in der Aufgabe.</div>';
+    const hd = `<div class="today-sechead goal-head ${g.done?'is-reached':''}" style="cursor:pointer" onclick="openPGoal('${g.id}')">`
+      + `<span class="title">${esc(g.title)}</span><span class="count">${st.total}</span>`
+      + `<span class="spacer"></span>${right}</div>`;
+    return `<div class="today-sec"${dropAttr({drop:{type:'goal',value:g.id}})}>${hd}${bar}${noteHTML}${grid}</div>`;
+  }).join('<div class="rule soft"></div>');
+  const goalBlock = (gs.length ? goalSecs : '<div class="proj-empty">Noch kein Ziel. Ein Ziel bündelt die Aufgaben, die zusammen ein Ergebnis bringen.</div>')
+    + `<button class="colnew ms-add" onclick="openPGoal(null)">+ Ziel</button>`;
+
+  /* --- Ohne Ziel: damit sich keine Aufgabe versteckt (wie „Ohne Projekt" im Board) --- */
+  const rest = ts.filter(t=>!t.goalId).sort(sortP);
+  const restBlock = `<div class="today-sec"${dropAttr({drop:{type:'goal',value:''}})}>`
+    + head('Ohne Ziel', rest.length, '', 'Aufgaben, die noch keinem Ziel zugeordnet sind')
+    + (rest.length?`<div class="proj-taskgrid">${rest.map(t=>todayCardHTML(t)).join('')}</div>`
+                  :'<div class="proj-empty">Alle Aufgaben sind einem Ziel zugeordnet.</div>')
+    + `</div>`;
+
+  return msBlock + '<div class="rule"></div>' + goalBlock + '<div class="rule"></div>' + restBlock;
+}
 function renderProjektDetail(){
   const p=projById(openProjectId);
   if(!p){ openProjectId=null; renderProjekte(); return; }
@@ -2156,9 +2397,10 @@ function renderProjektDetail(){
   const chrome=document.getElementById('projChrome');
   chrome.classList.remove('hidden');
   chrome.innerHTML = projHeadHTML(p) + projKpiHTML(p) + projSwitchRowHTML() + projScopeNavHTML();
-  const host = projView==='aufgaben' ? 'projekte' : (projView==='board' ? 'board' : projView);
+  const host = (projView==='aufgaben'||projView==='ziele') ? 'projekte' : (projView==='board' ? 'board' : projView);
   ['projekte','board','calendar','gantt'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.toggle('hidden', id!==host); });
   if(projView==='aufgaben') document.getElementById('projekte').innerHTML = projAufgabenHTML(p);
+  else if(projView==='ziele') document.getElementById('projekte').innerHTML = projZieleHTML(p);
   else if(projView==='board') renderBoard();
   else if(projView==='calendar') renderCalendar();
   else if(projView==='gantt') renderGantt();
@@ -2250,6 +2492,106 @@ function projectCardHTML(p){
     </div>
     ${nextHTML}${overHTML}${rangeHTML}${membersHTML}
   </div>`;
+}
+
+/* ============================== PROJEKTZIELE & MEILENSTEINE ==============================
+   Eigene Entitäten je Projekt. Ziel = Titel + Notiz (Fortschritt kommt aus den Aufgaben),
+   Meilenstein = Titel + Datum. Namen bewusst mit Präfix, damit sie nicht mit den WOCHENzielen
+   der Startseite kollidieren (openGoal/saveGoal/toggleGoalDone gehören dort hin).
+   ======================================================================================== */
+const pgOverlay = document.getElementById('pgOverlay');
+const msOverlay = document.getElementById('msOverlay');
+
+function openPGoal(id){
+  if(!openProjectId && !id) return;
+  const editing=!!id, g=editing?goalById(id):null;
+  if(editing && !g) return;
+  document.getElementById('pgModalTitle').textContent = editing ? 'Ziel bearbeiten' : 'Neues Ziel';
+  document.getElementById('pgId').value = editing ? g.id : '';
+  document.getElementById('pgTitle').value = editing ? (g.title||'') : '';
+  document.getElementById('pgNote').value  = editing ? (g.note||'')  : '';
+  document.getElementById('pgDelete').style.display = editing ? '' : 'none';
+  pgOverlay.classList.add('open');
+  setTimeout(()=>document.getElementById('pgTitle').focus(), 30);
+}
+function closePGoal(){ pgOverlay.classList.remove('open'); }
+function savePGoal(){
+  const id=document.getElementById('pgId').value;
+  const title=document.getElementById('pgTitle').value.trim();
+  const note=document.getElementById('pgNote').value.trim();
+  if(!title){ document.getElementById('pgTitle').focus(); return; }
+  if(id){ const g=goalById(id); if(g){ g.title=title; g.note=note; } }
+  else {
+    const pid = openProjectId; if(!pid) return;
+    goals.push({ id:uid('g'), projectId:pid, title, note, done:false, doneAt:'' });
+  }
+  persist(); closePGoal(); refreshActive();
+}
+function deletePGoal(){
+  const id=document.getElementById('pgId').value; const g=goalById(id); if(!g) return;
+  const n=tasks.filter(t=>t.goalId===id).length;
+  if(confirm(`Ziel „${g.title}" löschen?` + (n?`\n${n} Aufgabe(n) bleiben erhalten, verlieren aber die Zuordnung.`:''))){
+    tasks.forEach(t=>{ if(t.goalId===id) t.goalId=null; });
+    goals = goals.filter(x=>x.id!==id);
+    persist(); closePGoal(); refreshActive();
+  }
+}
+function togglePGoalDone(id){
+  const g=goalById(id); if(!g) return;
+  g.done=!g.done; g.doneAt = g.done ? todayStr() : '';
+  persist(); refreshActive();
+}
+
+function openMs(id){
+  if(!openProjectId && !id) return;
+  const editing=!!id, m=editing?milestones.find(x=>x.id===id):null;
+  if(editing && !m) return;
+  document.getElementById('msModalTitle').textContent = editing ? 'Meilenstein bearbeiten' : 'Neuer Meilenstein';
+  document.getElementById('msId').value = editing ? m.id : '';
+  document.getElementById('msTitle').value = editing ? (m.title||'') : '';
+  document.getElementById('msDate').value  = editing ? (m.date||'')  : '';
+  document.getElementById('msDelete').style.display = editing ? '' : 'none';
+  msOverlay.classList.add('open');
+  setTimeout(()=>document.getElementById('msTitle').focus(), 30);
+}
+function closeMs(){ msOverlay.classList.remove('open'); }
+function saveMs(){
+  const id=document.getElementById('msId').value;
+  const title=document.getElementById('msTitle').value.trim();
+  const date=document.getElementById('msDate').value;
+  if(!title){ document.getElementById('msTitle').focus(); return; }
+  if(!date){ alert('Ein Meilenstein braucht ein Datum – er markiert einen Punkt im Zeitplan.'); document.getElementById('msDate').focus(); return; }
+  if(id){ const m=milestones.find(x=>x.id===id); if(m){ m.title=title; m.date=date; } }
+  else {
+    const pid = openProjectId; if(!pid) return;
+    milestones.push({ id:uid('ms'), projectId:pid, title, date, done:false, doneAt:'' });
+  }
+  persist(); closeMs(); refreshActive();
+}
+function deleteMs(){
+  const id=document.getElementById('msId').value; const m=milestones.find(x=>x.id===id); if(!m) return;
+  if(confirm(`Meilenstein „${m.title}" löschen?`)){
+    milestones = milestones.filter(x=>x.id!==id);
+    persist(); closeMs(); refreshActive();
+  }
+}
+function toggleMsDone(id){
+  const m=milestones.find(x=>x.id===id); if(!m) return;
+  m.done=!m.done; m.doneAt = m.done ? todayStr() : '';
+  persist(); refreshActive();
+}
+// Für Gantt und KPI-Modal: Meilensteine, die durch Rollen-/Projekt-Scope und Zeitraum kommen.
+function visibleMilestones(){
+  const w=scopeWindow();
+  return milestones.filter(m=>{
+    const p=projById(m.projectId); if(!p) return false;
+    if(openProjectId && m.projectId!==openProjectId) return false;
+    if(filters.role && p.role!==filters.role) return false;
+    if(filters.proj==='__none') return false;
+    if(filters.proj && filters.proj!=='__none' && m.projectId!==filters.proj) return false;
+    if(w && !(m.date>=w.s && m.date<=w.e)) return false;
+    return true;
+  });
 }
 
 /* ============================== NOTIZEN ============================== */
@@ -2513,8 +2855,13 @@ function fromListEdit(id){ listOverlay.classList.remove('open'); openEdit(id); }
    ================================================================================================ */
 function kpiRowHTML(pid, v){
   const scope = pid ? `'${pid}'` : 'null';
-  const cell=(n,l,key,over)=>`<div class="stat kpi-click ${over?'overdue':''}" onclick="openKpi(${scope},'${key}')" title="Aufgaben dazu ansehen"><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
-  return `<div class="stats">${cell(v.total,'Aufgaben gesamt','total')}${cell(v.open,'Offen','open')}${cell(v.overdue,'Überfällig','overdue',v.overdue>0)}${cell(v.pct+'%','Fortschritt','progress')}</div>`;
+  const cell=(n,l,key,over)=>`<div class="stat kpi-click ${over?'overdue':''}" onclick="openKpi(${scope},'${key}')" title="Ansehen"><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
+  // Fünfte Card: eine Ebene über den Aufgaben. Wird IMMER gezeigt (bei null Zielen „–"),
+  // damit die Zeile nicht je nach Projekt vier oder fünf Kacheln hat.
+  const gs = pid ? goalsOf(pid) : goals.filter(g=>projById(g.projectId));
+  const reached = gs.filter(g=>g.done).length;
+  const goalNum = gs.length ? `${reached}/${gs.length}` : '–';
+  return `<div class="stats">${cell(v.total,'Aufgaben gesamt','total')}${cell(v.open,'Offen','open')}${cell(v.overdue,'Überfällig','overdue',v.overdue>0)}${cell(v.pct+'%','Fortschritt','progress')}${cell(goalNum,'Ziele erreicht','goals')}</div>`;
 }
 // Grundmenge einer KPI – muss exakt zu der Zahl passen, die auf der Card steht.
 function kpiPool(pid){ return pid ? projectTasks(pid) : tasks.filter(inRole); }
@@ -2523,7 +2870,55 @@ const KPI_DEF = {
   open:    { label:'Offen',           pred:t=>t.status!=='done' && t.status!=='discarded' },
   overdue: { label:'Überfällig',      pred:isOverdue },
 };
-function openKpi(pid, key){ if(key==='progress') openProgressDetail(pid); else openKpiList(pid, key); }
+function openKpi(pid, key){
+  if(key==='progress') openProgressDetail(pid);
+  else if(key==='goals') openGoalsList(pid);
+  else openKpiList(pid, key);
+}
+/* Ziele-Modal: schlank. Eine Zeile je Ziel mit Balken – keine Aufgabenliste, kein Verlauf.
+   Klick auf eine Zeile springt in den Ziele-Reiter des Projekts. */
+function openGoalsList(pid){
+  const p = pid ? projById(pid) : null;
+  const gs = pid ? goalsOf(pid) : goals.filter(g=>projById(g.projectId))
+                     .slice().sort((a,b)=>{
+                       const pa=projById(a.projectId).name, pb=projById(b.projectId).name;
+                       if(pa!==pb) return pa.localeCompare(pb,'de');
+                       return (a.done?1:0)-(b.done?1:0);
+                     });
+  const pool = pid ? projectTasks(pid) : tasks.filter(inRole);
+  const reached = gs.filter(g=>g.done).length;
+  document.getElementById('listTitle').textContent =
+    `Ziele · ${reached} von ${gs.length} erreicht` + (p?` · ${p.name}`:'');
+  if(!gs.length){
+    document.getElementById('listBody').innerHTML =
+      `<div class="cal-empty">Noch keine Ziele.${p?'' : ' Ziele werden in einem Projekt angelegt.'}<br>`
+      + `Im Projekt unter „Ziele“ anlegen – ein Ziel bündelt die Aufgaben, die zusammen ein Ergebnis bringen.</div>`;
+    listOverlay.classList.add('open'); return;
+  }
+  const rows = gs.map(g=>{
+    const st=goalStats(g.id, pool);
+    const pj=projById(g.projectId);
+    const projHTML = pid ? '' : `<span class="badge proj" style="background:${pj.color}">${esc(pj.name)}</span>`;
+    const bar = `<span class="gr-bar"><span class="pcard-bar ${st.total&&st.done===st.total?'full':''}"><i style="width:${st.total?st.pct:0}%"></i></span></span>`;
+    const cnt = st.total ? `${st.done} von ${st.total}` : 'keine Aufgabe';
+    return `<div class="arch-row goal-row ${g.done?'is-reached':''}" onclick="goalListJump('${g.projectId}')">
+      <span class="a-title">${esc(g.title)}</span>${projHTML}${bar}
+      <span class="gr-cnt">${cnt}</span>${g.done?'<span class="gr-ok">Erreicht</span>':''}</div>`;
+  }).join('');
+  // Die einzige Zahl, die im Balkenbild sonst fehlt: Aufgaben ohne Ziel (nur in Projekten, die Ziele haben).
+  const withGoals = new Set(gs.map(g=>g.projectId));
+  const noGoal = pool.filter(t=>!t.goalId && t.projectId && withGoals.has(t.projectId)).length;
+  const hint = p ? 'Klick auf eine Zeile öffnet den Ziele-Reiter.'
+                 : 'Alle Ziele im Tool. Klick auf eine Zeile öffnet das Projekt.';
+  document.getElementById('listBody').innerHTML =
+    `<div class="eh-hint" style="margin-bottom:4px">${hint}</div><div class="tag-list">${rows}</div>`
+    + `<div class="cal-more" style="padding:8px 2px 0">Ohne Ziel: ${noGoal} ${noGoal===1?'Aufgabe':'Aufgaben'}</div>`;
+  listOverlay.classList.add('open');
+}
+function goalListJump(pid){
+  listOverlay.classList.remove('open');
+  openProjectId=pid; projView='ziele'; purpose='projekte'; view='projekte'; render();
+}
 // Eine Zeile der Aufgabenliste – Vokabular des Archivs (arch-row), klickbar.
 function kpiRowHTML_task(t, showProj){
   const p = showProj ? projById(t.projectId) : null;
@@ -2627,14 +3022,10 @@ function curBoardGroup(){ return openProjectId ? (projView==='aufgaben' ? projTa
 function boardGroups(pool){
   const boardGroup = curBoardGroup();   // im Projekt: projBoardGroup (Default Status), global unberührt
   if(boardGroup==='termin'){
-    // Termin ist eine Gruppierung wie jede andere: eine Spalte je Tag, gleiches Spalten-Vokabular.
-    return plannedSections(pool||[]).map(s=>{
-      const ids=new Set(s.items.map(t=>t.id));
-      return { key:'t:'+s.key, label:s.label, color: s.over?'var(--red)':'var(--text-muted)',
-               match:t=>ids.has(t.id),
-               drop: s.date?{type:'due', value:s.date}:null,
-               no: s.date?null:'„Überfällig“ ist kein Termin' };
-    });
+    // Termin = die sieben Tage der Cursor-Woche, immer alle (auch leere) – siehe weekDayColumns().
+    // renderBoard() zeichnet dafür renderWeekBoard(); dieser Zweig hält die Gruppierung auch für
+    // jeden anderen Aufrufer korrekt (ohne ihn fiele 'termin' still auf Status zurück).
+    return weekDayColumns();
   }
   if(boardGroup==='prio') return [
     { key:'A', label:'A', color:'#b06a6a', match:t=>(t.prio||'D')==='A', drop:{type:'prio',value:'A'} },
@@ -2653,10 +3044,34 @@ function boardGroups(pool){
     g.push({ key:'__none', label:'Ohne Projekt', color:'#a7aaac', match:t=>!t.projectId, drop:{type:'project',value:''} });
     return g;
   }
+  if(boardGroup==='goal'){
+    // Nur im Projektmodus angeboten: die Ziele dieses Projekts + „Ohne Ziel".
+    const g=goalsOf(openProjectId).map(x=>({ key:x.id, label:x.title, color:'var(--text-muted)',
+      match:t=>t.goalId===x.id, drop:{type:'goal',value:x.id} }));
+    g.push({ key:'__none', label:'Ohne Ziel', color:'#a7aaac', match:t=>!t.goalId, drop:{type:'goal',value:''} });
+    return g;
+  }
   if(boardGroup==='role'){
     return ROLES.map(r=>({ key:r.id, label:r.label, color:r.color, match:t=>taskRole(t)===r.id, drop:{type:'role',value:r.id} }));
   }
   return STATUS.filter(s=>s.board).map(s=>({ key:s.id, label:s.label, color:s.color, match:t=>t.status===s.id, drop:{type:'status',value:s.id} }));
+}
+// Die sieben Tage der Woche, in der der Zeit-Cursor (calRef) steht – als Spaltengruppen.
+// Immer alle sieben, damit sich eine Aufgabe auf JEDEN Wochentag ziehen lässt, auch auf einen leeren.
+function weekDayColumns(){
+  const {mon}=weekRange(calRef instanceof Date ? calRef : new Date());
+  const today=ymd(new Date());
+  const WD=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const cols=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(mon); d.setDate(mon.getDate()+i);
+    const ds=ymd(d);
+    cols.push({ key:ds, date:ds, isToday:ds===today,
+                label:`${WD[i]} ${d.getDate()}.`,
+                color: ds===today ? 'var(--accent)' : 'var(--text-muted)',
+                match:t=>t.due===ds, drop:{type:'due', value:ds} });
+  }
+  return cols;
 }
 function plannedSections(visible){
   const today=ymd(new Date());
@@ -2701,32 +3116,58 @@ function boardCardHTML(t){
     <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
   </div>`;
 }
-function renderBoard(){
-  const el=document.getElementById('board');
-  const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
-  const boardGroup = curBoardGroup();
-  const groups = boardGroups(visible);
-  el.innerHTML = `<div class="board-a">` + groups.map(col => {
-    const items = visible.filter(col.match).sort((a,b)=>{
-      const e = ehRank(a)-ehRank(b); if(e!==0) return e;
-      return (a.due||'9999') < (b.due||'9999') ? -1 : 1;
-    });
-    const cards = items.map(boardCardHTML).join('');
-    const addBtn = boardGroup==='status' ? `<button class="colnew" onclick="event.stopPropagation();openNew('${col.key}')">+ Aufgabe</button>` : '';
-    const openKey = boardGroup+':'+col.key;
-    const collapsed = boardOpen.has(openKey) ? false : false; // Spalten immer offen (ruhiger); Klick auf Titel klappt ein
-    const isCollapsed = boardCollapsed.has(openKey);
-    return `<div class="cola ${isCollapsed?'is-collapsed':''}" style="--col:${col.color}"${dropAttr(col)}>
+// Spalten-Markup einer Board-Spalte (ein Vokabular für Kanban und Wochenraster)
+function colaHTML(col, items, groupKey, addBtn){
+  const openKey = groupKey+':'+col.key;
+  const isCollapsed = boardCollapsed.has(openKey);
+  return `<div class="cola ${isCollapsed?'is-collapsed':''} ${col.isToday?'is-today':''}" style="--col:${col.color}"${dropAttr(col)}>
       <div class="cola-head" onclick="toggleColA('${openKey}')">
         <span class="ic cola-chev">${ICON.chevronDown}</span>
         <span class="cola-dot"></span><span class="cola-name">${esc(col.label)}</span>
         <span class="cola-count">${items.length}</span>
       </div>
-      <div class="col-body ${isCollapsed?'collapsed':''}">${cards}${addBtn}</div>
+      <div class="col-body ${isCollapsed?'collapsed':''}">${items.map(boardCardHTML).join('')}${addBtn||''}</div>
     </div>`;
+}
+const boardSortP=(a,b)=>{ const e=ehRank(a)-ehRank(b); if(e!==0) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
+/* Termin-Board: festes Wochenraster. Sieben Tagesspalten (immer alle), darunter „Früher" und „Später"
+   für alles ausserhalb der Woche – als Sektionen, nicht als Spalten, denn sie sind keine Tage.
+   WICHTIG: alles in EINEN Wrapper, #board darf nur ein Kind haben (Grid-Falle). */
+function renderWeekBoard(visible){
+  const el=document.getElementById('board');
+  const cols=weekDayColumns();
+  const first=cols[0].date, last=cols[6].date;
+  const dated=visible.filter(t=>t.due);
+  const grid=`<div class="board-a week" style="--wcols:7">`
+    + cols.map(c=>colaHTML(c, dated.filter(c.match).sort(boardSortP), 'termin')).join('') + `</div>`;
+  const sec=(key,title,items,reason,over)=>{
+    if(!items.length) return '';
+    return `<div class="rule soft"></div><div class="today-sec wk-rest"${dropNo(reason)}>`
+      + `<div class="today-sechead" style="cursor:default"><span class="title"${over?' style="color:var(--red)"':''}>${title}</span>`
+      + `<span class="count">${items.length}</span></div>`
+      + `<div class="today-grid">${items.sort(boardSortP).map(boardCardHTML).join('')}</div></div>`;
+  };
+  const earlier=dated.filter(t=>t.due<first);
+  const later=dated.filter(t=>t.due>last);
+  const undated=visible.filter(t=>!t.due);
+  el.innerHTML = `<div class="board-week">` + grid
+    + sec('earlier','Früher', earlier, 'Liegt vor dieser Woche – blättere zurück', earlier.some(isOverdue))
+    + sec('later','Später', later, 'Liegt nach dieser Woche – blättere vor')
+    + sec('undated','Ohne Datum', undated, 'Zieh die Aufgabe auf einen Tag, um sie zu terminieren')
+    + `</div>`;
+}
+function renderBoard(){
+  const el=document.getElementById('board');
+  const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
+  const boardGroup = curBoardGroup();
+  if(boardGroup==='termin'){ renderWeekBoard(visible); return; }
+  const groups = boardGroups(visible);
+  el.innerHTML = `<div class="board-a">` + groups.map(col => {
+    const items = visible.filter(col.match).sort(boardSortP);
+    const addBtn = boardGroup==='status' ? `<button class="colnew" onclick="event.stopPropagation();openNew('${col.key}')">+ Aufgabe</button>` : '';
+    return colaHTML(col, items, boardGroup, addBtn);
   }).join('') + `</div>`;
-  // Nur bei Gruppierung „Termin“ möglich: es gibt keine datierte Aufgabe -> keine Tagesspalte.
-  if(!groups.length) el.innerHTML = '<div class="today-empty">Keine terminierten Aufgaben. Sobald eine Aufgabe ein Fälligkeitsdatum hat, erscheint hier eine Tagesspalte – Überfällig, Heute, Morgen, dann nach Tag.</div>';
+  if(!groups.length) el.innerHTML = '<div class="today-empty">Keine Spalten in dieser Gruppierung.</div>';
 }
 let boardCollapsed = (()=>{ try{ return new Set(JSON.parse(localStorage.getItem('taskDashboard.boardCollapsed')||'[]')); }catch(e){ return new Set(); } })();
 function toggleColA(key){ if(boardCollapsed.has(key)) boardCollapsed.delete(key); else boardCollapsed.add(key); try{localStorage.setItem('taskDashboard.boardCollapsed', JSON.stringify([...boardCollapsed]));}catch(e){} renderBoard(); }
@@ -2888,10 +3329,15 @@ function renderGantt(){
   const todayD=new Date(); const today=ymd(todayD);
 
   // Zeitfenster: Datenbereich, aber immer ein breites, heute-zentriertes Fenster (volle Breite, auch wenn leer)
+  // Meilensteine gehören mit ins Fenster – sonst liegt eine Raute ausserhalb und ist unsichtbar.
+  const msVis = visibleMilestones();
   let startD, endD;
-  if(dated.length){
-    let minS=dated[0].r.start, maxE=dated[0].r.end;
-    dated.forEach(x=>{ if(x.r.start<minS) minS=x.r.start; if(x.r.end>maxE) maxE=x.r.end; });
+  const bounds=[];
+  dated.forEach(x=>bounds.push(x.r.start, x.r.end));
+  msVis.forEach(m=>bounds.push(m.date));
+  if(bounds.length){
+    let minS=bounds[0], maxE=bounds[0];
+    bounds.forEach(d=>{ if(d<minS) minS=d; if(d>maxE) maxE=d; });
     startD=new Date(minS+'T00:00:00'); startD.setDate(startD.getDate()-2);
     endD=new Date(maxE+'T00:00:00'); endD.setDate(endD.getDate()+2);
   } else { startD=new Date(todayD); endD=new Date(todayD); }
@@ -2938,6 +3384,19 @@ function renderGantt(){
     const grpOpen = g.id ? ` onclick="event.stopPropagation();openProject('${g.id}')" style="cursor:pointer;text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:2px" title="Projekt öffnen"` : '';
     rows+=`<div class="g-row g-grouprow ${grpCollapsed?'is-collapsed':''}"><div class="g-group" onclick="toggleGantt('${grpKey}')" style="cursor:pointer">${grpChev}<span${grpOpen}>${esc(g.name)}</span><span class="col-count">${items.length}</span></div><div class="g-track" style="width:${trackW}px"></div></div>`;
     if(grpCollapsed) return;
+    // Meilensteine des Projekts: eigene Zeile ganz oben, Rauten auf der Zeitachse.
+    // Sie stehen bewusst nicht zwischen den Aufgabenbalken – sie sind Termine, keine Arbeit.
+    if(g.id){
+      const gms = msVis.filter(m=>m.projectId===g.id).sort((a,b)=>a.date<b.date?-1:1);
+      if(gms.length){
+        const dias = gms.map(m=>{
+          const idx=dayIdx(m.date); if(idx<0||idx>=totalDays) return '';
+          const cls=[m.done?'is-done':'', msOverdue(m)?'is-over':''].join(' ').trim();
+          return `<div class="g-ms ${cls}" style="left:${idx*GDAY()+GDAY()/2-6}px" title="${esc(m.title)} · ${fmtDate(m.date)}" onclick="event.stopPropagation();openMs('${m.id}')"><span class="g-ms-dia"></span><span class="g-ms-lbl">${esc(m.title)}</span></div>`;
+        }).join('');
+        rows+=`<div class="g-row g-msrow"><div class="g-label g-mslabel">${ic('flag')} Meilensteine<span class="col-count">${gms.length}</span></div><div class="g-track" style="width:${trackW}px">${dias}</div></div>`;
+      }
+    }
     items.forEach(({t,r})=>{
       const color=(t.projectId&&projById(t.projectId))?projById(t.projectId).color:evColor(t);
       const done=(t.status==='done'||t.status==='discarded')?'opacity:.5;':'';
@@ -3039,6 +3498,12 @@ function dropCheck(it, type, value, reason){
     return { ok:true };
   }
   if(type==='person') return value ? { ok:true } : { ok:false, reason:'Personen werden in der Aufgabe entfernt' };
+  if(type==='goal'){
+    if(!value) return { ok:true };                                   // „Ohne Ziel" = Zuordnung lösen
+    const g=goalById(value); if(!g) return { ok:false, reason:'' };
+    if(t.projectId!==g.projectId){ const p=projById(g.projectId); return { ok:false, reason:`Ziel gehört zu „${p?p.name:'—'}"` }; }
+    return { ok:true };
+  }
   if(['status','prio','project','due','start'].includes(type)) return { ok:true };
   return { ok:false, reason:'Hier nicht ablegbar' };
 }
@@ -3079,6 +3544,12 @@ function applyDrop(it, type, value){
     if(t.start && t.due) t.due = shiftDays(t.due, daysBetween(t.start, value));
     else if(t.due && t.due<value) t.due = value;
     t.start = value; return true;
+  }
+  if(type==='goal'){
+    const gid = value || null;
+    if((t.goalId||null)===gid) return false;
+    if(gid){ const g=goalById(gid); if(!g || g.projectId!==t.projectId) return false; }
+    t.goalId=gid; return true;
   }
   if(type==='person'){
     t.people = t.people||[];
@@ -3228,7 +3699,7 @@ document.addEventListener('pointercancel', ()=>{ if(dragState){ if(dragState.act
 document.addEventListener('click', e=>{ if(dragEndedAt && Date.now()-dragEndedAt<350){ e.stopPropagation(); e.preventDefault(); } }, true);
 
 /* ============================== ACTIONS ============================== */
-async function persist(){ await Store.save({ tasks, projects, people, notes, weekGoals }); }
+async function persist(){ await Store.save({ tasks, projects, people, notes, weekGoals, goals, milestones }); }
 const personById = id => people.find(p => p.id === id) || null;
 const selfPerson = () => people.find(p => p.self) || null;
 // Anzeige-Kürzel einer Person = der erfasste Name selbst (Albrecht erfasst Personen als Kürzel, z. B. AlbBue).
@@ -3443,6 +3914,18 @@ function delPerson(id){
     persist(); renderPeopleList(); render();
   }
 }
+// Ziel-Feld: erscheint nur, wenn das gewählte Projekt überhaupt Ziele hat.
+function updateGoalField(keep){
+  const pid=document.getElementById('mProj').value;
+  const field=document.getElementById('mGoalField');
+  const sel=document.getElementById('mGoal');
+  const gs = pid ? goalsOf(pid) : [];
+  if(!gs.length){ field.classList.add('hidden'); sel.innerHTML='<option value="">— kein Ziel —</option>'; sel.value=''; return; }
+  field.classList.remove('hidden');
+  sel.innerHTML = '<option value="">— kein Ziel —</option>' +
+    gs.map(g=>`<option value="${g.id}">${esc(g.title)}${g.done?' (erreicht)':''}</option>`).join('');
+  sel.value = (keep && gs.some(g=>g.id===keep)) ? keep : '';
+}
 function updateRoleField(){
   const pid = document.getElementById('mProj').value;
   const sel = document.getElementById('mRole');
@@ -3473,6 +3956,8 @@ function openNew(presetStatus){
   document.getElementById('mDesc').value='';
   document.getElementById('mProj').value = openProjectId || '';
   document.getElementById('mStatus').value = presetStatus || (view === 'backlog' ? 'backlog' : 'inbox');
+  // Im Ziele-Reiter direkt das offene Ziel vorbelegen, wenn es genau eines gibt
+  updateGoalField(null);
   document.getElementById('mRole').value = filters.role || 'meta';
   document.getElementById('mPrio').value='B';
   document.getElementById('mStart').value='';
@@ -3510,6 +3995,7 @@ function openEdit(id){
   modalLinks=(t.links||[]).map(x=>({...x})); renderModalLinks();
   modalPeople=(t.people||[]).map(x=>({...x})); modalDeps=[...(t.dependsOn||[])];
   renderModalPeople(); renderModalDeps();
+  updateGoalField(t.goalId||null);
   updateRoleField();
   document.getElementById('mDelete').classList.remove('hidden');
   overlay.classList.add('open');
@@ -3520,9 +4006,13 @@ function saveModal(){
   if(!title){ document.getElementById('mTitle').focus(); return; }
   const id=document.getElementById('mId').value;
   const pid=document.getElementById('mProj').value||null;
+  // Ziel nur behalten, wenn es zum gewählten Projekt gehört (Projektwechsel löst die Zuordnung).
+  const gsel=document.getElementById('mGoal').value||null;
+  const gOk = gsel && goalById(gsel) && goalById(gsel).projectId===pid ? gsel : null;
   const data={
     title, desc:document.getElementById('mDesc').value.trim(),
     projectId:pid,
+    goalId:gOk,
     role: pid ? null : document.getElementById('mRole').value,
     status:document.getElementById('mStatus').value,
     prio:document.getElementById('mPrio').value,
@@ -3667,8 +4157,13 @@ function deleteProject(){
   const id=document.getElementById('pId').value;
   const p=projById(id); if(!p) return;
   const n=projectTasks(id).length;
-  if(confirm(`Projekt „${p.name}" löschen?` + (n?`\n${n} Aufgabe(n) bleiben erhalten, verlieren aber die Zuordnung.`:''))){
-    tasks.forEach(t=>{ if(t.projectId===id){ t.role = p.role; t.projectId=null; } });
+  const g=goalsOf(id).length, ms=milestonesOf(id).length;
+  const extra = [n?`${n} Aufgabe(n) bleiben erhalten, verlieren aber die Zuordnung.`:'',
+                 (g||ms)?`${g} Ziel(e) und ${ms} Meilenstein(e) werden mit gelöscht.`:''].filter(Boolean).join('\n');
+  if(confirm(`Projekt „${p.name}" löschen?` + (extra?'\n'+extra:''))){
+    tasks.forEach(t=>{ if(t.projectId===id){ t.role = p.role; t.projectId=null; t.goalId=null; } });
+    goals = goals.filter(x=>x.projectId!==id);
+    milestones = milestones.filter(x=>x.projectId!==id);
     projects=projects.filter(x=>x.id!==id);
     if(openProjectId===id) openProjectId=null;
     persist(); closeProjModal(); render();
@@ -3702,11 +4197,12 @@ async function ghConnect(){
   try {
     const res = await Store.ghGet();
     if(res.missing){
-      await Store.ghPut({tasks, projects, people, notes, weekGoals}, 'tasks.json anlegen');
+      await Store.ghPut({tasks, projects, people, notes, weekGoals, goals, milestones}, 'tasks.json anlegen');
       state.textContent='Verbunden. tasks.json wurde mit deinen aktuellen Daten angelegt.';
     } else {
       tasks=res.data.tasks||[]; projects=res.data.projects||[]; people=res.data.people||[]; notes=res.data.notes||[]; weekGoals=res.data.weekGoals||[];
-      normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizePrio();
+      goals=res.data.goals||[]; milestones=res.data.milestones||[];
+      normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
       state.textContent='Verbunden. Daten aus dem Repo geladen ('+tasks.length+' Aufgaben).';
       render();
     }
@@ -3727,7 +4223,7 @@ function ghDisconnect(){
 
 /* ---------- Export / Import ---------- */
 function exportJSON(){
-  const blob=new Blob([JSON.stringify({tasks,projects,people,notes,weekGoals},null,2)],{type:'application/json'});
+  const blob=new Blob([JSON.stringify({tasks,projects,people,notes,weekGoals,goals,milestones},null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
   a.href=url; a.download='task-dashboard.json'; a.click(); URL.revokeObjectURL(url);
 }
@@ -3735,9 +4231,9 @@ function importJSON(file){
   const r=new FileReader();
   r.onload=()=>{ try{
     const d=JSON.parse(r.result);
-    if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; notes=[]; weekGoals=[]; }
-    else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; notes=(d.notes||[]).map(n=>({role:'meta',done:false,...n})); weekGoals=d.weekGoals||[]; }
-    normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizePrio();
+    if(Array.isArray(d)){ tasks=migrateTasks(d); projects=[]; people=[]; notes=[]; weekGoals=[]; goals=[]; milestones=[]; }
+    else { tasks=(d.tasks||[]).map(t=>({status:'inbox',role:'meta',...t})); projects=(d.projects||[]).map(p=>({role:'meta',...p})); people=d.people||[]; notes=(d.notes||[]).map(n=>({role:'meta',done:false,...n})); weekGoals=d.weekGoals||[]; goals=d.goals||[]; milestones=d.milestones||[]; }
+    normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
     persist(); render(); alert('Import erfolgreich: '+tasks.length+' Aufgaben, '+projects.length+' Projekte, '+people.length+' Personen.');
   }catch(e){ alert('Import fehlgeschlagen: '+e.message); } };
   r.readAsText(file);
@@ -3802,7 +4298,7 @@ document.getElementById('gCancel').onclick=closeGoal;
 document.getElementById('gDelete').onclick=deleteGoal;
 goalOverlay.addEventListener('click',e=>{ if(e.target===goalOverlay) closeGoal(); });
 document.getElementById('gTitle').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveGoal(); } });
-document.getElementById('mProj').onchange=updateRoleField;
+document.getElementById('mProj').onchange=()=>{ updateRoleField(); updateGoalField(null); };
 document.getElementById('mClAdd').onclick=addCl;
 document.getElementById('mClInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); addCl(); } });
 document.getElementById('mStAdd').onclick=addSt;
@@ -3827,6 +4323,16 @@ document.getElementById('personName').addEventListener('keydown',e=>{ if(e.key==
 peopleOverlay.addEventListener('click',e=>{ if(e.target===peopleOverlay) peopleOverlay.classList.remove('open'); });
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeModal(); });
 
+document.getElementById('pgSave').onclick=savePGoal;
+document.getElementById('pgCancel').onclick=closePGoal;
+document.getElementById('pgDelete').onclick=deletePGoal;
+pgOverlay.addEventListener('click',e=>{ if(e.target===pgOverlay) closePGoal(); });
+document.getElementById('pgTitle').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); savePGoal(); } });
+document.getElementById('msSave').onclick=saveMs;
+document.getElementById('msCancel').onclick=closeMs;
+document.getElementById('msDelete').onclick=deleteMs;
+msOverlay.addEventListener('click',e=>{ if(e.target===msOverlay) closeMs(); });
+document.getElementById('msTitle').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveMs(); } });
 document.getElementById('projClose').onclick=closeProjModal;
 document.getElementById('pSave').onclick=saveProject;
 document.getElementById('pDelete').onclick=deleteProject;
@@ -3834,7 +4340,7 @@ document.getElementById('pMembersSel').onchange=addProjMember;
 document.getElementById('pName').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); saveProject(); } });
 projOverlay.addEventListener('click',e=>{ if(e.target===projOverlay) closeProjModal(); });
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); roleOverlay.classList.remove('open'); filterOverlay.classList.remove('open'); groupOverlay.classList.remove('open'); scopeOverlay.classList.remove('open'); zoomOverlay.classList.remove('open'); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); projOverlay.classList.remove('open'); peopleOverlay.classList.remove('open'); listOverlay.classList.remove('open'); githubOverlay.classList.remove('open'); roleOverlay.classList.remove('open'); filterOverlay.classList.remove('open'); groupOverlay.classList.remove('open'); scopeOverlay.classList.remove('open'); zoomOverlay.classList.remove('open'); pgOverlay.classList.remove('open'); msOverlay.classList.remove('open'); } });
 
 document.getElementById('btnExport').onclick=exportJSON;
 document.getElementById('btnImport').onclick=()=>document.getElementById('fileInput').click();
@@ -3846,9 +4352,10 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
 (async function init(){
   document.querySelectorAll('[data-ic]').forEach(e=>{ e.innerHTML=ICON[e.dataset.ic]||''; });
   const data = await Store.load();
-  if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; notes=data.notes||[]; weekGoals=data.weekGoals||[]; }
+  if(data){ tasks=data.tasks||[]; projects=data.projects||[]; people=data.people||[]; notes=data.notes||[]; weekGoals=data.weekGoals||[];
+            goals=data.goals||[]; milestones=data.milestones||[]; }
   // Normalisierung: Projekte aufs erweiterte Modell bringen (Rolle, status, members, goal, desc)
-  normalizeProjects(); normalizeNotes(); normalizeWeekGoals();
+  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones();
   if(!data || (tasks.length===0 && projects.length===0)){
     const rel=n=>{ const d=new Date(); d.setDate(d.getDate()+n); return ymd(d); };
     people=[{ id:uid('pe'), name:'AlbBue', self:true }];
@@ -3864,8 +4371,13 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
       { id:uid(), title:'Projektlose ICT-Aufgabe (Rolle direkt gesetzt)', projectId:null, role:'ict', status:'todo', important:false, urgent:false, start:rel(3), due:rel(9), created:todayStr() },
       { id:uid(), title:'Idee für später (liegt im Backlog)', projectId:null, role:'meta', status:'backlog', important:false, urgent:false, start:'', due:'', created:todayStr() },
     ];
+    // Ein Ziel und ein Meilenstein im ersten Projekt, damit der Reiter „Ziele" nicht leer erklärt werden muss.
+    goals=[ { id:uid('g'), projectId:projects[0].id, title:'Dashboard läuft im Alltag', note:'Erst wenn ich es täglich nutze, ist es fertig.', done:false, doneAt:'' } ];
+    tasks[0].goalId = goals[0].id;
+    tasks[1].goalId = goals[0].id;
+    milestones=[ { id:uid('ms'), projectId:projects[0].id, title:'Erste Woche im Einsatz', date:rel(7), done:false, doneAt:'' } ];
   }
-  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizePrio();
+  normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
   await persist();
   render();
 })();
