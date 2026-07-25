@@ -63,7 +63,6 @@
 
   /* Board – horizontal scrollbar */
   .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; padding-bottom: 10px; align-items: start; }
-  .board.planned { display: block; }
   .column { background: var(--surface-2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px; min-height: 140px; min-width: 0; }
   @media (max-width: 520px) { .board { grid-template-columns: 1fr; } }
@@ -629,8 +628,6 @@
   .colnew { border: 1px dashed var(--border); background: transparent; color: var(--text-muted); width: 100%;
     border-radius: 9px; padding: 7px; font-size: .8rem; margin-top: 2px; cursor: pointer; font-family: inherit; transition: .15s; }
   .colnew:hover { border-color: var(--accent); color: var(--text); }
-  /* Planen-Ansicht: tagesweise (Termin-Gruppierung) nutzt today-sec Vokabular */
-  #board .today-sec + .today-sec { margin-top: 0; }
 
   .hidden { display: none !important; }
 
@@ -660,6 +657,50 @@
   .proj-taskgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:12px; }
   .proj-empty { color:var(--text-muted); font-size:.88rem; padding:8px 2px; }
   .proj-taskgrid .colnew.proj-add { align-self:start; min-height:70px; display:flex; align-items:center; justify-content:center; border-radius:var(--r); font-size:.9rem; }
+
+  /* ===== Ziehen & Ablegen (Drag & Drop) =====
+     Prinzip: Wohin die Karte gezogen wird, das wird sie. Zielzonen tragen data-drop-type/-value;
+     dropCheck() entscheidet je Aufgabe, ob die Zone den Drop annimmt. Nicht annehmende Zonen treten zurück. */
+  .drag-handle { cursor: grab; }
+  body.is-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+  body.is-dragging .tcard:hover { box-shadow: none; transform: none; }
+  .drag-source { opacity: .35; }
+  /* Der Zeiger bleibt während des Ziehens auf der Quellkarte „hängen“ (Pointer-Capture) – ohne das
+     hier würde ihre Hover-Meta aufklappen und die Spalte darunter verschieben. */
+  body.is-dragging .drag-source .meta { display: none !important; }
+  .drop-ph { border: 1px dashed var(--accent); border-radius: var(--r); min-height: 66px;
+    background: var(--accent-soft); margin-bottom: 10px; }
+  body.is-dragging [data-drop-type].no-drop { opacity: .42; }
+  .drop-target > .col-body, .drop-target > .today-grid, .drop-target > .agenda-colbody,
+  .drop-target > .cw-body, .drop-target > .proj-taskgrid, .drop-target > .backlog-grid {
+    outline: 1px dashed var(--accent); outline-offset: 6px; border-radius: var(--r); }
+  .cal-cell.drop-target, .cal-col.drop-target { outline: 1px dashed var(--accent); outline-offset: 2px; }
+  .drop-deny { outline: 1px dashed var(--border); outline-offset: 2px; border-radius: var(--r); }
+  .drag-ghost { position: fixed; z-index: 90; pointer-events: none; width: 215px;
+    box-shadow: 0 14px 34px rgba(0,0,0,.30); transform: rotate(-1.5deg); }
+  .drag-ghost .meta { display: flex !important; }
+  .drag-ghost.g-bar { width: auto; transform: none; opacity: .9; }
+  .drop-hint { position: fixed; z-index: 91; pointer-events: none; display: inline-flex; align-items: center;
+    gap: 6px; font-size: .72rem; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: 20px; padding: 4px 10px; box-shadow: var(--shadow); white-space: nowrap; }
+  .drop-hint .ic { width: 12px; height: 12px; }
+
+  /* ===== KPI-Cards: Klick öffnet mehr (gleiches Kachel-Prinzip wie Rolle/Filter/Zeitraum) ===== */
+  .stat.kpi-click { position: relative; }
+  .stat.kpi-click::after { content: ""; position: absolute; right: 14px; top: 15px; width: 6px; height: 6px;
+    border-right: 1.5px solid var(--text-muted); border-top: 1.5px solid var(--text-muted);
+    transform: rotate(45deg); opacity: .5; }
+  .stat.kpi-click:hover::after { opacity: 1; }
+
+  /* ===== KPI-Listen- und Fortschritts-Modal ===== */
+  #listOverlay .modal { max-width: 720px; }
+  .arch-row .a-date.over { color: var(--red); font-weight: 600; }
+  .arch-row .pcard-status { flex: none; }
+  .modal .body .stat-grid { grid-template-columns: 1fr; gap: 12px; }
+  .pd-prog { border: 1px solid var(--border); border-radius: var(--r); background: var(--surface-2); padding: 14px 16px; }
+  .pd-prog .pcard-prog-top { font-size: .86rem; margin-bottom: 8px; }
+  .pd-prog .pcard-prog-top b { color: var(--text); }
+  .pd-prog-sub { font-size: .78rem; color: var(--text-muted); margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -1713,19 +1754,20 @@ function todaySections(){
   const morgen = flow.filter(t=>t.due===tomorrow).sort(prioSort);
   // Undatiert, aber laufend: gehört in den Fokus, direkt unter „Heute“
   const runningUndated = flow.filter(t=>!t.due && t.status==='in_progress').sort(prioSort);
-  if(heute.length)         secs.push({ key:'heute',    title:'Heute',            day:dayLabel(today), items:heute });
-  if(runningUndated.length) secs.push({ key:'runNoDate', title:'Ohne Datum – läuft', day:'',            items:runningUndated });
-  if(overdue.length) secs.push({ key:'overdue', title:'Überfällig', day:'',                 items:overdue, over:true });
-  if(morgen.length)  secs.push({ key:'morgen',  title:'Morgen',     day:dayLabel(tomorrow), items:morgen });
+  // drop = Zieldatum der Sektion (Fälligkeit). no = Sektion nimmt bewusst nichts an, mit Grund.
+  if(heute.length)         secs.push({ key:'heute',    title:'Heute',            day:dayLabel(today), items:heute, drop:{type:'due',value:today} });
+  if(runningUndated.length) secs.push({ key:'runNoDate', title:'Ohne Datum – läuft', day:'',            items:runningUndated, no:'Ergibt sich aus „läuft“ ohne Datum' });
+  if(overdue.length) secs.push({ key:'overdue', title:'Überfällig', day:'',                 items:overdue, over:true, no:'„Überfällig“ ist kein Termin' });
+  if(morgen.length)  secs.push({ key:'morgen',  title:'Morgen',     day:dayLabel(tomorrow), items:morgen, drop:{type:'due',value:tomorrow} });
   // Folgetage bis Ende dieser Woche (nach übermorgen)
   const beyond = flow.filter(t=>t.due && t.due>tomorrow && t.due<=weekEnd);
   const byDate={};
   beyond.forEach(t=>{ (byDate[t.due]=byDate[t.due]||[]).push(t); });
   Object.keys(byDate).sort().forEach(d=>{
     const dt=new Date(d+'T00:00:00');
-    secs.push({ key:'d'+d, title:dt.toLocaleDateString('de-DE',{weekday:'long'}), day:dayLabel(d), items:byDate[d].sort(prioSort) });
+    secs.push({ key:'d'+d, title:dt.toLocaleDateString('de-DE',{weekday:'long'}), day:dayLabel(d), items:byDate[d].sort(prioSort), drop:{type:'due',value:d} });
   });
-  if(blocked.length) secs.push({ key:'wartet', title:'Wartet noch', day:'', items:blocked.sort(prioSort), blocked:true });
+  if(blocked.length) secs.push({ key:'wartet', title:'Wartet noch', day:'', items:blocked.sort(prioSort), blocked:true, no:'Ergibt sich aus den Abhängigkeiten' });
   return secs;
 }
 function dayLabel(ds){
@@ -1749,7 +1791,7 @@ function todayCardHTML(t, blocked){
   } else if(isRunning(t)){
     extra = `<span class="running">läuft</span>`;
   }
-  return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
+  return `<div class="tcard ${t.status}" style="--role:${roleColor}"${dragAttr(t.id)} onclick="openEdit('${t.id}')">
     <div class="tt">${esc(t.title)}</div>${dateHTML}
     <div class="meta">${badge}${extra}${linkBadge(t)}</div>
   </div>`;
@@ -1772,7 +1814,7 @@ function renderToday(){
     const secClass = ['today-sec', collapsed?'collapsed':'', s.blocked?'blocked muted':''].join(' ').trim();
     const titleStyle = s.over ? ' style="color:var(--red)"' : '';
     const rule = (startIdx+i)>0 ? '<div class="rule soft"></div>' : '';
-    return `${rule}<div class="${secClass}">
+    return `${rule}<div class="${secClass}"${dropAttr(s)}>
       <div class="today-sechead" onclick="toggleTodaySec('${s.key}')">
         <span class="ic chev">${ICON.chevronDown}</span>
         <span class="title"${titleStyle}>${esc(s.title)}</span>${dayHTML}
@@ -1794,7 +1836,7 @@ function agendaSectionHTML(hasRule){
   const rule = hasRule ? '<div class="rule soft"></div>' : '';
   const inner = ag.cols.length
     ? `<div class="agenda-board">${ag.cols.map(c=>`
-        <div class="agenda-col">
+        <div class="agenda-col"${dropStart(c.day)}>
           <div class="agenda-colhead">
             <span class="agenda-colday">${esc(c.title)}</span>
             <span class="count">${c.items.length}</span>
@@ -1873,10 +1915,11 @@ function renderFocus(){
   }).join('');
   document.getElementById('focus').innerHTML = html;
 }
-function barChart(title, rows){
+// noDot: ohne Farbpunkt (dort, wo die Farbe keine Bedeutung trägt, z. B. „Erledigt je Woche“)
+function barChart(title, rows, noDot){
   const max=Math.max(1, ...rows.map(r=>r.count));
   const body=rows.length ? rows.map(r=>`<div class="bar-row">
-      <span class="bar-label"><span class="col-dot" style="background:${r.color}"></span>${esc(r.label)}</span>
+      <span class="bar-label">${noDot?'':`<span class="col-dot" style="background:${r.color}"></span>`}${esc(r.label)}</span>
       <span class="bar-track"><span class="bar-fill" style="width:${Math.round(r.count/max*100)}%;background:${r.color}"></span></span>
       <span class="bar-val">${r.count}</span>
     </div>`).join('') : '<div class="cal-more">Keine Daten.</div>';
@@ -1891,9 +1934,9 @@ function renderStatistik(){
     {label:'Ohne Projekt',color:'#a7aaac',count:pool.filter(t=>!t.projectId).length}].filter(r=>r.count>0);
   const byPerson=people.map(p=>({label:p.name,color:'#6b727e',count:pool.filter(t=>active(t)&&(t.people||[]).some(pp=>pp.personId===p.id)).length})).filter(r=>r.count>0);
   const total=pool.length, open=pool.filter(active).length, done=pool.filter(t=>t.status==='done').length, overdue=pool.filter(isOverdue).length;
-  const kpi=(n,l,c)=>`<div><div style="font-size:1.7rem;font-weight:700;${c?`color:${c}`:''}">${n}</div><div class="mt-lbl">${l}</div></div>`;
-  const summary=`<div class="chart-block"><h3>Überblick${filters.role?' · Rolle '+roleCode(filters.role):''}</h3>
-    <div style="display:flex;gap:26px;flex-wrap:wrap">${kpi(total,'gesamt')}${kpi(open,'offen')}${kpi(done,'erledigt')}${kpi(overdue,'überfällig',overdue?'var(--q1)':'')}</div></div>`;
+  const pct = total ? Math.round(done/total*100) : 0;
+  // KPI-Zeile 1:1 wie auf den Projektseiten (vier .stat-Cards) – und klickbar: Klick öffnet die Aufgaben dahinter.
+  const summary = kpiRowHTML(null, { total, open, overdue, pct });
   document.getElementById('statistik').innerHTML=`${summary}
     <div class="stat-grid">
       ${barChart('Nach Status', byStatus)}
@@ -1980,7 +2023,7 @@ function renderBacklog(){
     const total = rTasks.length + rNotes.length;
     if(!total) return '';
     const cards = rTasks.map(backlogCardHTML).join('') + rNotes.map(noteCardHTML).join('');
-    return `<section class="today-sec">
+    return `<section class="today-sec"${dropRole(r.id)}>
       <div class="today-sechead" style="cursor:default">
         <span class="dot" style="width:9px;height:9px;border-radius:50%;background:${r.color};flex:none"></span>
         <span class="title">${r.label}</span>
@@ -1995,7 +2038,7 @@ function renderBacklog(){
 function backlogCardHTML(t){
   const q = quadrant(t); const p = projById(t.projectId);
   const projHTML = p ? `<span class="badge proj" style="background:${p.color}">${esc(p.name)}</span>` : '';
-  return `<div class="card ${q.key} ${t.status}" onclick="openEdit('${t.id}')">
+  return `<div class="card ${q.key} ${t.status}"${dragAttr(t.id)} onclick="openEdit('${t.id}')">
     <div class="c-title">${esc(t.title)}</div>
     <div class="c-meta">${roleBadge(t)}<span class="badge eh ${q.key}">${q.label}</span>${projHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${recurMarker(t)}${peopleChips(t)}</div>
     <div class="c-actions" onclick="event.stopPropagation()">
@@ -2020,9 +2063,9 @@ function backToProjects(){ openProjectId=null; purpose='projekte'; render(); }
 function projKpiHTML(p){
   const st=projectStats(p.id);
   const pct=st.total?Math.round(st.done/st.total*100):0;
-  const cell=(n,l,over)=>`<div class="stat ${over?'overdue':''}"><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
-  // KPIs immer voll, auf JEDER Ansicht (Albrecht: „KPI sind immer überall") — keine schmale Variante
-  return `<div class="stats">${cell(st.total,'Aufgaben gesamt')}${cell(st.open,'Offen')}${cell(st.overdue,'Überfällig',st.overdue>0)}${cell(pct+'%','Fortschritt')}</div>`;
+  // KPIs immer voll, auf JEDER Ansicht (Albrecht: „KPI sind immer überall") — keine schmale Variante.
+  // Gleiche Zeile wie in Auswerten (kpiRowHTML): Klick zeigt die Aufgaben dahinter, „Fortschritt" die Detail-Auswertung.
+  return kpiRowHTML(p.id, { total:st.total, open:st.open, overdue:st.overdue, pct });
 }
 function projHeadHTML(p){
   const r=roleById(p.role); const roleColor=r?r.color:'var(--border)';
@@ -2078,22 +2121,22 @@ function projAufgabenHTML(p){
   let openBlock;
   if(projTaskGroup==='none'){
     const cards=openAll.sort(sortP).map(t=>todayCardHTML(t)).join('');
-    openBlock=`<div class="today-sec">${head('var(--text-muted)','Offen',openAll.length)}${openAll.length?`<div class="proj-taskgrid">${cards}</div>`:'<div class="proj-empty">Keine offenen Aufgaben.</div>'}</div>`;
+    openBlock=`<div class="today-sec"${dropStatus('todo')}>${head('var(--text-muted)','Offen',openAll.length)}${openAll.length?`<div class="proj-taskgrid">${cards}</div>`:'<div class="proj-empty">Keine offenen Aufgaben.</div>'}</div>`;
   } else if(projTaskGroup==='termin'){
-    // Termin = nach Datum (wie die Termin-Gruppierung im Board -> plannedSections). boardGroups() kennt 'termin' NICHT.
-    const openSecs=plannedSections(openAll).map(s=>`<div class="today-sec">${head(s.over?'var(--red)':'var(--text-muted)', esc(s.label), s.items.length)}<div class="proj-taskgrid">${s.items.map(t=>todayCardHTML(t)).join('')}</div></div>`).join('<div class="rule soft"></div>');
+    // Termin = nach Datum (plannedSections). Ohne pool kennt boardGroups() hier keine Tagesspalten.
+    const openSecs=plannedSections(openAll).map(s=>`<div class="today-sec"${dropAttr(s.date?{drop:{type:'due',value:s.date}}:{no:'„Überfällig“ ist kein Termin'})}>${head(s.over?'var(--red)':'var(--text-muted)', esc(s.label), s.items.length)}<div class="proj-taskgrid">${s.items.map(t=>todayCardHTML(t)).join('')}</div></div>`).join('<div class="rule soft"></div>');
     openBlock = openSecs || '<div class="proj-empty">Keine offenen Aufgaben mit Datum.</div>';
   } else {
-    const openSecs=boardGroups().map(g=>{
+    const openSecs=boardGroups(openAll).map(g=>{
       const items=openAll.filter(g.match).sort(sortP);
       if(!items.length) return '';
-      return `<div class="today-sec">${head(g.color||'var(--text-muted)', esc(g.label), items.length)}<div class="proj-taskgrid">${items.map(t=>todayCardHTML(t)).join('')}</div></div>`;
+      return `<div class="today-sec"${dropAttr(g)}>${head(g.color||'var(--text-muted)', esc(g.label), items.length)}<div class="proj-taskgrid">${items.map(t=>todayCardHTML(t)).join('')}</div></div>`;
     }).filter(Boolean).join('<div class="rule soft"></div>');
     openBlock = openSecs || '<div class="proj-empty">Keine offenen Aufgaben.</div>';
   }
   const addRow=`<div class="proj-taskgrid" style="margin-top:14px"><button class="colnew proj-add" onclick="openNew()">+ Aufgabe</button></div>`;
   const doneGrid = done.length ? `<div class="proj-taskgrid">${done.map(t=>todayCardHTML(t)).join('')}</div>` : '<div class="proj-empty">Keine.</div>';
-  const doneSec = `<div class="today-sec">${head('var(--text-muted)','Erledigt',done.length)}${doneGrid}</div>`;
+  const doneSec = `<div class="today-sec"${dropStatus('done')}>${head('var(--text-muted)','Erledigt',done.length)}${doneGrid}</div>`;
   return openBlock + addRow + '<div class="rule"></div>' + doneSec;
 }
 function renderProjektDetail(){
@@ -2218,7 +2261,7 @@ function noteCardHTML(n){
   const short = preview.length>90 ? preview.slice(0,90)+'…' : preview;
   const textHTML = short ? `<span class="note-preview">${esc(short)}</span>` : '';
   const hasNote = short ? `<span class="note-hasnote" title="Notiz mit Text">${ic('edit')}</span>` : '';
-  return `<div class="tcard note-card ${n.done?'done':''}" style="--role:${color}" onclick="openNote('${n.id}')">
+  return `<div class="tcard note-card ${n.done?'done':''}" style="--role:${color}"${dragAttr(n.id,'note')} onclick="openNote('${n.id}')">
     <button class="note-check ${n.done?'on':''}" title="${n.done?'Als offen markieren':'Als erledigt markieren'}"
       onclick="event.stopPropagation();toggleNoteDone('${n.id}')">${ICON.check}</button>
     <div class="tt">${esc(n.title)}</div>
@@ -2454,6 +2497,95 @@ function openStatList(key){
 }
 function fromListEdit(id){ listOverlay.classList.remove('open'); openEdit(id); }
 
+/* ============================== KPI-CARDS: KLICK ÖFFNET DIE AUFGABEN ==============================
+   Eine KPI-Zeile (vier .stat-Cards) für Auswerten UND Projektseiten – gleiches Aussehen, gleiches Verhalten.
+   pid=null -> alle Aufgaben im Tool (Rollenfilter wie in der Statistik); pid gesetzt -> nur dieses Projekt.
+   Aufgaben-KPIs öffnen eine Liste, „Fortschritt“ öffnet die Detail-Auswertung.
+   ================================================================================================ */
+function kpiRowHTML(pid, v){
+  const scope = pid ? `'${pid}'` : 'null';
+  const cell=(n,l,key,over)=>`<div class="stat kpi-click ${over?'overdue':''}" onclick="openKpi(${scope},'${key}')" title="Aufgaben dazu ansehen"><div class="num">${n}</div><div class="lbl">${l}</div></div>`;
+  return `<div class="stats">${cell(v.total,'Aufgaben gesamt','total')}${cell(v.open,'Offen','open')}${cell(v.overdue,'Überfällig','overdue',v.overdue>0)}${cell(v.pct+'%','Fortschritt','progress')}</div>`;
+}
+// Grundmenge einer KPI – muss exakt zu der Zahl passen, die auf der Card steht.
+function kpiPool(pid){ return pid ? projectTasks(pid) : tasks.filter(inRole); }
+const KPI_DEF = {
+  total:   { label:'Aufgaben gesamt', pred:()=>true },
+  open:    { label:'Offen',           pred:t=>t.status!=='done' && t.status!=='discarded' },
+  overdue: { label:'Überfällig',      pred:isOverdue },
+};
+function openKpi(pid, key){ if(key==='progress') openProgressDetail(pid); else openKpiList(pid, key); }
+// Eine Zeile der Aufgabenliste – Vokabular des Archivs (arch-row), klickbar.
+function kpiRowHTML_task(t, showProj){
+  const p = showProj ? projById(t.projectId) : null;
+  const s = STATUS_MAP[t.status];
+  const projHTML = p ? `<span class="badge proj" style="background:${p.color}">${esc(p.name)}</span>` : '';
+  const over = isOverdue(t);
+  return `<div class="arch-row" onclick="fromListEdit('${t.id}')">
+    ${roleBadge(t)}<span class="a-title">${esc(t.title)}</span>
+    <span class="prio-chip">${t.prio||'D'}</span>${projHTML}
+    <span class="pcard-status">${s?s.label:'—'}</span>
+    <span class="a-date ${over?'over':''}">${t.due?fmtDate(t.due):'—'}</span>
+  </div>`;
+}
+function kpiSort(a,b){
+  const x=a.due||'9999-12-31', y=b.due||'9999-12-31';
+  if(x!==y) return x<y?-1:1;
+  return ehRank(a)-ehRank(b);
+}
+function openKpiList(pid, key){
+  const def=KPI_DEF[key]; if(!def) return;
+  const p = pid ? projById(pid) : null;
+  const items = kpiPool(pid).filter(def.pred).sort(kpiSort);
+  document.getElementById('listTitle').textContent = `${def.label} · ${items.length} ${items.length===1?'Aufgabe':'Aufgaben'}`;
+  const hint = p ? `Aufgaben im Projekt „${esc(p.name)}“. Klick auf eine Zeile öffnet die Aufgabe.`
+                 : `Alle Aufgaben im Tool${filters.role?' · Rolle '+roleCode(filters.role):''}. Klick auf eine Zeile öffnet die Aufgabe.`;
+  document.getElementById('listBody').innerHTML = items.length
+    ? `<div class="eh-hint" style="margin-bottom:4px">${hint}</div><div class="tag-list">${items.map(t=>kpiRowHTML_task(t, !pid)).join('')}</div>`
+    : '<div class="cal-empty">Keine Aufgaben in dieser Kategorie.</div>';
+  listOverlay.classList.add('open');
+}
+// Fortschritts-Detail: Wie weit? Wo steht die Arbeit? Was ist offen? Läuft es? Was als nächstes?
+function openProgressDetail(pid){
+  const p = pid ? projById(pid) : null;
+  const pool = kpiPool(pid);
+  const isOpen = t=>t.status!=='done' && t.status!=='discarded';
+  const total=pool.length, done=pool.filter(t=>t.status==='done').length,
+        disc=pool.filter(t=>t.status==='discarded').length, open=pool.filter(isOpen).length,
+        overdue=pool.filter(isOverdue).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const head = `<div class="pd-prog">
+    <div class="pcard-prog-top"><span><b>${done}</b> von ${total} erledigt</span><span><b>${pct}%</b></span></div>
+    <div class="pcard-bar ${total&&done===total?'full':''}" style="height:9px"><i style="width:${total?pct:0}%"></i></div>
+    <div class="pd-prog-sub">${open} offen${disc?` · ${disc} verworfen`:''}${overdue?` · <span style="color:var(--red);font-weight:600">${overdue} überfällig</span>`:''}</div>
+  </div>`;
+  const byStatus = STATUS.map(s=>({label:s.label,color:s.color,count:pool.filter(t=>t.status===s.id).length})).filter(r=>r.count>0);
+  const openPool = pool.filter(isOpen);
+  const PRIO_COL = { A:'#b06a6a', B:'#5f7d9c', C:'#b0895a', D:'#999c9e' };
+  const byPrio = ['A','B','C','D'].map(k=>({label:k,color:PRIO_COL[k],count:openPool.filter(t=>(t.prio||'D')===k).length})).filter(r=>r.count>0);
+  // Tempo: erledigte Aufgaben je Kalenderwoche, letzte 8 Wochen (Datenquelle archivedAt)
+  const weeks=[];
+  for(let i=7;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-7*i);
+    const {mon,sun}=weekRange(d); const s=ymd(mon), e=ymd(sun);
+    weeks.push({ label:'KW '+isoWeek(mon), color:'#5f8a70',
+                 count: pool.filter(t=>t.status==='done' && t.archivedAt && t.archivedAt>=s && t.archivedAt<=e).length });
+  }
+  const nextOver = openPool.filter(isOverdue).sort(kpiSort);
+  const nextDue  = openPool.filter(t=>t.due && !isOverdue(t)).sort(kpiSort).slice(0,5);
+  const nextList = (nextOver.concat(nextDue));
+  const nextBlock = `<div class="chart-block"><h3>Als nächstes</h3>${
+    nextList.length ? `<div class="tag-list">${nextList.map(t=>kpiRowHTML_task(t, !pid)).join('')}</div>`
+                    : '<div class="cal-more">Keine datierte offene Aufgabe.</div>'}</div>`;
+  document.getElementById('listTitle').textContent = p ? `Fortschritt · ${p.name}`
+    : `Fortschritt · alle Aufgaben${filters.role?' · Rolle '+roleCode(filters.role):''}`;
+  document.getElementById('listBody').innerHTML = head
+    + `<div class="stat-grid">${barChart('Wo die Arbeit steht', byStatus)}${barChart('Offen nach Priorität', byPrio)}</div>`
+    + barChart('Erledigt je Woche', weeks, true)
+    + nextBlock;
+  listOverlay.classList.add('open');
+}
+
 function renderFilters(){ /* alte Filterleiste entfernt – Filter läuft über die Filter-Kachel/Modal */ }
 
 function matchesFilter(t){
@@ -2471,28 +2603,41 @@ function matchesFilter(t){
 }
 
 function curBoardGroup(){ return openProjectId ? (projView==='aufgaben' ? projTaskGroup : projBoardGroup) : boardGroup; }
-function boardGroups(){
+// Spaltengruppen der aktuellen Gruppierung. `pool` wird nur für 'termin' gebraucht (Tagesspalten aus den Daten).
+// Jede Gruppe trägt zusätzlich ihr Drop-Ziel: drop = {type,value} oder no = 'Grund' (Zone nimmt nichts an).
+function boardGroups(pool){
   const boardGroup = curBoardGroup();   // im Projekt: projBoardGroup (Default Status), global unberührt
+  if(boardGroup==='termin'){
+    // Termin ist eine Gruppierung wie jede andere: eine Spalte je Tag, gleiches Spalten-Vokabular.
+    return plannedSections(pool||[]).map(s=>{
+      const ids=new Set(s.items.map(t=>t.id));
+      return { key:'t:'+s.key, label:s.label, color: s.over?'var(--red)':'var(--text-muted)',
+               match:t=>ids.has(t.id),
+               drop: s.date?{type:'due', value:s.date}:null,
+               no: s.date?null:'„Überfällig“ ist kein Termin' };
+    });
+  }
   if(boardGroup==='prio') return [
-    { key:'A', label:'A', color:'#b06a6a', match:t=>(t.prio||'D')==='A' },
-    { key:'B', label:'B', color:'#5f7d9c', match:t=>(t.prio||'D')==='B' },
-    { key:'C', label:'C', color:'#b0895a', match:t=>(t.prio||'D')==='C' },
-    { key:'D', label:'D', color:'#999c9e', match:t=>(t.prio||'D')==='D' },
+    { key:'A', label:'A', color:'#b06a6a', match:t=>(t.prio||'D')==='A', drop:{type:'prio',value:'A'} },
+    { key:'B', label:'B', color:'#5f7d9c', match:t=>(t.prio||'D')==='B', drop:{type:'prio',value:'B'} },
+    { key:'C', label:'C', color:'#b0895a', match:t=>(t.prio||'D')==='C', drop:{type:'prio',value:'C'} },
+    { key:'D', label:'D', color:'#999c9e', match:t=>(t.prio||'D')==='D', drop:{type:'prio',value:'D'} },
   ];
   if(boardGroup==='person'){
-    const g=people.map(p=>({ key:p.id, label:p.name, color:'#6b727e', match:t=>(t.people||[]).some(pp=>pp.personId===p.id) }));
-    g.push({ key:'__none', label:'Ohne Person', color:'#a7aaac', match:t=>!(t.people||[]).length });
+    const g=people.map(p=>({ key:p.id, label:p.name, color:'#6b727e', match:t=>(t.people||[]).some(pp=>pp.personId===p.id), drop:{type:'person',value:p.id} }));
+    g.push({ key:'__none', label:'Ohne Person', color:'#a7aaac', match:t=>!(t.people||[]).length,
+             no:'Personen werden in der Aufgabe entfernt' });
     return g;
   }
   if(boardGroup==='project'){
-    const g=projects.map(p=>({ key:p.id, label:p.name, color:p.color, match:t=>t.projectId===p.id }));
-    g.push({ key:'__none', label:'Ohne Projekt', color:'#a7aaac', match:t=>!t.projectId });
+    const g=projects.map(p=>({ key:p.id, label:p.name, color:p.color, match:t=>t.projectId===p.id, drop:{type:'project',value:p.id} }));
+    g.push({ key:'__none', label:'Ohne Projekt', color:'#a7aaac', match:t=>!t.projectId, drop:{type:'project',value:''} });
     return g;
   }
   if(boardGroup==='role'){
-    return ROLES.map(r=>({ key:r.id, label:r.label, color:r.color, match:t=>taskRole(t)===r.id }));
+    return ROLES.map(r=>({ key:r.id, label:r.label, color:r.color, match:t=>taskRole(t)===r.id, drop:{type:'role',value:r.id} }));
   }
-  return STATUS.filter(s=>s.board).map(s=>({ key:s.id, label:s.label, color:s.color, match:t=>t.status===s.id }));
+  return STATUS.filter(s=>s.board).map(s=>({ key:s.id, label:s.label, color:s.color, match:t=>t.status===s.id, drop:{type:'status',value:s.id} }));
 }
 function plannedSections(visible){
   const today=ymd(new Date());
@@ -2505,28 +2650,21 @@ function plannedSections(visible){
   const heute=pick(t=>t.due===today);
   const morgen=pick(t=>t.due===tomorrow);
   const uebermorgen=pick(t=>t.due===dayAfter);
-  if(overdue.length) sections.push({label:'Überfällig', over:true, items:overdue});
-  if(heute.length) sections.push({label:'Heute', items:heute});
-  if(morgen.length) sections.push({label:'Morgen', items:morgen});
-  if(uebermorgen.length) sections.push({label:'Übermorgen', items:uebermorgen});
+  // key = stabiler Spalten-/Sektions-Schlüssel (Einklapp-Zustand), date = Zieldatum beim Ablegen.
+  // „Überfällig“ hat bewusst KEIN Zieldatum: überfällig ist kein Termin, sondern eine Folge.
+  if(overdue.length) sections.push({key:'over', label:'Überfällig', over:true, items:overdue});
+  if(heute.length) sections.push({key:today, date:today, label:'Heute', items:heute});
+  if(morgen.length) sections.push({key:tomorrow, date:tomorrow, label:'Morgen', items:morgen});
+  if(uebermorgen.length) sections.push({key:dayAfter, date:dayAfter, label:'Übermorgen', items:uebermorgen});
   const beyond=dated.filter(t=>t.due>dayAfter);
   const byDate={};
   beyond.forEach(t=>{ (byDate[t.due]=byDate[t.due]||[]).push(t); });
   Object.keys(byDate).sort().forEach(d=>{
     const dt=new Date(d+'T00:00:00');
     const label=dt.toLocaleDateString('de-DE',{weekday:'short', day:'2-digit', month:'short'});
-    sections.push({label, items:byDate[d]});
+    sections.push({key:d, date:d, label, items:byDate[d]});
   });
   return sections;
-}
-function renderPlanned(){
-  const el=document.getElementById('board');
-  el.classList.add('planned');   // tagesweise Sektionen untereinander, kein Kanban-Raster
-  const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
-  const sections=plannedSections(visible);
-  el.innerHTML = sections.length
-    ? sections.map((s,i)=>`${i>0?'<div class="rule soft"></div>':''}<div class="today-sec"><div class="today-sechead" style="cursor:default"><span class="title"${s.over?' style="color:var(--red)"':''}>${esc(s.label)}</span><span class="count">${s.items.length}</span></div><div class="today-grid">${s.items.map(boardCardHTML).join('')}</div></div>`).join('')
-    : '<div class="today-empty">Keine terminierten Aufgaben. Aufgaben mit Fälligkeitsdatum erscheinen hier chronologisch – Überfällig, Heute, Morgen, dann nach Tag.</div>';
 }
 // Card im tcard-Vokabular (Variante A) – mit Status-Umschalter beim Hover-losen Klick über Modal
 function boardCardHTML(t){
@@ -2539,18 +2677,16 @@ function boardCardHTML(t){
   const dateHTML = t.due ? `<div class="tcard-date ${over?'over':''}">${fmtDate(t.due)}</div>` : '';
   const runHTML = t.status==='in_progress' ? `<span class="running">läuft</span>` : '';
   const projHTML = (()=>{ const p=projById(t.projectId); return p?`<span class="tbadge" style="background:${p.color};cursor:pointer" title="Projekt öffnen" onclick="event.stopPropagation();openProject('${p.id}')">${esc(p.name)}</span>`:''; })();
-  return `<div class="tcard ${t.status}" style="--role:${roleColor}" onclick="openEdit('${t.id}')">
+  return `<div class="tcard ${t.status}" style="--role:${roleColor}" ${dragAttr(t.id)} onclick="openEdit('${t.id}')">
     <div class="tt">${esc(t.title)}</div>${dateHTML}
     <div class="meta">${badge}${prioHTML}${projHTML}${runHTML}${clBadge(t)}${stBadge(t)}${linkBadge(t)}${blockedMarker(t)}${followUpMarker(t)}${peopleChips(t)}</div>
   </div>`;
 }
 function renderBoard(){
-  const boardGroup = curBoardGroup();
-  if(boardGroup==='termin'){ renderPlanned(); return; }
   const el=document.getElementById('board');
-  el.classList.remove('planned');   // Kanban-Raster aktiv
   const visible = tasks.filter(matchesFilter).filter(inTimeScope).filter(t => STATUS_MAP[t.status] ? STATUS_MAP[t.status].board : true);
-  const groups = boardGroups();
+  const boardGroup = curBoardGroup();
+  const groups = boardGroups(visible);
   el.innerHTML = `<div class="board-a">` + groups.map(col => {
     const items = visible.filter(col.match).sort((a,b)=>{
       const e = ehRank(a)-ehRank(b); if(e!==0) return e;
@@ -2561,7 +2697,7 @@ function renderBoard(){
     const openKey = boardGroup+':'+col.key;
     const collapsed = boardOpen.has(openKey) ? false : false; // Spalten immer offen (ruhiger); Klick auf Titel klappt ein
     const isCollapsed = boardCollapsed.has(openKey);
-    return `<div class="cola ${isCollapsed?'is-collapsed':''}" style="--col:${col.color}">
+    return `<div class="cola ${isCollapsed?'is-collapsed':''}" style="--col:${col.color}"${dropAttr(col)}>
       <div class="cola-head" onclick="toggleColA('${openKey}')">
         <span class="ic cola-chev">${ICON.chevronDown}</span>
         <span class="cola-dot"></span><span class="cola-name">${esc(col.label)}</span>
@@ -2570,6 +2706,8 @@ function renderBoard(){
       <div class="col-body ${isCollapsed?'collapsed':''}">${cards}${addBtn}</div>
     </div>`;
   }).join('') + `</div>`;
+  // Nur bei Gruppierung „Termin“ möglich: es gibt keine datierte Aufgabe -> keine Tagesspalte.
+  if(!groups.length) el.innerHTML = '<div class="today-empty">Keine terminierten Aufgaben. Sobald eine Aufgabe ein Fälligkeitsdatum hat, erscheint hier eine Tagesspalte – Überfällig, Heute, Morgen, dann nach Tag.</div>';
 }
 let boardCollapsed = (()=>{ try{ return new Set(JSON.parse(localStorage.getItem('taskDashboard.boardCollapsed')||'[]')); }catch(e){ return new Set(); } })();
 function toggleColA(key){ if(boardCollapsed.has(key)) boardCollapsed.delete(key); else boardCollapsed.add(key); try{localStorage.setItem('taskDashboard.boardCollapsed', JSON.stringify([...boardCollapsed]));}catch(e){} renderBoard(); }
@@ -2624,7 +2762,7 @@ function evChip(t, ds){
   if(span) pos = ds===sp.s ? 'start' : ds===sp.e ? 'end' : 'mid';
   const tip = span ? `${esc(t.title)} (${fmtDate(sp.s)}–${fmtDate(sp.e)})` : esc(t.title);
   const over = isOverdue(t) ? ' over' : '';
-  return `<div class="cal-ev ev-${pos}${over}" style="--role:${evColor(t)}" title="${tip}" onclick="event.stopPropagation();openEdit('${t.id}')">${esc(t.title)}</div>`;
+  return `<div class="cal-ev ev-${pos}${over}" style="--role:${evColor(t)}"${dragAttr(t.id)} title="${tip}" onclick="event.stopPropagation();openEdit('${t.id}')">${esc(t.title)}</div>`;
 }
 
 function renderCalendar(){
@@ -2654,7 +2792,7 @@ function calMonth(){
     const evs=spans.filter(x=>coversDay(x.sp,ds));
     const shown=evs.slice(0,3).map(x=>evChip(x.t, ds)).join('');
     const more=evs.length>3?`<div class="cal-more">+${evs.length-3} mehr</div>`:'';
-    cells+=`<div class="cal-cell ${other?'other':''} ${ds===today?'today':''}" onclick="openDay('${ds}')" title="${esc(dayTip(evs))}"><div class="cal-daynum">${d.getDate()}</div>${shown}${more}</div>`;
+    cells+=`<div class="cal-cell ${other?'other':''} ${ds===today?'today':''}"${dropDue(ds)} onclick="openDay('${ds}')" title="${esc(dayTip(evs))}"><div class="cal-daynum">${d.getDate()}</div>${shown}${more}</div>`;
   }
   return `<div class="cal-grid">${DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('')}${cells}</div>`;
 }
@@ -2668,7 +2806,7 @@ function calWeek(){
     const cards = evs.length
       ? `<div class="cw-body">${evs.map(x=>weekCardHTML(x.t, ds)).join('')}</div>`
       : `<div class="cw-empty">—</div>`;
-    cols+=`<div class="cal-col ${ds===today?'today':''}">
+    cols+=`<div class="cal-col ${ds===today?'today':''}"${dropDue(ds)}>
       <div class="cw-head" onclick="openDay('${ds}')" style="cursor:pointer" title="Tagesansicht öffnen">
         <span class="cw-dow">${DOW[i]}</span><span class="cw-date">${d.getDate()}.${d.getMonth()+1}.</span>
       </div>${cards}</div>`;
@@ -2684,7 +2822,7 @@ function weekCardHTML(t, ds){
   const isSpan = sp && sp.s!==sp.e;
   const spanHTML = isSpan ? `<span class="cw-span">${fmtDate(sp.s)}–${fmtDate(sp.e)}</span>` : '';
   const runHTML = t.status==='in_progress' ? `<span class="running">läuft</span>` : '';
-  return `<div class="cw-card ${over?'over':''}" style="--role:${roleColor}" title="${esc(t.title)}" onclick="event.stopPropagation();openEdit('${t.id}')">
+  return `<div class="cw-card ${over?'over':''}" style="--role:${roleColor}"${dragAttr(t.id)} title="${esc(t.title)}" onclick="event.stopPropagation();openEdit('${t.id}')">
     <div class="cw-t">${esc(t.title)}</div>
     <div class="cw-meta">${badge}${runHTML}${spanHTML}</div>
   </div>`;
@@ -2792,7 +2930,7 @@ function renderGantt(){
         : `<span class="g-chev" style="visibility:hidden">${ic('chevron')}</span>`;
       const cnt=hasSubs?` <span class="col-count">${subs.filter(x=>x.s.status==='done').length}/${subs.length}</span>`:'';
       rows+=`<div class="g-row"><div class="g-label" title="${esc(t.title)}">${chev}${roleBadge(t)}<span class="g-lname">${esc(t.title)}</span>${cnt}</div>
-        <div class="g-track" style="width:${trackW}px">${bar(r,color,done,'',t.title,t.id,`data-gtask="${t.id}"`)}</div></div>`;
+        <div class="g-track" style="width:${trackW}px">${bar(r,color,done,'',t.title,t.id,`data-gtask="${t.id}" data-drag-gantt="${t.id}"`)}</div></div>`;
       if(open){
         subs.forEach(({s,r:sr})=>{
           const sdone=(s.status==='done')?'opacity:.5;':'';
@@ -2845,6 +2983,230 @@ function drawGanttDeps(el){
   });
   inner.insertAdjacentHTML('afterbegin', `<svg class="g-deps" width="${W}" height="${H}" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0">${paths}</svg>`);
 }
+
+/* ============================== ZIEHEN & ABLEGEN (Drag & Drop) ==============================
+   Ein Mechanismus für alle Ansichten. Prinzip: Wohin die Karte gezogen wird, das wird sie.
+   - Zieh-Quellen: Karten mit data-drag-task (Aufgabe) bzw. data-drag-note (Notiz), Gantt-Balken mit data-drag-gantt.
+   - Zielzonen: data-drop-type + data-drop-value. type="none" + data-drop-reason = Zone, die bewusst nichts annimmt.
+   - dropCheck() entscheidet je Objekt UND Zone; nicht annehmende Zonen treten zurück (.no-drop) und nennen den Grund.
+   - Pointer-Events statt HTML5-Drag&Drop: funktioniert auch am Handy (Langdruck startet das Ziehen).
+   =========================================================================================== */
+function dragAttr(id, kind){ return ` data-drag-${kind||'task'}="${id}"`; }
+// Attribute einer Zielzone. Nimmt {drop:{type,value}} oder {no:'Grund'} (z. B. eine Gruppenspalte aus boardGroups()).
+function dropAttr(z){
+  if(!z) return '';
+  if(z.no) return ` data-drop-type="none" data-drop-reason="${esc(z.no)}"`;
+  if(z.drop) return ` data-drop-type="${z.drop.type}" data-drop-value="${esc(String(z.drop.value==null?'':z.drop.value))}"`;
+  return '';
+}
+const dropDue   = d => dropAttr({drop:{type:'due',    value:d}});
+const dropStart = d => dropAttr({drop:{type:'start',  value:d}});
+const dropRole  = r => dropAttr({drop:{type:'role',   value:r}});
+const dropStatus= s => dropAttr({drop:{type:'status', value:s}});
+const dropNo    = r => dropAttr({no:r});
+
+function shiftDays(ds, n){ const d=new Date(ds+'T00:00:00'); d.setDate(d.getDate()+n); return ymd(d); }
+function daysBetween(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000); }
+
+// Nimmt diese Zone dieses Objekt an? Liefert immer einen Grund, wenn nicht — kein stiller Fehlschlag.
+function dropCheck(it, type, value, reason){
+  if(!it) return { ok:false, reason:'' };
+  if(type==='none') return { ok:false, reason: reason || 'Hier nicht ablegbar' };
+  if(it.kind==='note') return type==='role' ? { ok:true } : { ok:false, reason:'Notizen kennen nur die Rolle' };
+  const t = it.task;
+  if(!t) return { ok:false, reason:'' };
+  if(type==='role'){
+    if(t.projectId){ const p=projById(t.projectId); return { ok:false, reason:`Rolle hängt am Projekt „${p?p.name:'—'}“` }; }
+    return { ok:true };
+  }
+  if(type==='person') return value ? { ok:true } : { ok:false, reason:'Personen werden in der Aufgabe entfernt' };
+  if(['status','prio','project','due','start'].includes(type)) return { ok:true };
+  return { ok:false, reason:'Hier nicht ablegbar' };
+}
+// Setzt die Eigenschaft der Zielzone. Liefert true, wenn sich wirklich etwas geändert hat.
+function applyDrop(it, type, value){
+  if(it.kind==='note'){
+    const n=notes.find(x=>x.id===it.id);
+    if(!n || type!=='role' || noteRole(n)===value) return false;
+    n.role=value; return true;
+  }
+  const t=tasks.find(x=>x.id===it.id); if(!t) return false;
+  if(type==='status'){
+    if(t.status===value) return false;
+    const old=t.status; t.status=value; setArchivedAt(t,old,value); maybeRecur(t,old,value); return true;
+  }
+  if(type==='prio'){ if((t.prio||'D')===value) return false; t.prio=value; return true; }
+  if(type==='role'){
+    if(t.projectId) return false;          // Rolle hängt am Projekt – dropCheck() verweigert das bereits
+    if((t.role||'meta')===value) return false;
+    t.role=value; return true;
+  }
+  if(type==='project'){
+    const pid = value || null;
+    if((t.projectId||null)===pid) return false;
+    if(pid){ t.projectId=pid; t.role=null; }          // Rolle erbt ab jetzt das Projekt
+    else { t.role=taskRole(t); t.projectId=null; }    // ohne Projekt: bisherige Rolle festschreiben, nicht auf META fallen
+    return true;
+  }
+  if(type==='due'){
+    if(t.due===value) return false;
+    // Die Spanne wandert mit: die Dauer bleibt, es entsteht nie ein Ende vor dem Start.
+    if(t.start && t.due) t.start = shiftDays(t.start, daysBetween(t.due, value));
+    else if(t.start && t.start>value) t.start = value;
+    t.due = value; return true;
+  }
+  if(type==='start'){
+    if(t.start===value) return false;
+    if(t.start && t.due) t.due = shiftDays(t.due, daysBetween(t.start, value));
+    else if(t.due && t.due<value) t.due = value;
+    t.start = value; return true;
+  }
+  if(type==='person'){
+    t.people = t.people||[];
+    if(t.people.some(pp=>pp.personId===value)) return false;
+    t.people.push({ personId:value, approval:false }); return true;   // hinzufügen, nie stillschweigend ersetzen
+  }
+  if(type==='ganttShift'){
+    const n=parseInt(value,10); if(!n) return false;
+    if(t.start) t.start=shiftDays(t.start,n);
+    if(t.due)   t.due  =shiftDays(t.due,n);
+    return true;
+  }
+  return false;
+}
+
+let dragState = null, dragEndedAt = 0;
+const DRAG_THRESHOLD = 5, DRAG_HOLD = 320;
+function dragFind(el){
+  const n = (el && el.closest) ? el.closest('[data-drag-task],[data-drag-note],[data-drag-gantt]') : null;
+  if(!n) return null;
+  if(n.dataset.dragGantt) return { kind:'gantt', id:n.dataset.dragGantt, node:n, task:tasks.find(x=>x.id===n.dataset.dragGantt) };
+  if(n.dataset.dragNote)  return { kind:'note',  id:n.dataset.dragNote,  node:n };
+  return { kind:'task', id:n.dataset.dragTask, node:n, task:tasks.find(x=>x.id===n.dataset.dragTask) };
+}
+function zoneBody(z){ return z.querySelector('.col-body, .today-grid, .agenda-colbody, .cw-body, .proj-taskgrid, .backlog-grid'); }
+function dropPlaceholder(z){
+  const b=z?zoneBody(z):null; if(!b) return;
+  const ph=document.createElement('div'); ph.className='drop-ph'; ph.dataset.ph='1';
+  b.insertBefore(ph, b.firstChild);
+}
+function clearPlaceholder(){ document.querySelectorAll('.drop-ph[data-ph]').forEach(n=>n.remove()); }
+function markZones(){
+  document.querySelectorAll('[data-drop-type]').forEach(z=>{
+    const c=dropCheck(dragState.it, z.dataset.dropType, z.dataset.dropValue||'', z.dataset.dropReason);
+    z.classList.toggle('no-drop', !c.ok);
+  });
+}
+// Am oberen/unteren Rand mitscrollen. Am Handy stehen die Spalten untereinander –
+// ohne das käme eine Karte nie bis zu einer Spalte, die gerade nicht auf dem Schirm ist.
+function dragAutoScroll(){
+  const st=dragState; if(!st||!st.active) return;
+  const m=70, h=window.innerHeight;
+  let dy=0;
+  if(st.y<m) dy=-Math.min(14, Math.ceil((m-st.y)/5));
+  else if(st.y>h-m) dy=Math.min(14, Math.ceil((st.y-(h-m))/5));
+  if(!dy) return;
+  const before=window.scrollY;
+  window.scrollBy(0,dy);
+  if(window.scrollY!==before) dragMove();   // Ziel unter dem ruhenden Finger neu bestimmen
+}
+function dragStart(){
+  const st=dragState; if(!st) return;
+  clearTimeout(st.timer); st.active=true;
+  st.scroller=setInterval(dragAutoScroll, 30);
+  document.body.classList.add('is-dragging');
+  try{ st.node.setPointerCapture(st.id); }catch(e){}
+  st.node.classList.add('drag-source');
+  if(st.it.kind==='gantt'){
+    st.dayW=GDAY();
+    st.hint=document.createElement('span'); st.hint.className='drop-hint'; document.body.appendChild(st.hint);
+  } else {
+    const g=st.node.cloneNode(true);
+    g.classList.add('drag-ghost'); g.classList.remove('drag-source');
+    g.style.width=Math.min(280, Math.max(190, st.node.offsetWidth))+'px';
+    document.body.appendChild(g); st.ghost=g;
+    st.hint=document.createElement('span'); st.hint.className='drop-hint'; st.hint.style.display='none';
+    document.body.appendChild(st.hint);
+    markZones();
+  }
+  dragMove();
+}
+function dragMove(){
+  const st=dragState; if(!st||!st.active) return;
+  if(st.it.kind==='gantt'){
+    const days=Math.round((st.x-st.x0)/st.dayW); st.days=days;
+    const t=st.it.task, a=t.start||t.due, b=t.due||t.start;
+    st.hint.textContent = days===0 ? 'Zeitraum unverändert'
+      : `${fmtDate(shiftDays(a,days))} – ${fmtDate(shiftDays(b,days))}  (${days>0?'+':''}${days} Tage)`;
+    st.hint.style.left=(st.x+14)+'px'; st.hint.style.top=(st.y+16)+'px';
+    st.node.style.transform=`translateX(${days*st.dayW}px)`;
+    return;
+  }
+  st.ghost.style.left=(st.x-90)+'px'; st.ghost.style.top=(st.y-18)+'px';
+  const under=document.elementFromPoint(st.x, st.y);
+  const zone=under?under.closest('[data-drop-type]'):null;
+  if(zone!==st.zone){
+    if(st.zone) st.zone.classList.remove('drop-target','drop-deny');
+    clearPlaceholder();
+    st.zone=zone; st.ok=false;
+    if(zone){
+      const c=dropCheck(st.it, zone.dataset.dropType, zone.dataset.dropValue||'', zone.dataset.dropReason);
+      st.ok=c.ok;
+      zone.classList.add(c.ok?'drop-target':'drop-deny');
+      if(c.ok){ dropPlaceholder(zone); st.hint.style.display='none'; }
+      else { st.hint.textContent=c.reason; st.hint.style.display=c.reason?'':'none'; }
+    } else st.hint.style.display='none';
+  }
+  // Hinweis UNTER die Ghost-Karte, nicht darüber – sonst verdeckt er sie.
+  if(st.hint.style.display!=='none'){ st.hint.style.left=(st.x-86)+'px'; st.hint.style.top=(st.y+(st.ghost?st.ghost.offsetHeight-10:34))+'px'; }
+}
+function dragEnd(commit){
+  const st=dragState; if(!st) return; dragState=null;
+  clearTimeout(st.timer); clearInterval(st.scroller);
+  document.body.classList.remove('is-dragging');
+  try{ st.node.releasePointerCapture(st.id); }catch(e){}
+  if(st.ghost) st.ghost.remove();
+  if(st.hint) st.hint.remove();
+  clearPlaceholder();
+  document.querySelectorAll('.no-drop,.drop-target,.drop-deny').forEach(n=>n.classList.remove('no-drop','drop-target','drop-deny'));
+  st.node.classList.remove('drag-source'); st.node.style.transform='';
+  dragEndedAt = Date.now();   // unterdrückt den Klick, der nach dem Ziehen folgen würde
+  let changed=false;
+  if(commit){
+    if(st.it.kind==='gantt') changed = applyDrop(st.it,'ganttShift',String(st.days||0));
+    else if(st.zone && st.ok) changed = applyDrop(st.it, st.zone.dataset.dropType, st.zone.dataset.dropValue||'');
+  }
+  if(changed){ persist(); refreshActive(); }
+}
+document.addEventListener('pointerdown', e=>{
+  if(dragState) return;
+  if(e.button) return;
+  if(e.target.closest && e.target.closest('button, select, input, textarea, a, .today-sechead, .cola-head, .cw-head, .g-chev, .overlay')) return;
+  const it=dragFind(e.target); if(!it) return;
+  if(it.kind!=='note' && !it.task) return;
+  if(it.kind==='gantt' && !(it.task.start||it.task.due)) return;
+  dragState={ it, node:it.node, id:e.pointerId, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY,
+              active:false, zone:null, ok:false, timer:null, days:0 };
+  if(e.pointerType!=='mouse') dragState.timer=setTimeout(()=>{ if(dragState && !dragState.active) dragStart(); }, DRAG_HOLD);
+}, true);
+document.addEventListener('pointermove', e=>{
+  const st=dragState; if(!st || e.pointerId!==st.id) return;
+  st.x=e.clientX; st.y=e.clientY;
+  if(!st.active){
+    const d=Math.abs(e.clientX-st.x0)+Math.abs(e.clientY-st.y0);
+    if(e.pointerType==='mouse'){ if(d>DRAG_THRESHOLD) dragStart(); }
+    else if(d>10){ clearTimeout(st.timer); dragState=null; }   // Wischen heißt scrollen, nicht ziehen
+    return;
+  }
+  e.preventDefault(); dragMove();
+}, { passive:false });
+document.addEventListener('pointerup', e=>{
+  const st=dragState; if(!st || e.pointerId!==st.id) return;
+  if(!st.active){ clearTimeout(st.timer); dragState=null; return; }
+  dragEnd(true);
+});
+document.addEventListener('pointercancel', ()=>{ if(dragState){ if(dragState.active) dragEnd(false); else { clearTimeout(dragState.timer); dragState=null; } } });
+document.addEventListener('click', e=>{ if(dragEndedAt && Date.now()-dragEndedAt<350){ e.stopPropagation(); e.preventDefault(); } }, true);
 
 /* ============================== ACTIONS ============================== */
 async function persist(){ await Store.save({ tasks, projects, people, notes, weekGoals }); }
