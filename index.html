@@ -2213,7 +2213,13 @@ function openRoleModal(){
   el.innerHTML = row('','Alle Rollen','') + ROLES.map(r=>row(r.id, r.code, r.label, r.color)).join('');
   roleOverlay.classList.add('open');
 }
-function pickRole(id){ filters.role=id; roleOverlay.classList.remove('open'); render(); }
+function pickRole(id){
+  filters.role=id;
+  // Blendet die neue Rolle das gefilterte Wochenziel aus, wird der Zielfilter geloest -
+  // sonst waeren Aufgaben weg, ohne dass irgendwo ein Grund sichtbar ist.
+  if(focusFilterWg && !focusGoals().some(g=>g.id===focusFilterWg)) focusFilterWg=null;
+  roleOverlay.classList.remove('open'); render();
+}
 
 /* ---------- Filter-Modal ---------- */
 const filterOverlay = document.getElementById('filterOverlay');
@@ -3105,10 +3111,16 @@ function inFocusFilter(t){ return !focusFilterWg || t.wgId===focusFilterWg; }
 /* Der Fokus-Block: Wochenziele ueber dem Tagesgeruest, im selben Raster wie die Aufgaben.
    Die Blaetter-Zeile sitzt im Sektionskopf (kein eigener Zeitregler, keine Kachel) und
    blaettert beliebig weit vor und zurueck - fuers Freitagsritual. */
+// Die im Fokus sichtbaren Ziele: Woche + Rolle-Kachel. Der Filter greift global in ALLEN
+// Ansichten - ein Wochenziel traegt eine Rolle, also folgt es ihr wie alles andere.
+// (Muster wie renderProjekte(): p.role===filters.role.)
+function focusGoals(){
+  return goalsForWeek(focusMon()).filter(g=>!filters.role || (g.role||'meta')===filters.role);
+}
 function focusBlockHTML(){
   const monKey = focusMon();
   const { kw, range } = weekTitle(monKey);
-  const goals = goalsForWeek(monKey);
+  const goals = focusGoals();
   const cards = goals.map(wgCardHTML).join('');
   const empty = goals.length ? '' : `<div class="goal-empty">Noch kein Fokus für diese Woche.</div>`;
   const nav = `<button class="ghost sm" onclick="startNav(-1)" title="Woche zurück">◀</button>`
