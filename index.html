@@ -712,32 +712,6 @@
   @media (max-width: 1200px) { .board-a.week { grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); } }
   @media (max-width: 640px)  { .board-a.week { grid-template-columns: 1fr; } }
 
-  /* ===== Ziele im Projekt: Sektion mit Fortschrittsbalken (kein Kasten – Striche trennen) ===== */
-  .goal-head { position: relative; padding-right: 96px; }
-  .goal-prog { display: flex; flex-direction: column; gap: 5px; max-width: 420px; margin: -4px 0 14px; }
-  .goal-prog .pcard-prog-top { font-size: .78rem; color: var(--text-muted); }
-  .goal-prog .pcard-prog-top b { color: var(--text); font-weight: 650; }
-  .goal-check { position: absolute; top: -2px; right: 0; width: 22px; height: 22px; padding: 0;
-    border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer;
-    color: transparent; display: inline-flex; align-items: center; justify-content: center; transition: all .12s; }
-  .goal-check .ic { width: 14px; height: 14px; }
-  .goal-check:hover { border-color: var(--text-muted); color: var(--text-muted); }
-  .goal-reached { position: absolute; top: 1px; right: 2px; font-size: .72rem; font-weight: 600; color: #5f8a70; }
-  .today-sechead.is-reached .title { color: var(--text-muted); }
-  .goal-note { font-size: .8rem; color: var(--text-muted); line-height: 1.45; margin: -6px 0 12px; max-width: 720px; }
-  .goal-edit { position: absolute; top: 0; right: 30px; }
-
-  /* ===== Meilensteine: Liste im Projekt ===== */
-  .ms-dia { width: 9px; height: 9px; background: var(--text-muted); transform: rotate(45deg);
-    flex: none; margin: 0 3px; border-radius: 1px; }
-  .ms-dia.is-done { background: #5f8a70; }
-  .ms-dia.is-over { background: var(--red); }
-  .ms-row { gap: 12px; }
-  .ms-row.is-done .a-title { color: var(--text-muted); text-decoration: line-through; }
-  .ms-row .a-title { flex: 1; }
-  .ms-row .goal-check { position: static; flex: none; }
-  .ms-row .goal-reached { position: static; }
-  .ms-add { margin-top: 8px; max-width: 240px; }
 
   /* ===== Meilensteine im Gantt: eigene Zeile mit Rauten ===== */
   .g-msrow { background: var(--surface-2); }
@@ -764,6 +738,53 @@
   .goal-row .gr-cnt { font-size: .74rem; color: var(--text-muted); white-space: nowrap; flex: none; }
   .goal-row.is-reached .a-title { color: var(--text-muted); }
   .goal-row .gr-ok { font-size: .7rem; font-weight: 600; color: #5f8a70; white-space: nowrap; flex: none; }
+
+  /* ===== Ziele-Reiter: Ziele und Meilensteine als Cards =====
+     Ein Card-Typ fuer beides. Auf der Card steht nur Titel, Balken und die harte Zahl
+     (Ziel: Zaehler, Meilenstein: Datum). Die Statusfarbe sitzt AM LINKEN RAND und nur dort:
+     grau = on track, gruen = erreicht, rot = ueberfaellig, keine Linie = noch keine Aufgabe.
+     Alles Weitere erst beim Klick. Kein Bedienelement auf der Oberflaeche. */
+  .goal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--gap); align-items: start; }
+  .gcard { position: relative; border: 1px solid var(--border); border-left: 3px solid var(--st, var(--border));
+    border-radius: var(--r); background: var(--surface); padding: 16px 18px 15px; cursor: pointer;
+    transition: box-shadow .12s, transform .12s; display: flex; flex-direction: column; gap: 13px; min-height: 92px; }
+  .gcard:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .gcard.is-empty { border-left-color: transparent; }   /* noch keine Aufgabe: gar keine Linie */
+  .gcard .gc-head { display: flex; align-items: flex-start; gap: 10px; }
+  .gcard .gc-title { font-size: .98rem; font-weight: 600; line-height: 1.35; word-break: break-word; flex: 1; }
+  .gcard .gc-barrow { display: flex; align-items: center; gap: 10px; margin-top: auto; }
+  .gcard .gc-bar { height: 6px; background: var(--surface-2); border-radius: 4px; overflow: hidden; flex: 1; }
+  .gcard .gc-bar > i { display: block; height: 100%; border-radius: 4px; background: var(--accent);
+    opacity: .55; transition: width .2s; }
+  .gcard .gc-num { font-size: .72rem; color: var(--text-muted); font-weight: 600; white-space: nowrap;
+    flex: none; font-variant-numeric: tabular-nums; }
+  /* Chevron nur beim Hover – ein Icon, kein Text */
+  .gcard .gc-chev { position: absolute; right: 14px; bottom: 13px; width: 13px; height: 13px;
+    color: var(--text-muted); opacity: 0; transition: opacity .12s, transform .15s; }
+  .gcard:hover .gc-chev { opacity: .65; }
+  .gcard.is-open .gc-chev { opacity: .65; transform: rotate(90deg); }
+  .gcard.is-open { cursor: default; }
+  .gcard .gc-note { font-size: .82rem; color: var(--text-muted); line-height: 1.45; }
+  .gcard .gc-tasks { display: flex; flex-direction: column; gap: 6px; }
+  .gcard .gc-row { display: flex; align-items: center; gap: 9px; padding: 7px 9px; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 8px; font-size: .83rem; cursor: pointer; }
+  .gcard .gc-row:hover { border-color: var(--accent); }
+  .gcard .gc-row .gr-t { flex: 1; min-width: 0; overflow-wrap: break-word; }
+  .gcard .gc-row.is-done .gr-t { text-decoration: line-through; color: var(--text-muted); }
+  .gcard .gc-row .gr-d { font-size: .74rem; color: var(--text-muted); flex: none; }
+  .gcard .gc-row .gr-d.over { color: var(--red); font-weight: 600; }
+  .gcard .gc-foot { display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-soft); }
+  .gcard .colnew { margin-top: 2px; }
+  /* Ablegen: die Card selbst ist die Zone – zugeklappt gibt es keinen Karten-Container */
+  .gcard.drop-target { outline: 1px dashed var(--accent); outline-offset: 4px; border-radius: var(--r); }
+  /* Anlegen: gestrichelte Card am Ende – Muster der Wochenziele */
+  .gcard-add { border: 1px dashed var(--border); background: none; border-radius: var(--r); color: var(--text-muted);
+    font: inherit; cursor: pointer; padding: 14px; display: flex; align-items: center; justify-content: center;
+    gap: 7px; min-height: 92px; transition: border-color .12s, color .12s; }
+  .gcard-add:hover { border-color: var(--accent); color: var(--text); }
+  .gcard-add .ic { width: 15px; height: 15px; }
+  .goal-rest .colnew { max-width: 240px; margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -1096,11 +1117,16 @@
         <label for="msDate">Datum *</label>
         <input id="msDate" type="date">
       </div>
+      <div class="field">
+        <label for="msNote">Wann ist der Meilenstein erreicht?</label>
+        <textarea id="msNote" placeholder="Woran erkennst du, dass dieser Punkt erreicht ist?" style="min-height:90px"></textarea>
+      </div>
       <div class="eh-hint">Meilensteine erscheinen im Gantt als Raute. Sie zählen nicht als Aufgabe.</div>
     </div>
     <div class="foot">
       <button class="ghost" id="msDelete" style="color:var(--q1);display:none">Löschen</button>
       <div class="spacer"></div>
+      <button class="ghost" id="msReach" style="display:none">Erreicht</button>
       <button class="ghost" id="msCancel">Abbrechen</button>
       <button class="primary" id="msSave">Speichern</button>
     </div>
@@ -1519,8 +1545,8 @@ function normalizeGoals(){
     if(!g.id) g.id = uid('g');
     if(typeof g.title!=='string') g.title = '';
     if(typeof g.note!=='string') g.note = '';
-    g.done = !!g.done;
-    if(typeof g.doneAt!=='string') g.doneAt = '';
+    // g.done / g.doneAt sind Altfelder: „erreicht" wird seit 25.07.2026 aus den Aufgaben gerechnet
+    // (goalStats().reached). Die Felder bleiben unangetastet, werden aber nirgends mehr ausgewertet.
   });
   goals = goals.filter(g=>g.projectId && projById(g.projectId));
   // Aufgaben-Zuordnung säubern: Ziel muss existieren UND zum Projekt der Aufgabe gehören.
@@ -1547,18 +1573,24 @@ function ehRank(t){ const q=quadrant(t).key; return {q1:0,q2:1,q3:2,q4:3}[q]; }
 function projById(id){ return projects.find(p=>p.id===id) || null; }
 function goalById(id){ return goals.find(g=>g.id===id) || null; }
 // Ziele eines Projekts: offene zuerst, danach erreichte; innerhalb stabil in Anlage-Reihenfolge.
-function goalsOf(pid){ return goals.filter(g=>g.projectId===pid).slice().sort((a,b)=>(a.done?1:0)-(b.done?1:0)); }
+function goalsOf(pid, pool){ return goals.filter(g=>g.projectId===pid).slice()
+  .sort((a,b)=>(goalStats(a.id,pool).reached?1:0)-(goalStats(b.id,pool).reached?1:0)); }
 function milestonesOf(pid){ return milestones.filter(m=>m.projectId===pid).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0); }
 function msOverdue(m){ return !m.done && m.date && m.date < todayStr(); }
 // Fortschritt eines Ziels – ausschliesslich aus den übergebenen Aufgaben gerechnet.
+// Fortschritt eines Ziels – ausschliesslich aus den Aufgaben gerechnet, es gibt kein gesetztes Flag.
+// Verworfene Aufgaben zaehlen weder im Zaehler noch im Nenner: sonst koennte ein Ziel, aus dem eine
+// Aufgabe verworfen wurde, nie 100% erreichen und waere nie „erreicht".
 function goalStats(goalId, pool){
-  const ts = (pool||tasks).filter(t=>t.goalId===goalId);
+  const ts = (pool||tasks).filter(t=>t.goalId===goalId && t.status!=='discarded');
   const done = ts.filter(t=>t.status==='done').length;
-  const open = ts.filter(t=>t.status!=='done' && t.status!=='discarded').length;
+  const open = ts.filter(t=>t.status!=='done').length;
   const overdue = ts.filter(isOverdue).length;
   const next = ts.filter(t=>t.status!=='done'&&t.status!=='discarded'&&t.due)
                  .sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:ehRank(a)-ehRank(b))[0] || null;
-  return { total:ts.length, done, open, overdue, next, pct: ts.length?Math.round(done/ts.length*100):0 };
+  return { total:ts.length, done, open, overdue, next,
+           pct: ts.length?Math.round(done/ts.length*100):0,
+           reached: ts.length>0 && done===ts.length };
 }
 function migrateTasks(arr){
   const smap = { todo:'todo', doing:'in_progress', done:'done' };
@@ -2327,67 +2359,110 @@ function projAufgabenHTML(p){
   const doneSec = `<div class="today-sec"${dropStatus('done')}>${head('var(--text-muted)','Erledigt',done.length)}${doneGrid}</div>`;
   return openBlock + addRow + '<div class="rule"></div>' + doneSec;
 }
-/* ===== Reiter „Ziele": oben Meilensteine, darunter die Ziele, zuletzt „Ohne Ziel" =====
-   Zwei Blöcke, getrennt durch feine Striche – dasselbe Muster wie Heute und Backlog, kein neuer Kasten.
-   Filter und Zeitraum wirken hier wie im Aufgaben-Reiter; die Zähler rechnen über dieselbe gefilterte Menge,
-   damit Balken und Karten nie auseinanderlaufen. */
+/* ===== Reiter „Ziele": Ziele und Meilensteine als Cards =====
+   Ein Card-Typ fuer beides – Ziele sind Ergebnisse, Meilensteine Termine, aber beide beantworten
+   dieselbe Frage: „wie weit ist das?". Deshalb identischer Aufbau: Titel, Balken, harte Zahl.
+   Beim Ziel misst der Balken die erledigten Aufgaben, beim Meilenstein die verstrichene Zeit.
+   Die Statusfarbe sitzt nur am linken Rand. Auf der Card gibt es KEIN Bedienelement:
+   „erreicht" wird beim Ziel gerechnet (alle Aufgaben erledigt), beim Meilenstein im Modal gesetzt.
+   „Ohne Ziel" ist ein fester Block unter dem Raster – damit sich keine Aufgabe versteckt.
+   Filter und Zeitraum wirken wie im Aufgaben-Reiter; Zaehler und Balken rechnen ueber dieselbe Menge. */
+const GOAL_GREEN = '#5f8a70';
+let goalCardOpen = new Set();          // Laufzeit: welche Ziel-Cards sind aufgeklappt
+let showDoneGoals = false, showDoneMs = false;   // wie showDoneProjects in der Projekte-Uebersicht
+function toggleGoalCard(id){ if(goalCardOpen.has(id)) goalCardOpen.delete(id); else goalCardOpen.add(id); renderProjektDetail(); }
+function toggleDoneGoals(){ showDoneGoals=!showDoneGoals; renderProjektDetail(); }
+function toggleDoneMs(){ showDoneMs=!showDoneMs; renderProjektDetail(); }
+// Sektionskopf mit optionalem Zeigen/Ausblenden-Knopf – nur wenn es ueberhaupt erreichte gibt.
+function goalSecHead(title, count, doneCount, shown, fn){
+  const btn = doneCount
+    ? `<button class="ghost sm" onclick="${fn}()">${shown?'Erreichte ausblenden':'Erreichte zeigen ('+doneCount+')'}</button>` : '';
+  return `<div class="today-sechead" style="cursor:default"><span class="title">${title}</span>`
+    + `<span class="count">${count}</span><span class="spacer"></span>${btn}</div>`;
+}
+// Zeitfenster eines Meilensteins: Projektstart -> Termin. Ohne Projektstart die letzten 30 Tage
+// vor dem Termin, sonst gaebe es keinen Nullpunkt und der Balken stuende immer auf null.
+function msProgress(m, p){
+  if(m.done) return 100;
+  const from = (p && p.start) ? p.start : shiftDays(m.date, -30);
+  const span = Math.max(1, daysBetween(from, m.date));
+  return Math.max(0, Math.min(100, Math.round(daysBetween(from, todayStr())/span*100)));
+}
 function projZieleHTML(p){
   const ts=tasks.filter(matchesFilter).filter(inTimeScope);
   const sortP=(a,b)=>{ const e=ehRank(a)-ehRank(b); if(e) return e; return (a.due||'9999')<(b.due||'9999')?-1:1; };
-  // Ein Kopf-Muster für den ganzen Reiter: kein Farbpunkt (die Ziel-Köpfe hätten keine Farbe zu tragen).
-  const head=(title,count,extra,sub)=>`<div class="today-sechead goal-head" style="cursor:default">`
-    + `<span class="title">${title}</span>${sub?`<span class="day">${sub}</span>`:''}`
-    + `<span class="count">${count}</span><span class="spacer"></span>${extra||''}</div>`;
 
-  /* --- Meilensteine --- */
-  const ms=milestonesOf(p.id).filter(m=>!scopeWindow() || (m.date>=scopeWindow().s && m.date<=scopeWindow().e));
-  const msRows = ms.map(m=>{
-    const over=msOverdue(m);
-    const cls=[m.done?'is-done':'', over?'is-over':''].join(' ').trim();
-    const right = m.done
-      ? `<span class="goal-reached">Erreicht</span><button class="ghost sm" title="Wieder offen" onclick="event.stopPropagation();toggleMsDone('${m.id}')">↺</button>`
-      : `<button class="goal-check" title="Als erreicht markieren" onclick="event.stopPropagation();toggleMsDone('${m.id}')">${ic('check')}</button>`;
-    return `<div class="arch-row ms-row ${cls}" onclick="openMs('${m.id}')">
-      <span class="ms-dia ${cls}"></span><span class="a-title">${esc(m.title)}</span>
-      <span class="a-date ${over?'over':''}">${fmtDate(m.date)}</span>${right}</div>`;
+  /* --- Meilensteine: Titel + Zeitbalken + Datum --- */
+  const w=scopeWindow();
+  const ms=milestonesOf(p.id).filter(m=>!w || (m.date>=w.s && m.date<=w.e));
+  const msDone = ms.filter(m=>m.done).length;
+  const msShown = showDoneMs ? ms : ms.filter(m=>!m.done);
+  const msCards = msShown.map(m=>{
+    const st = m.done ? GOAL_GREEN : (msOverdue(m) ? 'var(--red)' : 'var(--accent)');
+    return `<div class="gcard" style="--st:${st}" onclick="openMs('${m.id}')">
+      <div class="gc-head"><div class="gc-title">${esc(m.title)}</div></div>
+      <div class="gc-barrow"><div class="gc-bar"><i style="width:${msProgress(m,p)}%"></i></div>
+        <span class="gc-num">${fmtDate(m.date)}</span></div></div>`;
   }).join('');
   const msBlock = `<div class="today-sec">`
-    + head('Meilensteine', ms.length)
-    + (ms.length?`<div class="tag-list">${msRows}</div>`:'<div class="proj-empty">Noch kein Meilenstein.</div>')
-    + `<button class="colnew ms-add" onclick="openMs(null)">+ Meilenstein</button></div>`;
+    + goalSecHead('Meilensteine', msShown.length, msDone, showDoneMs, 'toggleDoneMs')
+    + `<div class="goal-grid">${msCards}`
+    + `<button class="gcard-add" onclick="openMs(null)">${ic('plus')} Meilenstein</button></div></div>`;
 
-  /* --- Ziele --- */
-  const gs=goalsOf(p.id);
-  const goalSecs = gs.map(g=>{
-    const st=goalStats(g.id, ts);
-    const right = g.done
-      ? `<span class="goal-reached">Erreicht</span><button class="ghost sm goal-edit" title="Wieder offen" onclick="event.stopPropagation();togglePGoalDone('${g.id}')">↺</button>`
-      : `<button class="goal-check" title="Als erreicht markieren" onclick="event.stopPropagation();togglePGoalDone('${g.id}')">${ic('check')}</button>`;
-    const bar = `<div class="goal-prog"><div class="pcard-prog-top">`
-      + (st.total?`<span><b>${st.done}</b> von ${st.total} erledigt</span><span>${st.pct}%</span>`
-                :`<span>Noch keine Aufgabe zugeordnet</span><span></span>`)
-      + `</div><div class="pcard-bar ${st.total&&st.done===st.total?'full':''}"><i style="width:${st.total?st.pct:0}%"></i></div></div>`;
-    const noteHTML = (g.note||'').trim() ? `<div class="goal-note">${esc(g.note.trim())}</div>` : '';
-    const items = ts.filter(t=>t.goalId===g.id).sort(sortP);
-    const grid = items.length ? `<div class="proj-taskgrid">${items.map(t=>todayCardHTML(t)).join('')}</div>`
-                              : '<div class="proj-empty">Zieh eine Aufgabe hierher oder wähle das Ziel in der Aufgabe.</div>';
-    const hd = `<div class="today-sechead goal-head ${g.done?'is-reached':''}" style="cursor:pointer" onclick="openPGoal('${g.id}')">`
-      + `<span class="title">${esc(g.title)}</span><span class="count">${st.total}</span>`
-      + `<span class="spacer"></span>${right}</div>`;
-    return `<div class="today-sec"${dropAttr({drop:{type:'goal',value:g.id}})}>${hd}${bar}${noteHTML}${grid}</div>`;
-  }).join('<div class="rule soft"></div>');
-  const goalBlock = (gs.length ? goalSecs : '<div class="proj-empty">Noch kein Ziel. Ein Ziel bündelt die Aufgaben, die zusammen ein Ergebnis bringen.</div>')
-    + `<button class="colnew ms-add" onclick="openPGoal(null)">+ Ziel</button>`;
+  /* --- Ziele: Titel + Fortschrittsbalken + Zaehler --- */
+  const gs=goalsOf(p.id, ts);
+  const statOf = g => goalStats(g.id, ts);
+  const gsDone = gs.filter(g=>statOf(g).reached).length;
+  const gsShown = showDoneGoals ? gs : gs.filter(g=>!statOf(g).reached);
+  const cards = gsShown.map(g=>{
+    const stx=statOf(g);
+    const open=goalCardOpen.has(g.id);
+    const items=ts.filter(t=>t.goalId===g.id).sort(sortP);
+    // Statusfarbe: erreicht (alle Aufgaben erledigt) > ueberfaellig > on track. Ohne Aufgabe: keine Linie.
+    const st = stx.reached ? GOAL_GREEN : (stx.overdue>0 ? 'var(--red)' : 'var(--accent)');
+    const rows = items.length
+      ? `<div class="gc-tasks">` + items.map(t=>`<div class="gc-row ${t.status==='done'?'is-done':''}" onclick="event.stopPropagation();openEdit('${t.id}')">`
+          + `<span class="gr-t">${esc(t.title)}</span>`
+          + (t.due?`<span class="gr-d ${isOverdue(t)?'over':''}">${fmtDate(t.due)}</span>`:'')
+          + `</div>`).join('') + `</div>`
+      : `<div class="proj-empty" style="padding:4px 2px">Noch keine Aufgabe. Zieh eine hierher oder leg eine an.</div>`;
+    const note=(g.note||'').trim()?`<div class="gc-note">${esc(g.note.trim())}</div>`:'';
+    const body = open ? note + rows
+      + `<button class="colnew" onclick="event.stopPropagation();openNewInGoal('${g.id}')">+ Aufgabe</button>`
+      + `<div class="gc-foot"><button class="ghost sm" onclick="event.stopPropagation();openPGoal('${g.id}')">${ic('edit')} Ziel bearbeiten</button></div>` : '';
+    return `<div class="gcard ${open?'is-open':''} ${stx.total===0?'is-empty':''}" style="--st:${st}"`
+      + dropAttr({drop:{type:'goal',value:g.id}}) + ` onclick="toggleGoalCard('${g.id}')">`
+      + `<div class="gc-head"><div class="gc-title">${esc(g.title)}</div></div>`
+      + `<div class="gc-barrow"><div class="gc-bar"><i style="width:${stx.total?stx.pct:0}%"></i></div>`
+      + `<span class="gc-num">${stx.done}/${stx.total}</span></div>`
+      + `<span class="ic gc-chev">${ICON.chevronRight}</span>`
+      + body + `</div>`;
+  }).join('');
+  const goalBlock = `<div class="today-sec">`
+    + goalSecHead('Ziele', gsShown.length, gsDone, showDoneGoals, 'toggleDoneGoals')
+    + `<div class="goal-grid">${cards}`
+    + `<button class="gcard-add" onclick="openPGoal(null)">${ic('plus')} Ziel</button></div></div>`;
 
-  /* --- Ohne Ziel: damit sich keine Aufgabe versteckt (wie „Ohne Projekt" im Board) --- */
+  /* --- Ohne Ziel: fester Block unter dem Raster --- */
   const rest = ts.filter(t=>!t.goalId).sort(sortP);
-  const restBlock = `<div class="today-sec"${dropAttr({drop:{type:'goal',value:''}})}>`
-    + head('Ohne Ziel', rest.length, '', 'Aufgaben, die noch keinem Ziel zugeordnet sind')
-    + (rest.length?`<div class="proj-taskgrid">${rest.map(t=>todayCardHTML(t)).join('')}</div>`
-                  :'<div class="proj-empty">Alle Aufgaben sind einem Ziel zugeordnet.</div>')
-    + `</div>`;
+  const restBlock = `<div class="today-sec goal-rest"${dropAttr({drop:{type:'goal',value:''}})}>`
+    + `<div class="today-sechead" style="cursor:default"><span class="title">Ohne Ziel</span>`
+    + `<span class="day">Aufgaben, die noch keinem Ziel zugeordnet sind</span>`
+    + `<span class="count">${rest.length}</span></div>`
+    + `<div class="proj-taskgrid">`
+    + (rest.length ? rest.map(t=>todayCardHTML(t)).join('')
+                   : `<div class="proj-empty">Alle Aufgaben sind einem Ziel zugeordnet.</div>`)
+    + `</div><button class="colnew" onclick="openNew()">+ Aufgabe</button></div>`;
 
   return msBlock + '<div class="rule"></div>' + goalBlock + '<div class="rule"></div>' + restBlock;
+}
+// Neue Aufgabe direkt in einem Ziel anlegen (Knopf in der aufgeklappten Ziel-Card).
+// Das Ziel-Feld im Modal erscheint erst, wenn ein Projekt gewaehlt ist – deshalb Projekt zuerst.
+function openNewInGoal(goalId){
+  openNew();
+  const g = goalById(goalId); if(!g) return;
+  document.getElementById('mProj').value = g.projectId;
+  updateRoleField(); updateGoalField(goalId);
 }
 function renderProjektDetail(){
   const p=projById(openProjectId);
@@ -2536,11 +2611,6 @@ function deletePGoal(){
     persist(); closePGoal(); refreshActive();
   }
 }
-function togglePGoalDone(id){
-  const g=goalById(id); if(!g) return;
-  g.done=!g.done; g.doneAt = g.done ? todayStr() : '';
-  persist(); refreshActive();
-}
 
 function openMs(id){
   if(!openProjectId && !id) return;
@@ -2550,7 +2620,16 @@ function openMs(id){
   document.getElementById('msId').value = editing ? m.id : '';
   document.getElementById('msTitle').value = editing ? (m.title||'') : '';
   document.getElementById('msDate').value  = editing ? (m.date||'')  : '';
+  document.getElementById('msNote').value  = editing ? (m.note||'')  : '';
   document.getElementById('msDelete').style.display = editing ? '' : 'none';
+  // „Erreicht" sitzt hier statt auf der Card – die Card bleibt bedienelementfrei.
+  const rb = document.getElementById('msReach');
+  rb.style.display = editing ? '' : 'none';
+  if(editing){
+    rb.innerHTML = m.done ? '↺ Wieder offen' : ic('check')+' Erreicht';
+    rb.style.color = m.done ? '' : GOAL_GREEN;
+    rb.dataset.ms = m.id;
+  }
   msOverlay.classList.add('open');
   setTimeout(()=>document.getElementById('msTitle').focus(), 30);
 }
@@ -2559,12 +2638,13 @@ function saveMs(){
   const id=document.getElementById('msId').value;
   const title=document.getElementById('msTitle').value.trim();
   const date=document.getElementById('msDate').value;
+  const note=document.getElementById('msNote').value.trim();
   if(!title){ document.getElementById('msTitle').focus(); return; }
   if(!date){ alert('Ein Meilenstein braucht ein Datum – er markiert einen Punkt im Zeitplan.'); document.getElementById('msDate').focus(); return; }
-  if(id){ const m=milestones.find(x=>x.id===id); if(m){ m.title=title; m.date=date; } }
+  if(id){ const m=milestones.find(x=>x.id===id); if(m){ m.title=title; m.date=date; m.note=note; } }
   else {
     const pid = openProjectId; if(!pid) return;
-    milestones.push({ id:uid('ms'), projectId:pid, title, date, done:false, doneAt:'' });
+    milestones.push({ id:uid('ms'), projectId:pid, title, date, note, done:false, doneAt:'' });
   }
   persist(); closeMs(); refreshActive();
 }
@@ -2859,7 +2939,7 @@ function kpiRowHTML(pid, v){
   // Fünfte Card: eine Ebene über den Aufgaben. Wird IMMER gezeigt (bei null Zielen „–"),
   // damit die Zeile nicht je nach Projekt vier oder fünf Kacheln hat.
   const gs = pid ? goalsOf(pid) : goals.filter(g=>projById(g.projectId));
-  const reached = gs.filter(g=>g.done).length;
+  const reached = gs.filter(g=>goalStats(g.id).reached).length;   // abgeleitet, nicht gesetzt
   const goalNum = gs.length ? `${reached}/${gs.length}` : '–';
   return `<div class="stats">${cell(v.total,'Aufgaben gesamt','total')}${cell(v.open,'Offen','open')}${cell(v.overdue,'Überfällig','overdue',v.overdue>0)}${cell(v.pct+'%','Fortschritt','progress')}${cell(goalNum,'Ziele erreicht','goals')}</div>`;
 }
@@ -2883,10 +2963,10 @@ function openGoalsList(pid){
                      .slice().sort((a,b)=>{
                        const pa=projById(a.projectId).name, pb=projById(b.projectId).name;
                        if(pa!==pb) return pa.localeCompare(pb,'de');
-                       return (a.done?1:0)-(b.done?1:0);
+                       return (goalStats(a.id).reached?1:0)-(goalStats(b.id).reached?1:0);
                      });
   const pool = pid ? projectTasks(pid) : tasks.filter(inRole);
-  const reached = gs.filter(g=>g.done).length;
+  const reached = gs.filter(g=>goalStats(g.id, pool).reached).length;
   document.getElementById('listTitle').textContent =
     `Ziele · ${reached} von ${gs.length} erreicht` + (p?` · ${p.name}`:'');
   if(!gs.length){
@@ -2901,9 +2981,9 @@ function openGoalsList(pid){
     const projHTML = pid ? '' : `<span class="badge proj" style="background:${pj.color}">${esc(pj.name)}</span>`;
     const bar = `<span class="gr-bar"><span class="pcard-bar ${st.total&&st.done===st.total?'full':''}"><i style="width:${st.total?st.pct:0}%"></i></span></span>`;
     const cnt = st.total ? `${st.done} von ${st.total}` : 'keine Aufgabe';
-    return `<div class="arch-row goal-row ${g.done?'is-reached':''}" onclick="goalListJump('${g.projectId}')">
+    return `<div class="arch-row goal-row ${st.reached?'is-reached':''}" onclick="goalListJump('${g.projectId}')">
       <span class="a-title">${esc(g.title)}</span>${projHTML}${bar}
-      <span class="gr-cnt">${cnt}</span>${g.done?'<span class="gr-ok">Erreicht</span>':''}</div>`;
+      <span class="gr-cnt">${cnt}</span>${st.reached?'<span class="gr-ok">Erreicht</span>':''}</div>`;
   }).join('');
   // Die einzige Zahl, die im Balkenbild sonst fehlt: Aufgaben ohne Ziel (nur in Projekten, die Ziele haben).
   const withGoals = new Set(gs.map(g=>g.projectId));
@@ -3923,7 +4003,7 @@ function updateGoalField(keep){
   if(!gs.length){ field.classList.add('hidden'); sel.innerHTML='<option value="">— kein Ziel —</option>'; sel.value=''; return; }
   field.classList.remove('hidden');
   sel.innerHTML = '<option value="">— kein Ziel —</option>' +
-    gs.map(g=>`<option value="${g.id}">${esc(g.title)}${g.done?' (erreicht)':''}</option>`).join('');
+    gs.map(g=>`<option value="${g.id}">${esc(g.title)}${goalStats(g.id).reached?' (erreicht)':''}</option>`).join('');
   sel.value = (keep && gs.some(g=>g.id===keep)) ? keep : '';
 }
 function updateRoleField(){
@@ -4328,6 +4408,10 @@ document.getElementById('pgCancel').onclick=closePGoal;
 document.getElementById('pgDelete').onclick=deletePGoal;
 pgOverlay.addEventListener('click',e=>{ if(e.target===pgOverlay) closePGoal(); });
 document.getElementById('pgTitle').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); savePGoal(); } });
+document.getElementById('msReach').onclick=()=>{
+  const id=document.getElementById('msReach').dataset.ms;
+  if(id){ toggleMsDone(id); closeMs(); }
+};
 document.getElementById('msSave').onclick=saveMs;
 document.getElementById('msCancel').onclick=closeMs;
 document.getElementById('msDelete').onclick=deleteMs;
@@ -4372,10 +4456,11 @@ document.getElementById('fSearch').oninput=e=>{ filters.search=e.target.value; r
       { id:uid(), title:'Idee für später (liegt im Backlog)', projectId:null, role:'meta', status:'backlog', important:false, urgent:false, start:'', due:'', created:todayStr() },
     ];
     // Ein Ziel und ein Meilenstein im ersten Projekt, damit der Reiter „Ziele" nicht leer erklärt werden muss.
-    goals=[ { id:uid('g'), projectId:projects[0].id, title:'Dashboard läuft im Alltag', note:'Erst wenn ich es täglich nutze, ist es fertig.', done:false, doneAt:'' } ];
+    goals=[ { id:uid('g'), projectId:projects[0].id, title:'Dashboard läuft im Alltag', note:'Erst wenn ich es täglich nutze, ist es fertig.' } ];
     tasks[0].goalId = goals[0].id;
     tasks[1].goalId = goals[0].id;
-    milestones=[ { id:uid('ms'), projectId:projects[0].id, title:'Erste Woche im Einsatz', date:rel(7), done:false, doneAt:'' } ];
+    milestones=[ { id:uid('ms'), projectId:projects[0].id, title:'Erste Woche im Einsatz', date:rel(7),
+                   note:'Fünf Arbeitstage in Folge genutzt, ohne auf Planner zurückzufallen.', done:false, doneAt:'' } ];
   }
   normalizeProjects(); normalizeNotes(); normalizeWeekGoals(); normalizeGoals(); normalizeMilestones(); normalizePrio();
   await persist();
